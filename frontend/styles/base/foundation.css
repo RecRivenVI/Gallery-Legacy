@@ -1,0 +1,74 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  min-width: 320px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeInDim {
+  from { opacity: 0; }
+  to   { opacity: .3; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes fadeOutDim {
+  from { opacity: .3; }
+  to   { opacity: 0; }
+}
+
+/* .entrance / .exit 仅用于空状态 / 错误信息 / 分页等非卡片元素的淡入淡出。
+   卡片（.card）进出场与布局 morph 统一由 GridMotion 负责，不使用这两个类。 */
+.entrance {
+  opacity: 0;
+  animation: fadeIn .35s ease forwards;
+}
+
+.exit {
+  animation: fadeOut .2s ease forwards;
+}
+
+.global-header h1,
+.breadcrumb a,
+.breadcrumb .sep,
+.meta,
+.empty,
+.loading {
+  filter: drop-shadow(0 1px 3px var(--text-shadow-color));
+}

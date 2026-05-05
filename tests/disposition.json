@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "purpose": "Audit record, never used by the test runner for exclusion",
+  "previousExcludedUnits": [
+    {
+      "formerFile": "catalog-mutation-plan-contract.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 4,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-mutation-plan-destructive.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 6,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-mutation-plan-integration.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 2,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-mutation-plan-isolation.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 5,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-mutation-plan-profile.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 5,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-builder-authority.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/indexing/streaming.test.js",
+        "tests/publication/generation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-builder-determinism.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/indexing/streaming.test.js",
+        "tests/publication/generation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-builder-failure.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 5,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/indexing/streaming.test.js",
+        "tests/publication/generation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-builder-isolation.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-isolation.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 2,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-mapping.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 10,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-media-persistence-integration.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 2,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-media-persistence-isolation.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-media-persistence-transitions.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 13,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-media-persistence.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-mutation-executor-integration.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 1,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-mutation-executor-isolation.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 4,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-mutation-executor-profile.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 4,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-mutation-executor-removals.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 6,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-mutation-executor-transaction.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 6,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "catalog-next-query-plan.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 4,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/search/query.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-writer-boundaries.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-writer-determinism.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-writer-query-plan.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-writer-updates.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 8,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "catalog-next-writer.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/catalog/schema.test.js"
+      ]
+    },
+    {
+      "formerFile": "hardcoding-audit.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 15,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-reconciliation-adapters.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-reconciliation-bridge.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 1,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-reconciliation-contract.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 10,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-reconciliation-isolation.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 4,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-relational-adapters.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 1,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-relational-bridge.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-relational-contract.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 9,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/media/lifecycle.test.js",
+        "tests/media/eligibility.test.js"
+      ]
+    },
+    {
+      "formerFile": "media-relational-isolation.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/core-layout.test.js",
+        "tests/core-isolation.test.js"
+      ]
+    },
+    {
+      "formerFile": "query-plan.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/catalog/writer.test.js",
+        "tests/search/query.test.js"
+      ]
+    },
+    {
+      "formerFile": "snapshot-diff-contract.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 8,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "snapshot-diff-destructive.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 8,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "snapshot-diff-integration.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 1,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "snapshot-diff-isolation.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 4,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "snapshot-diff-presence.test.js",
+      "decision": "OBSOLETE",
+      "testsInspected": 5,
+      "reason": "Source-keyed incremental mutation/diff is not a current product operation. Physical completeness and collision invariants are covered independently.",
+      "coveredBy": []
+    },
+    {
+      "formerFile": "snapshot-preparation-authority.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/library/authority.test.js",
+        "tests/library/completeness.test.js"
+      ]
+    },
+    {
+      "formerFile": "snapshot-preparation-conflicts.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 7,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/library/authority.test.js",
+        "tests/library/completeness.test.js"
+      ]
+    },
+    {
+      "formerFile": "snapshot-preparation-contract.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 6,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/library/authority.test.js",
+        "tests/library/completeness.test.js"
+      ]
+    },
+    {
+      "formerFile": "snapshot-preparation-integration.test.js",
+      "decision": "MIGRATE",
+      "testsInspected": 3,
+      "reason": "Re-expressed as current physical-identity, immutable-generation behavior; obsolete schema/facade assumptions are intentionally not retained.",
+      "coveredBy": [
+        "tests/library/authority.test.js",
+        "tests/library/completeness.test.js"
+      ]
+    }
+  ]
+}

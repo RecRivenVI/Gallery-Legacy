@@ -1,0 +1,33 @@
+{
+  "name": "gallery",
+  "version": "10.3.0",
+  "private": true,
+  "description": "Filesystem-authoritative Gallery for eight fixed platforms",
+  "main": "desktop/main.js",
+  "engines": {
+    "node": ">=22.23.2 <23"
+  },
+  "scripts": {
+    "start": "node cmd/gallery/main.js serve",
+    "manager": "node tools/desktop.js",
+    "scan": "node cmd/gallery/main.js scan",
+    "validate": "node cmd/gallery/main.js validate",
+    "publish": "node cmd/gallery/main.js publish",
+    "rollback": "node cmd/gallery/main.js rollback",
+    "test": "node tools/test.js",
+    "test:core": "node tools/test.js --core",
+    "check": "node tools/check.js",
+    "check:electron": "node tools/check.js --desktop",
+    "audit:tree": "node tools/audit-tree.js",
+    "accept": "node tools/acceptance.js",
+    "build": "node tools/build.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.11.1",
+    "ws": "8.21.0"
+  },
+  "devDependencies": {
+    "electron": "43.0.0",
+    "playwright": "1.61.1"
+  }
+}

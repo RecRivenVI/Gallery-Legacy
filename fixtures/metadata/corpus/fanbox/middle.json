@@ -1,0 +1,78 @@
+{
+  "id": "8111111",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "feeRequired": 1001,
+  "publishedDatetime": "2026-01-01T00:00:00Z",
+  "updatedDatetime": "2026-01-01T00:00:00Z",
+  "tags": [
+    "synthetic-2",
+    "synthetic-3"
+  ],
+  "isLiked": false,
+  "likeCount": 0,
+  "isCommentingRestricted": false,
+  "commentCount": 0,
+  "isRestricted": false,
+  "user": {
+    "creatorId": "synthetic-4",
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "hasAdultContent": true,
+    "coverImageUrl": "https://example.invalid/synthetic/5",
+    "profileLinks": [
+      "https://example.invalid/synthetic/6",
+      "https://example.invalid/synthetic/7"
+    ],
+    "profileItems": [
+      {
+        "id": "synthetic-8",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/9",
+        "thumbnailUrl": "https://example.invalid/synthetic/10"
+      }
+    ],
+    "isFollowed": true,
+    "isSupported": false,
+    "isStopped": false,
+    "isAcceptingRequest": true,
+    "hasBoothShop": false,
+    "hasPublishedPost": true,
+    "category": "synthetic-11",
+    "userId": "81111111",
+    "name": "synthetic-12",
+    "iconUrl": "https://example.invalid/synthetic/13"
+  },
+  "creatorId": "synthetic-14",
+  "hasAdultContent": true,
+  "type": "image",
+  "coverImageUrl": "https://example.invalid/synthetic/15",
+  "excerpt": "",
+  "nextPost": {
+    "id": "8111111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "prevPost": {
+    "id": "8111111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "imageForShare": "https://example.invalid/synthetic/16",
+  "isPinned": false,
+  "archives": [],
+  "date": "2026-01-01T00:00:00Z",
+  "text": "",
+  "isCoverImage": false,
+  "plan": {
+    "id": "811111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "fee": 1017,
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "coverImageUrl": "https://example.invalid/synthetic/18",
+    "creatorId": "synthetic-19",
+    "hasAdultContent": true,
+    "paymentMethod": null,
+    "perks": []
+  },
+  "category": "synthetic-20",
+  "subcategory": "synthetic-21"
+}

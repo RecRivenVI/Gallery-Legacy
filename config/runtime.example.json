@@ -1,0 +1,16 @@
+{
+  "instanceRoot": null,
+  "mode": "local",
+  "host": "127.0.0.1",
+  "port": 18104,
+  "sources": {
+    "pixiv": null,
+    "pixivFANBOX": null,
+    "Gank": null,
+    "Fantia": null,
+    "Patreon": null,
+    "Pawchive": null,
+    "X": null,
+    "微博": null
+  }
+}

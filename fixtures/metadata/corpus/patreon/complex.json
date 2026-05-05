@@ -1,0 +1,261 @@
+{
+  "change_visibility_at": null,
+  "comment_count": 1001,
+  "commenter_count": 1002,
+  "current_user_can_comment": false,
+  "current_user_can_delete": false,
+  "current_user_can_view": false,
+  "current_user_has_liked": false,
+  "has_ti_violation": false,
+  "image": {
+    "url": "https://example.invalid/synthetic/3.png",
+    "thumb_url": "https://example.invalid/synthetic/4.png",
+    "large_url": "https://example.invalid/synthetic/5.png",
+    "thumb_square_url": "https://example.invalid/synthetic/6.png",
+    "thumb_square_large_url": "https://example.invalid/synthetic/7.png",
+    "width": 1008,
+    "height": 1009
+  },
+  "is_paid": false,
+  "like_count": 1010,
+  "meta_image_url": "https://example.invalid/synthetic/11.png",
+  "min_cents_pledged_to_view": null,
+  "moderation_status": "synthetic-12",
+  "patreon_url": "https://example.invalid/synthetic/13",
+  "pledge_url": "https://example.invalid/synthetic/14",
+  "pls_one_liners_by_category": [],
+  "post_level_suspension_removal_date": null,
+  "post_metadata": {
+    "platform": {},
+    "image_order": [
+      "811111111",
+      "811111111",
+      "811111111",
+      "811111111",
+      "811111111",
+      "811111111"
+    ]
+  },
+  "post_type": "synthetic-15",
+  "preview_asset_type": "synthetic-16",
+  "published_at": "2026-01-01T00:00:00Z",
+  "teaser_text": null,
+  "thumbnail": {
+    "original": "https://example.invalid/synthetic/17.png",
+    "default": "https://example.invalid/synthetic/18.png",
+    "default_blurred": "https://example.invalid/synthetic/19.png",
+    "default_small": "https://example.invalid/synthetic/20.png",
+    "default_large": "https://example.invalid/synthetic/21.png",
+    "default_blurred_small": "https://example.invalid/synthetic/22.png",
+    "thumbnail": "https://example.invalid/synthetic/23.png",
+    "thumbnail_large": "https://example.invalid/synthetic/24.png",
+    "thumbnail_small": "https://example.invalid/synthetic/25.png",
+    "url": "https://example.invalid/synthetic/26.png",
+    "width": 1027,
+    "height": 1028
+  },
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "upgrade_url": "https://example.invalid/synthetic/29",
+  "url": "https://example.invalid/synthetic/30",
+  "video_preview": null,
+  "was_posted_by_campaign_owner": true,
+  "id": 1031,
+  "images": [
+    {
+      "file_name": "synthetic-32.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/33.png",
+        "original": "https://example.invalid/synthetic/34.png",
+        "default": "https://example.invalid/synthetic/35.png",
+        "default_blurred": "https://example.invalid/synthetic/36.png",
+        "default_small": "https://example.invalid/synthetic/37.png",
+        "default_large": "https://example.invalid/synthetic/38.png",
+        "default_blurred_small": "https://example.invalid/synthetic/39.png",
+        "thumbnail": "https://example.invalid/synthetic/40.png",
+        "thumbnail_large": "https://example.invalid/synthetic/41.png",
+        "thumbnail_small": "https://example.invalid/synthetic/42.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1043,
+          "w": 1044
+        }
+      }
+    },
+    {
+      "file_name": "synthetic-45.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/46.png",
+        "original": "https://example.invalid/synthetic/47.png",
+        "default": "https://example.invalid/synthetic/48.png",
+        "default_blurred": "https://example.invalid/synthetic/49.png",
+        "default_small": "https://example.invalid/synthetic/50.png",
+        "default_large": "https://example.invalid/synthetic/51.png",
+        "default_blurred_small": "https://example.invalid/synthetic/52.png",
+        "thumbnail": "https://example.invalid/synthetic/53.png",
+        "thumbnail_large": "https://example.invalid/synthetic/54.png",
+        "thumbnail_small": "https://example.invalid/synthetic/55.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1056,
+          "w": 1057
+        }
+      }
+    },
+    {
+      "file_name": "synthetic-58.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/59.png",
+        "original": "https://example.invalid/synthetic/60.png",
+        "default": "https://example.invalid/synthetic/61.png",
+        "default_blurred": "https://example.invalid/synthetic/62.png",
+        "default_small": "https://example.invalid/synthetic/63.png",
+        "default_large": "https://example.invalid/synthetic/64.png",
+        "default_blurred_small": "https://example.invalid/synthetic/65.png",
+        "thumbnail": "https://example.invalid/synthetic/66.png",
+        "thumbnail_large": "https://example.invalid/synthetic/67.png",
+        "thumbnail_small": "https://example.invalid/synthetic/68.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1069,
+          "w": 1070
+        }
+      }
+    },
+    {
+      "file_name": "synthetic-71.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/72.png",
+        "original": "https://example.invalid/synthetic/73.png",
+        "default": "https://example.invalid/synthetic/74.png",
+        "default_blurred": "https://example.invalid/synthetic/75.png",
+        "default_small": "https://example.invalid/synthetic/76.png",
+        "default_large": "https://example.invalid/synthetic/77.png",
+        "default_blurred_small": "https://example.invalid/synthetic/78.png",
+        "thumbnail": "https://example.invalid/synthetic/79.png",
+        "thumbnail_large": "https://example.invalid/synthetic/80.png",
+        "thumbnail_small": "https://example.invalid/synthetic/81.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1082,
+          "w": 1083
+        }
+      }
+    },
+    {
+      "file_name": "synthetic-84.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/85.png",
+        "original": "https://example.invalid/synthetic/86.png",
+        "default": "https://example.invalid/synthetic/87.png",
+        "default_blurred": "https://example.invalid/synthetic/88.png",
+        "default_small": "https://example.invalid/synthetic/89.png",
+        "default_large": "https://example.invalid/synthetic/90.png",
+        "default_blurred_small": "https://example.invalid/synthetic/91.png",
+        "thumbnail": "https://example.invalid/synthetic/92.png",
+        "thumbnail_large": "https://example.invalid/synthetic/93.png",
+        "thumbnail_small": "https://example.invalid/synthetic/94.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1095,
+          "w": 1096
+        }
+      }
+    },
+    {
+      "file_name": "synthetic-97.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/98.png",
+        "original": "https://example.invalid/synthetic/99.png",
+        "default": "https://example.invalid/synthetic/100.png",
+        "default_blurred": "https://example.invalid/synthetic/101.png",
+        "default_small": "https://example.invalid/synthetic/102.png",
+        "default_large": "https://example.invalid/synthetic/103.png",
+        "default_blurred_small": "https://example.invalid/synthetic/104.png",
+        "thumbnail": "https://example.invalid/synthetic/105.png",
+        "thumbnail_large": "https://example.invalid/synthetic/106.png",
+        "thumbnail_small": "https://example.invalid/synthetic/107.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1108,
+          "w": 1109
+        }
+      }
+    }
+  ],
+  "attachments": [],
+  "attachments_media": [],
+  "date": "2026-01-01T00:00:00Z",
+  "campaign": {
+    "avatar_photo_image_urls": {
+      "original": "https://example.invalid/synthetic/110.png",
+      "default": "https://example.invalid/synthetic/111.png",
+      "default_small": "https://example.invalid/synthetic/112.png",
+      "default_large": "https://example.invalid/synthetic/113.png",
+      "default_blurred": "https://example.invalid/synthetic/114.png",
+      "default_blurred_small": "https://example.invalid/synthetic/115.png",
+      "thumbnail": "https://example.invalid/synthetic/116.png",
+      "thumbnail_large": "https://example.invalid/synthetic/117.png",
+      "thumbnail_small": "https://example.invalid/synthetic/118.png"
+    },
+    "avatar_photo_url": "https://example.invalid/synthetic/119.png",
+    "currency": "synthetic-120",
+    "earnings_visibility": "synthetic-121",
+    "is_monthly": true,
+    "is_nsfw": true,
+    "name": "synthetic-122",
+    "show_audio_post_download_links": true,
+    "url": "https://example.invalid/synthetic/123"
+  },
+  "tags": [
+    "synthetic-124",
+    "synthetic-125",
+    "synthetic-126",
+    "synthetic-127"
+  ],
+  "creator": {
+    "about": null,
+    "created": "2026-01-01T00:00:00Z",
+    "current_user_block_status": "synthetic-128",
+    "facebook": null,
+    "first_name": "synthetic-129",
+    "full_name": "synthetic-130",
+    "gender": 0,
+    "image_url": "https://example.invalid/synthetic/131.png",
+    "last_name": "",
+    "social_connections": {
+      "discord": null,
+      "facebook": null,
+      "google": null,
+      "instagram": null,
+      "reddit": null,
+      "spotify": null,
+      "spotify_open_access": null,
+      "tiktok": null,
+      "twitch": null,
+      "twitter": {
+        "url": "https://example.invalid/synthetic/132",
+        "user_id": "8111111111111111111"
+      },
+      "twitter2": null,
+      "twitter_new_app": null,
+      "vimeo": null,
+      "youtube": null
+    },
+    "thumb_url": "https://example.invalid/synthetic/133.png",
+    "twitch": null,
+    "twitter": null,
+    "url": "https://example.invalid/synthetic/134",
+    "vanity": "synthetic-135",
+    "youtube": null,
+    "id": "81111111",
+    "date": "2026-01-01T00:00:00Z"
+  },
+  "category": "synthetic-136",
+  "subcategory": "synthetic-137"
+}

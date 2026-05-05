@@ -1,0 +1,39 @@
+{
+  "post_id": 1001,
+  "post_url": "https://example.invalid/synthetic/2",
+  "post_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "comment": null,
+  "rating": "adult",
+  "posted_at": "synthetic-3",
+  "date": "2026-01-01T00:00:00Z",
+  "fanclub_id": 1004,
+  "fanclub_user_id": 1005,
+  "fanclub_user_name": "synthetic-6",
+  "fanclub_name": "synthetic-7",
+  "fanclub_url": "https://example.invalid/synthetic/8",
+  "tags": [
+    "synthetic-9",
+    "synthetic-10",
+    "synthetic-11",
+    "synthetic-12"
+  ],
+  "num": 0,
+  "content_count": 3,
+  "content_num": 1,
+  "content_category": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content_filename": "",
+  "content_id": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content_comment": "",
+  "plan": {
+    "id": 0,
+    "price": 0,
+    "limit": 0,
+    "name": "",
+    "description": "",
+    "thumb": "https://example.invalid/synthetic/13.png"
+  },
+  "blogpost_text": "",
+  "category": "synthetic-14",
+  "subcategory": "synthetic-15"
+}

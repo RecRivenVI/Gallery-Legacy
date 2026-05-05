@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "cases": [
+    {
+      "platformId": "pixiv",
+      "metadata": {
+        "id": "2001",
+        "user": {
+          "id": "1001",
+          "name": "Synthetic Pixiv"
+        },
+        "title": {
+          "text": "Synthetic illustration"
+        },
+        "caption": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>",
+        "tags": [
+          "fixture",
+          "Fixture",
+          "fixture"
+        ],
+        "frames": [
+          {
+            "file": "frame.jpg",
+            "delay": 40
+          }
+        ]
+      },
+      "body": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>"
+    },
+    {
+      "platformId": "pixivFANBOX",
+      "metadata": {
+        "id": "2002",
+        "title": "Synthetic supporter post",
+        "content": "Synthetic text 🧪​\r\nsecond line &amp;",
+        "excerpt": "Synthetic summary",
+        "user": {
+          "id": "1002",
+          "userId": "1002",
+          "name": "Synthetic Fanbox",
+          "creatorId": "synthetic-creator",
+          "description": "Synthetic profile"
+        },
+        "tags": [
+          "fixture"
+        ]
+      },
+      "body": "Synthetic text 🧪​\r\nsecond line &amp;"
+    },
+    {
+      "platformId": "Gank",
+      "metadata": {
+        "id": "00000000-0000-4000-8000-000000002003",
+        "title": "Synthetic post",
+        "content": "Synthetic text 🧪​\r\nsecond line &amp;",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000001003",
+          "nickname": "Synthetic Gank"
+        },
+        "postTags": [
+          {
+            "name": "fixture"
+          }
+        ],
+        "postSummary": {},
+        "postMedia": []
+      },
+      "body": "Synthetic text 🧪​\r\nsecond line &amp;"
+    },
+    {
+      "platformId": "Fantia",
+      "metadata": {
+        "post_id": "2004",
+        "post_title": "Synthetic post",
+        "fanclub_user_id": "1004",
+        "fanclub_user_name": "Synthetic Fantia",
+        "comment": "Synthetic text 🧪​\r\nsecond line &amp;",
+        "content_comment": "{ \"ops\": [ { \"insert\": \"Synthetic 🧪\\n\" } ] }",
+        "content_id": 12,
+        "file_id": "13",
+        "tags": []
+      },
+      "body": "Synthetic text 🧪​\r\nsecond line &amp;"
+    },
+    {
+      "platformId": "Patreon",
+      "metadata": {
+        "id": "2005",
+        "title": "Synthetic membership post",
+        "content": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>",
+        "creator": {
+          "id": "1005",
+          "full_name": "Synthetic Patreon",
+          "vanity": "synthetic",
+          "social_connections": {}
+        },
+        "tags": [
+          "fixture"
+        ],
+        "is_paid": false
+      },
+      "body": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>"
+    },
+    {
+      "platformId": "Pawchive",
+      "authorDirectoryName": "fanbox_1006",
+      "metadata": {
+        "service": "fanbox",
+        "id": "2006",
+        "user": "1006",
+        "username": "Synthetic Pawchive",
+        "title": "Synthetic mirror post",
+        "content": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>",
+        "attachments": [
+          {
+            "name": "asset.jpg",
+            "path": "/synthetic/asset.jpg"
+          }
+        ],
+        "tags": [
+          "fixture"
+        ],
+        "has_full": true
+      },
+      "body": "<p>Synthetic text 🧪​\r\nsecond line &amp;</p>"
+    },
+    {
+      "platformId": "X",
+      "metadata": {
+        "tweet_id": "9007199254740993",
+        "content": "Synthetic text 🧪​\r\nsecond line &amp;",
+        "hashtags": [
+          "fixture"
+        ],
+        "user": {
+          "id": "1007",
+          "name": "synthetic_x",
+          "nick": "Synthetic X",
+          "description": "Synthetic profile"
+        },
+        "sensitive": false,
+        "lang": "en"
+      },
+      "body": "Synthetic text 🧪​\r\nsecond line &amp;"
+    },
+    {
+      "platformId": "微博",
+      "metadata": {
+        "idstr": "9223372036854775806",
+        "text_raw": "Synthetic text 🧪​\r\nsecond line &amp; #fixture#",
+        "user": {
+          "idstr": "1008",
+          "screen_name": "Synthetic Weibo"
+        },
+        "topic_struct": [
+          {
+            "topic_title": "fixture"
+          }
+        ],
+        "annotations": [],
+        "actionlog": {},
+        "isAd": 0,
+        "act_code": "1",
+        "type": 1,
+        "uuid": "synthetic",
+        "pic_infos": {
+          "100": {
+            "thumbnail": {
+              "url": "https://example.invalid/image.jpg"
+            }
+          }
+        }
+      },
+      "body": "Synthetic text 🧪​\r\nsecond line &amp; #fixture#"
+    }
+  ]
+}

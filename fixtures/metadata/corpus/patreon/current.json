@@ -1,0 +1,174 @@
+{
+  "change_visibility_at": null,
+  "comment_count": 5,
+  "commenter_count": 5,
+  "current_user_can_comment": false,
+  "current_user_can_delete": false,
+  "current_user_can_view": false,
+  "current_user_has_liked": false,
+  "has_ti_violation": false,
+  "image": {
+    "url": "https://example.invalid/synthetic/1.png",
+    "thumb_url": "https://example.invalid/synthetic/2.png",
+    "large_url": "https://example.invalid/synthetic/3.png",
+    "thumb_square_url": "https://example.invalid/synthetic/4.png",
+    "thumb_square_large_url": "https://example.invalid/synthetic/5.png",
+    "width": 1006,
+    "height": 1007
+  },
+  "is_paid": false,
+  "like_count": 1008,
+  "meta_image_url": "https://example.invalid/synthetic/9.png",
+  "min_cents_pledged_to_view": null,
+  "moderation_status": "synthetic-10",
+  "patreon_url": "https://example.invalid/synthetic/11",
+  "pledge_url": "https://example.invalid/synthetic/12",
+  "pls_one_liners_by_category": [],
+  "post_level_suspension_removal_date": null,
+  "post_metadata": {
+    "platform": {},
+    "image_order": [
+      "811111111",
+      "811111111"
+    ]
+  },
+  "post_type": "synthetic-13",
+  "preview_asset_type": "synthetic-14",
+  "published_at": "2026-01-01T00:00:00Z",
+  "teaser_text": null,
+  "thumbnail": {
+    "original": "https://example.invalid/synthetic/15.png",
+    "default": "https://example.invalid/synthetic/16.png",
+    "default_blurred": "https://example.invalid/synthetic/17.png",
+    "default_small": "https://example.invalid/synthetic/18.png",
+    "default_large": "https://example.invalid/synthetic/19.png",
+    "default_blurred_small": "https://example.invalid/synthetic/20.png",
+    "thumbnail": "https://example.invalid/synthetic/21.png",
+    "thumbnail_large": "https://example.invalid/synthetic/22.png",
+    "thumbnail_small": "https://example.invalid/synthetic/23.png",
+    "url": "https://example.invalid/synthetic/24.png",
+    "width": 1025,
+    "height": 1026
+  },
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "upgrade_url": "https://example.invalid/synthetic/27",
+  "url": "https://example.invalid/synthetic/28",
+  "video_preview": null,
+  "was_posted_by_campaign_owner": true,
+  "id": 1029,
+  "images": [
+    {
+      "file_name": "synthetic-30.png",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/31.png",
+        "original": "https://example.invalid/synthetic/32.png",
+        "default": "https://example.invalid/synthetic/33.png",
+        "default_blurred": "https://example.invalid/synthetic/34.png",
+        "default_small": "https://example.invalid/synthetic/35.png",
+        "default_large": "https://example.invalid/synthetic/36.png",
+        "default_blurred_small": "https://example.invalid/synthetic/37.png",
+        "thumbnail": "https://example.invalid/synthetic/38.png",
+        "thumbnail_large": "https://example.invalid/synthetic/39.png",
+        "thumbnail_small": "https://example.invalid/synthetic/40.png"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1041,
+          "w": 1042
+        },
+        "video_preview_end_ms": null,
+        "video_preview_start_ms": null
+      }
+    },
+    {
+      "file_name": "synthetic-43",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/44.PNG",
+        "original": "https://example.invalid/synthetic/45.PNG",
+        "default": "https://example.invalid/synthetic/46.PNG",
+        "default_blurred": "https://example.invalid/synthetic/47.PNG",
+        "default_small": "https://example.invalid/synthetic/48.PNG",
+        "default_large": "https://example.invalid/synthetic/49.PNG",
+        "default_blurred_small": "https://example.invalid/synthetic/50.PNG",
+        "thumbnail": "https://example.invalid/synthetic/51.PNG",
+        "thumbnail_large": "https://example.invalid/synthetic/52.PNG",
+        "thumbnail_small": "https://example.invalid/synthetic/53.PNG"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1054,
+          "w": 1055
+        }
+      }
+    }
+  ],
+  "attachments": [],
+  "attachments_media": [],
+  "date": "2026-01-01T00:00:00Z",
+  "campaign": {
+    "avatar_photo_image_urls": {
+      "original": "https://example.invalid/synthetic/56.png",
+      "default": "https://example.invalid/synthetic/57.png",
+      "default_small": "https://example.invalid/synthetic/58.png",
+      "default_large": "https://example.invalid/synthetic/59.png",
+      "default_blurred": "https://example.invalid/synthetic/60.png",
+      "default_blurred_small": "https://example.invalid/synthetic/61.png",
+      "thumbnail": "https://example.invalid/synthetic/62.png",
+      "thumbnail_large": "https://example.invalid/synthetic/63.png",
+      "thumbnail_small": "https://example.invalid/synthetic/64.png"
+    },
+    "avatar_photo_url": "https://example.invalid/synthetic/65.png",
+    "currency": "synthetic-66",
+    "earnings_visibility": "synthetic-67",
+    "is_monthly": true,
+    "is_nsfw": true,
+    "name": "synthetic-68",
+    "show_audio_post_download_links": true,
+    "url": "https://example.invalid/synthetic/69"
+  },
+  "tags": [
+    "synthetic-70",
+    "synthetic-71",
+    "synthetic-72"
+  ],
+  "creator": {
+    "about": null,
+    "created": "2026-01-01T00:00:00Z",
+    "current_user_block_status": "synthetic-73",
+    "facebook": null,
+    "first_name": "synthetic-74",
+    "full_name": "synthetic-75",
+    "gender": 0,
+    "image_url": "https://example.invalid/synthetic/76.png",
+    "last_name": "",
+    "social_connections": {
+      "discord": null,
+      "facebook": null,
+      "google": null,
+      "instagram": null,
+      "reddit": null,
+      "spotify": null,
+      "spotify_open_access": null,
+      "tiktok": null,
+      "twitch": null,
+      "twitter": {
+        "url": "https://example.invalid/synthetic/77",
+        "user_id": "8111111111111111111"
+      },
+      "twitter2": null,
+      "twitter_new_app": null,
+      "vimeo": null,
+      "youtube": null
+    },
+    "thumb_url": "https://example.invalid/synthetic/78.png",
+    "twitch": null,
+    "twitter": null,
+    "url": "https://example.invalid/synthetic/79",
+    "vanity": "synthetic-80",
+    "youtube": null,
+    "id": "81111111",
+    "date": "2026-01-01T00:00:00Z"
+  },
+  "category": "synthetic-81",
+  "subcategory": "synthetic-82"
+}

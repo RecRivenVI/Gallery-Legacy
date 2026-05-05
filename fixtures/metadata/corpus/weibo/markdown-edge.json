@@ -1,0 +1,11 @@
+{
+  "category": "synthetic-1",
+  "idstr": "8111111111111111",
+  "isMarkdown": true,
+  "text_raw": "**Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/**",
+  "date": "2026-01-01T00:00:00Z",
+  "user": {
+    "idstr": "8111111111",
+    "screen_name": "synthetic-2"
+  }
+}

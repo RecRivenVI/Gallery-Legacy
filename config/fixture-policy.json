@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "publicCorpus": "fixtures/metadata/corpus.json",
+  "classifications": [
+    {
+      "path": "fixtures/**",
+      "classification": "public-safe",
+      "basis": "Synthetic or structurally reconstructed; no original private values/provenance"
+    },
+    {
+      "path": "tests/support/**",
+      "classification": "public-safe",
+      "basis": "Generated synthetic temporary filesystem data"
+    }
+  ],
+  "privateOnly": "Real source metadata, media and acceptance instances stay outside the repository; never part of default tests",
+  "rules": [
+    "No real author names or IDs",
+    "No real bodies/profile fields",
+    "Reserved example URLs only",
+    "No private source paths",
+    "Preserve type/Unicode/conflict semantics with invented values"
+  ]
+}

@@ -1,0 +1,205 @@
+{
+  "visible": {
+    "type": 0,
+    "list_id": 0
+  },
+  "created_at": "2026-01-01T00:00:00Z",
+  "id": 1001,
+  "idstr": "8111111111111111",
+  "mid": "8111111111111111",
+  "mblogid": "synthetic-2",
+  "user": {
+    "id": 1003,
+    "idstr": "8111111111",
+    "pc_new": 7,
+    "screen_name": "synthetic-4",
+    "profile_image_url": "https://example.invalid/synthetic/5.jpg",
+    "profile_url": "https://example.invalid/synthetic/6",
+    "verified": true,
+    "verified_type": 0,
+    "domain": "",
+    "weihao": "",
+    "verified_type_ext": 1,
+    "status_total_counter": {
+      "total_cnt_format": "synthetic-7",
+      "comment_cnt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "repost_cnt": "synthetic-8",
+      "like_cnt": "synthetic-9",
+      "total_cnt": "synthetic-10"
+    },
+    "avatar_large": "https://example.invalid/synthetic/11.jpg",
+    "avatar_hd": "https://example.invalid/synthetic/12.jpg",
+    "follow_me": false,
+    "following": true,
+    "mbrank": 4,
+    "mbtype": 1013,
+    "v_plus": 0,
+    "user_ability": 1014,
+    "planet_video": false,
+    "icon_list": [
+      {
+        "type": "synthetic-15",
+        "data": {
+          "mbrank": 4,
+          "mbtype": 1016,
+          "svip": 1,
+          "vvip": 1
+        }
+      },
+      {
+        "type": "synthetic-17",
+        "data": {
+          "value": "8",
+          "icon_img": "https://example.invalid/synthetic/18.png",
+          "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+          "url": "https://example.invalid/synthetic/19"
+        }
+      }
+    ]
+  },
+  "can_edit": false,
+  "textLength": 1020,
+  "annotations": [
+    {
+      "photo_sub_type": "8"
+    },
+    {
+      "client_mblogid": "synthetic-21"
+    },
+    {
+      "source_text": "",
+      "phone_id": "synthetic-22"
+    },
+    {
+      "mapi_request": true
+    }
+  ],
+  "source": "synthetic-23",
+  "favorited": false,
+  "rid": "synthetic-24",
+  "cardid": "synthetic-25",
+  "pic_ids": [
+    "synthetic-26"
+  ],
+  "pic_focus_point": [
+    {
+      "focus_point": {
+        "left": 123.25,
+        "top": 123.25,
+        "width": 123.25,
+        "height": 123.25
+      },
+      "pic_id": "synthetic-27"
+    }
+  ],
+  "pic_num": 1,
+  "pic_infos": {
+    "synthetic-key-28": {
+      "thumbnail": {
+        "url": "https://example.invalid/synthetic/29.jpg",
+        "width": 1030,
+        "height": 1031,
+        "cut_type": 1,
+        "type": ""
+      },
+      "bmiddle": {
+        "url": "https://example.invalid/synthetic/32.jpg",
+        "width": 1033,
+        "height": 1034,
+        "cut_type": 1,
+        "type": ""
+      },
+      "large": {
+        "url": "https://example.invalid/synthetic/35.jpg",
+        "width": 1036,
+        "height": 1037,
+        "cut_type": 1,
+        "type": ""
+      },
+      "original": {
+        "url": "https://example.invalid/synthetic/38.jpg",
+        "width": 1039,
+        "height": 1040,
+        "cut_type": 1,
+        "type": ""
+      },
+      "largest": {
+        "url": "https://example.invalid/synthetic/41.jpg",
+        "width": 1042,
+        "height": 1043,
+        "cut_type": 1,
+        "type": ""
+      },
+      "mw2000": {
+        "url": "https://example.invalid/synthetic/44.jpg",
+        "width": 1045,
+        "height": 1046,
+        "cut_type": 1,
+        "type": ""
+      },
+      "largecover": {
+        "url": "https://example.invalid/synthetic/47.jpg",
+        "width": 1048,
+        "height": 1049,
+        "cut_type": 1,
+        "type": ""
+      },
+      "focus_point": {
+        "left": 123.25,
+        "top": 123.25,
+        "width": 123.25,
+        "height": 123.25
+      },
+      "object_id": "synthetic-50",
+      "pic_id": "synthetic-51",
+      "photo_tag": 0,
+      "type": "synthetic-52",
+      "pic_status": 1
+    }
+  },
+  "is_paid": false,
+  "pic_bg_new": "https://example.invalid/synthetic/53.png",
+  "mblog_vip_type": 0,
+  "number_display_strategy": {
+    "apply_scenario_flag": 1054,
+    "display_text_min_number": 1055,
+    "display_text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+  },
+  "reposts_count": 4,
+  "comments_count": 1056,
+  "attitudes_count": 1057,
+  "attitudes_status": 0,
+  "isLongText": false,
+  "mlevel": 0,
+  "content_auth": 0,
+  "is_show_bulletin": 2,
+  "comment_manage_info": {
+    "comment_permission_type": -1,
+    "approval_comment_type": 0,
+    "comment_sort_type": 0,
+    "comment_anon_type": 0
+  },
+  "share_repost_type": 0,
+  "mblogtype": 0,
+  "showFeedRepost": false,
+  "showFeedComment": false,
+  "pictureViewerSign": false,
+  "showPictureViewer": false,
+  "rcList": [],
+  "analysis_extra": "synthetic-58",
+  "readtimetype": "synthetic-59",
+  "mixed_count": 0,
+  "is_show_mixed": false,
+  "mblog_feed_back_menus_format": [],
+  "isAd": false,
+  "isSinglePayAudio": false,
+  "md_render_mark": null,
+  "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "text_raw": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "region_name": "synthetic-60",
+  "like": null,
+  "date": "2026-01-01T00:00:00Z",
+  "count": 1,
+  "category": "synthetic-61",
+  "subcategory": "synthetic-62"
+}

@@ -1,0 +1,57 @@
+{
+  "id": 1001,
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "type": "synthetic-2",
+  "caption": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "restrict": 0,
+  "user": {
+    "id": 1003,
+    "name": "synthetic-4",
+    "account": "synthetic-5",
+    "profile_image_urls": {
+      "medium": "https://example.invalid/synthetic/6.jpg"
+    },
+    "is_followed": true,
+    "is_access_blocking_user": false,
+    "is_accept_request": false
+  },
+  "tags": [
+    "synthetic-7",
+    "synthetic-8",
+    "synthetic-9",
+    "synthetic-10",
+    "synthetic-11",
+    "synthetic-12"
+  ],
+  "tools": [
+    "synthetic-13"
+  ],
+  "create_date": "2026-01-01T00:00:00Z",
+  "page_count": 1,
+  "width": 1014,
+  "height": 1015,
+  "sanity_level": 6,
+  "x_restrict": 0,
+  "series": null,
+  "total_view": 1016,
+  "total_bookmarks": 1017,
+  "is_bookmarked": false,
+  "visible": true,
+  "is_muted": false,
+  "seasonal_effect_animation_urls": null,
+  "event_banners": null,
+  "total_comments": 0,
+  "illust_ai_type": 0,
+  "illust_book_style": 0,
+  "request": null,
+  "restriction_attributes": [
+    "synthetic-18"
+  ],
+  "num": 0,
+  "date": "2026-01-01T00:00:00Z",
+  "count": 1,
+  "rating": "General",
+  "suffix": "",
+  "category": "synthetic-19",
+  "subcategory": "synthetic-20"
+}

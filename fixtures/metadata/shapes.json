@@ -1,0 +1,251 @@
+{
+  "signatureVersion": 1,
+  "synthetic": true,
+  "hashes": [
+    {
+      "fixture": "corpus/pixiv/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixiv",
+      "hash": "bc9cb6b11580ecdc3675449be296b87c66b2919f1be8f217570c70c1d123a4eb"
+    },
+    {
+      "fixture": "corpus/pixiv/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixiv",
+      "hash": "32be3176a091ad9f120890cd3521ed9feb6b869988a66e4716c97e410efa952a"
+    },
+    {
+      "fixture": "corpus/pixiv/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixiv",
+      "hash": "b3453d09d1a694d38d53afd9ad6dc2c0f8732c6b72eb074d946aa36038503289"
+    },
+    {
+      "fixture": "corpus/pixiv/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixiv",
+      "hash": "43bc8c5cb2d8ea579762afaea040414cf3118c23e3369f275e4bcd53a3c4395d"
+    },
+    {
+      "fixture": "corpus/fanbox/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixivFANBOX",
+      "hash": "dded07dc59361235cdcefd382ec30eef707ecd3695a7168e60abd3b62d8234ff"
+    },
+    {
+      "fixture": "corpus/fanbox/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixivFANBOX",
+      "hash": "d0c57eb80b1d2d5b229726d468f42cbbec04a04d4dc23e18cb126fecf8b92319"
+    },
+    {
+      "fixture": "corpus/fanbox/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixivFANBOX",
+      "hash": "ab895124cfd73b29b6e46c20c0f6dc421b409d5b1a5d8b001bc055aaaf286392"
+    },
+    {
+      "fixture": "corpus/fanbox/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "pixivFANBOX",
+      "hash": "784538ead4ca7094ddf7e0692c2f63fa135a9e6279bdb56a7cda4cf5e1b3cc52"
+    },
+    {
+      "fixture": "corpus/gank/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Gank",
+      "hash": "63510535043547f4adf96d58cfad98e49ebf933b6b7207dcdb844fbf55a940e7"
+    },
+    {
+      "fixture": "corpus/gank/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Gank",
+      "hash": "63510535043547f4adf96d58cfad98e49ebf933b6b7207dcdb844fbf55a940e7"
+    },
+    {
+      "fixture": "corpus/gank/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Gank",
+      "hash": "6f4f3a88ef001495257af995f67222e7fbcfa35da108493afc7854c110dca8f1"
+    },
+    {
+      "fixture": "corpus/gank/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Gank",
+      "hash": "dad90fa4cab1a92c9ad803f13b239d64780bc4faa0d15c8981c13afb7844a9f4"
+    },
+    {
+      "fixture": "corpus/fantia/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Fantia",
+      "hash": "d0e8b91e40fe2b242dbf4b1857594ea1d614268ae7fea743e7feb17b1b9cada7"
+    },
+    {
+      "fixture": "corpus/fantia/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Fantia",
+      "hash": "24d23da5cf073fada4a3235ab79922df4b674df57c15cd3df9d382e65184da31"
+    },
+    {
+      "fixture": "corpus/fantia/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Fantia",
+      "hash": "46c44f55fef1ad70edee4f4b2e0f32f8b17fa349e6d6434aecab982b025671aa"
+    },
+    {
+      "fixture": "corpus/fantia/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Fantia",
+      "hash": "46d73a71cc26af2851a590aeff38c0e3b6206e4e6e35addaaa18d8ce06db554d"
+    },
+    {
+      "fixture": "corpus/patreon/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Patreon",
+      "hash": "1a8d7727748e3165b9f2fd805b17af664e7986ea1fe81f8c9715eae02e2da27f"
+    },
+    {
+      "fixture": "corpus/patreon/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Patreon",
+      "hash": "6155bc482e409499a2073aed7692afae2ee5fbac387ef80c33e5687f00999ab7"
+    },
+    {
+      "fixture": "corpus/patreon/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Patreon",
+      "hash": "742238f43277d6162b782852f2d2a40b007bf848f06333880a1446b84607a862"
+    },
+    {
+      "fixture": "corpus/patreon/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Patreon",
+      "hash": "6155bc482e409499a2073aed7692afae2ee5fbac387ef80c33e5687f00999ab7"
+    },
+    {
+      "fixture": "corpus/pawchive/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Pawchive",
+      "hash": "55a19eec78e8a9c1f50f91d2e0ea686e985603dab75af351c4df72c78e04c345"
+    },
+    {
+      "fixture": "corpus/pawchive/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Pawchive",
+      "hash": "95702e7998a2b6ac80aaf9d90a20fb469a0d351d2674ca8f0f265351f82bbde5"
+    },
+    {
+      "fixture": "corpus/pawchive/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Pawchive",
+      "hash": "95702e7998a2b6ac80aaf9d90a20fb469a0d351d2674ca8f0f265351f82bbde5"
+    },
+    {
+      "fixture": "corpus/pawchive/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Pawchive",
+      "hash": "95702e7998a2b6ac80aaf9d90a20fb469a0d351d2674ca8f0f265351f82bbde5"
+    },
+    {
+      "fixture": "corpus/pawchive/service-conflict.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "Pawchive",
+      "hash": "1fcdf1acf7e4ebbe7211da24bf3212e0f5df52f0530bdedfcffdc1e2b395771e"
+    },
+    {
+      "fixture": "corpus/x/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "X",
+      "hash": "403e164fd2844a1bd3c1b5ddec8ab7e9d4ed09c6199d10306655e15990350ea8"
+    },
+    {
+      "fixture": "corpus/x/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "X",
+      "hash": "787484fec24e74b40c26e34a44eaeb2b4b05da02b9029590701c314dd2dcf23b"
+    },
+    {
+      "fixture": "corpus/x/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "X",
+      "hash": "403e164fd2844a1bd3c1b5ddec8ab7e9d4ed09c6199d10306655e15990350ea8"
+    },
+    {
+      "fixture": "corpus/x/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "X",
+      "hash": "403e164fd2844a1bd3c1b5ddec8ab7e9d4ed09c6199d10306655e15990350ea8"
+    },
+    {
+      "fixture": "corpus/weibo/complex.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "2a6bd72a824bc5a145872efa09120290eb6efb9d7105e931699eae011741645a"
+    },
+    {
+      "fixture": "corpus/weibo/current.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "8c46f3c8667d49938ce41b382422335ff7598cbd3a88256304bd35afbc42b6ec"
+    },
+    {
+      "fixture": "corpus/weibo/markdown-edge.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "3774ec025f5dd8d0a7431c687e64d0d0d4f9f9b14f4c2cdeed4cc78a0c555bce"
+    },
+    {
+      "fixture": "corpus/weibo/middle.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "9441e5a91c80c587d7f182c7f3e262f9760867a92476c5bcaa88d0ea3b01c75d"
+    },
+    {
+      "fixture": "corpus/weibo/old.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "371da575048574513fbda697f74ffdcad3abec9be213cc6adf0c8896d1d0d933"
+    },
+    {
+      "fixture": "corpus/weibo/repost.json",
+      "signatureVersion": 1,
+      "policyVersion": 1,
+      "platformId": "微博",
+      "hash": "f6a4dbe6b3838a84321cff4856e1361192ad462b6d30fd8cfa4fc25527387ec5"
+    }
+  ]
+}

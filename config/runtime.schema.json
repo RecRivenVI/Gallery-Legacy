@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gallery local instance configuration",
+  "type": "object",
+  "required": ["instanceRoot", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "instanceRoot": { "type": "string", "minLength": 3 },
+    "mode": { "enum": ["local", "lan"], "default": "local" },
+    "host": { "type": "string", "default": "127.0.0.1" },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 18104
+    },
+    "sources": {
+      "type": "object",
+      "required": [
+        "pixiv",
+        "pixivFANBOX",
+        "Gank",
+        "Fantia",
+        "Patreon",
+        "Pawchive",
+        "X",
+        "微博"
+      ],
+      "minProperties": 8,
+      "maxProperties": 8,
+      "propertyNames": {
+        "enum": [
+          "pixiv",
+          "pixivFANBOX",
+          "Gank",
+          "Fantia",
+          "Patreon",
+          "Pawchive",
+          "X",
+          "微博"
+        ]
+      },
+      "additionalProperties": { "type": "string", "minLength": 3 }
+    },
+    "generationsRoot": { "type": "string" },
+    "cacheRoot": { "type": "string" },
+    "logsRoot": { "type": "string" },
+    "tempRoot": { "type": "string" },
+    "stateRoot": { "type": "string" },
+    "reportsRoot": { "type": "string" },
+    "desktopDataRoot": { "type": "string" }
+  },
+  "$comment": "Native absolute paths, physical aliases, overlap and source/generation safety are checked by internal/instance/config.js; null example values intentionally do not validate until configured."
+}

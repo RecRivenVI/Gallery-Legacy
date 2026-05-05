@@ -1,0 +1,134 @@
+{
+  "id": "811111",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "feeRequired": 0,
+  "publishedDatetime": "2026-01-01T00:00:00Z",
+  "updatedDatetime": "2026-01-01T00:00:00Z",
+  "tags": [],
+  "isLiked": false,
+  "likeCount": 1001,
+  "isCommentingRestricted": false,
+  "commentCount": 5,
+  "isRestricted": false,
+  "user": {
+    "creatorId": "synthetic-2",
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "hasAdultContent": true,
+    "coverImageUrl": "https://example.invalid/synthetic/3",
+    "profileLinks": [
+      "https://example.invalid/synthetic/4",
+      "https://example.invalid/synthetic/5",
+      "https://example.invalid/synthetic/6"
+    ],
+    "profileItems": [
+      {
+        "id": "synthetic-7",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/8",
+        "thumbnailUrl": "https://example.invalid/synthetic/9"
+      },
+      {
+        "id": "synthetic-10",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/11",
+        "thumbnailUrl": "https://example.invalid/synthetic/12"
+      },
+      {
+        "id": "synthetic-13",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/14",
+        "thumbnailUrl": "https://example.invalid/synthetic/15"
+      },
+      {
+        "id": "synthetic-16",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/17",
+        "thumbnailUrl": "https://example.invalid/synthetic/18"
+      },
+      {
+        "id": "synthetic-19",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/20",
+        "thumbnailUrl": "https://example.invalid/synthetic/21"
+      },
+      {
+        "id": "synthetic-22",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/23",
+        "thumbnailUrl": "https://example.invalid/synthetic/24"
+      }
+    ],
+    "isFollowed": true,
+    "isSupported": false,
+    "isStopped": false,
+    "isAcceptingRequest": false,
+    "hasBoothShop": false,
+    "hasPublishedPost": true,
+    "category": "synthetic-25",
+    "userId": "81111111",
+    "name": "synthetic-26",
+    "iconUrl": "https://example.invalid/synthetic/27"
+  },
+  "creatorId": "synthetic-28",
+  "hasAdultContent": true,
+  "type": "article",
+  "coverImageUrl": null,
+  "excerpt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "nextPost": {
+    "id": "811111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "prevPost": null,
+  "imageForShare": "https://example.invalid/synthetic/29",
+  "isPinned": false,
+  "archives": [],
+  "articleBody": {
+    "blocks": [
+      {
+        "type": "synthetic-30",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-31",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-32",
+        "text": ""
+      },
+      {
+        "type": "synthetic-33",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-34",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-35",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      }
+    ],
+    "imageMap": {},
+    "fileMap": {},
+    "embedMap": {},
+    "urlEmbedMap": {}
+  },
+  "content": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "date": "2026-01-01T00:00:00Z",
+  "text": null,
+  "isCoverImage": false,
+  "plan": {
+    "id": "",
+    "title": "",
+    "fee": 0,
+    "description": "",
+    "coverImageUrl": "https://example.invalid/synthetic/36",
+    "creatorId": "synthetic-37",
+    "hasAdultContent": null,
+    "paymentMethod": null
+  },
+  "category": "synthetic-38",
+  "subcategory": "synthetic-39"
+}

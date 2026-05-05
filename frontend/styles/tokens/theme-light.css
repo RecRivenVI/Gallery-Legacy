@@ -1,0 +1,104 @@
+/* 浅色主题。`system` 由 theme-bootstrap.js 在首帧前解析成具体的 data-theme，
+   因此这里不需要再维护一份 prefers-color-scheme 副本。 */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* 表面 */
+  --bg-main: #f5f6f7;
+  --bg-sidebar: #eceef0;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --surface-inset: #e6e8ea;
+  --surface-well: #eef0f2;
+  --surface-media: #e9ebee;
+
+  /* 控件 */
+  --bg-control: #f0f1f2;
+  --bg-control-hover: #e2e4e7;
+  --bg-control-active: #cfd2d6;
+  --state-layer: #dfe2e6;
+  --state-layer-press: #ccd0d5;
+  --state-layer-ring: #9aa0a8;
+
+  /* 描边 */
+  --border-subtle: #d4d7db;
+  --border-active: #777c84;
+  --border-hairline: rgba(0, 0, 0, .1);
+  --border-hairline-strong: rgba(0, 0, 0, .16);
+  --border-emphasis: #17181a;
+
+  /* 文字 */
+  --text-primary: #17181a;
+  --text-secondary: #414449;
+  --text-muted: #62666d;
+  --text-disabled: #858991;
+  --text-on-accent: #ffffff;
+  --text-on-active: #17181a;
+
+  /* 强调色：暖金在浅底上必须加深才能维持 4.5:1 */
+  --accent-gray: #303338;
+  --accent: #7d5c07;
+  --accent-strong: #6f5108;
+  --accent-soft: #a87d10;
+  --accent-highlight: #2b2416;
+  --accent-surface: rgba(184, 134, 11, .14);
+  --accent-surface-hover: rgba(184, 134, 11, .26);
+  --accent-surface-veil: rgba(184, 134, 11, .16);
+  --accent-border: rgba(138, 101, 8, .32);
+  --accent-border-hover: rgba(138, 101, 8, .5);
+  --accent-ring: rgba(138, 101, 8, .6);
+  --accent-glow: rgba(138, 101, 8, .22);
+  --accent-focus: rgba(138, 101, 8, .35);
+  --accent-wash: rgba(184, 134, 11, .16);
+
+  /* 语义状态 */
+  --danger: #b4232a;
+  --danger-text: #7a1a20;
+  --danger-surface: #fbeaea;
+  --danger-surface-strong: #f0d0d1;
+  --danger-surface-veil: rgba(180, 35, 42, .1);
+  --danger-border: rgba(180, 35, 42, .38);
+  --danger-border-soft: #dcb5b6;
+  --danger-border-strong: #c58e90;
+  --success: #227a35;
+  --success-text: #1d6b2e;
+  --success-surface-veil: rgba(34, 122, 53, .1);
+  --success-border: rgba(34, 122, 53, .38);
+  --warning: #8a5700;
+  --info: #205ea8;
+  --info-text: #10514c;
+  --info-surface: #dff1ef;
+  --info-border: #8fc4bf;
+
+  /* 状态层：浅色下 hover 必须变暗，不能沿用深色的“加白”叠加 */
+  --focus-ring: #4d535b;
+  --state-hover: rgba(0, 0, 0, .055);
+  --state-pressed: rgba(0, 0, 0, .11);
+  --state-selected: rgba(0, 0, 0, .08);
+  --state-focus: rgba(77, 83, 91, .22);
+  --state-veil: #000000;
+
+  /* 玻璃层与遮罩 */
+  --header-glass: rgba(245, 246, 247, .88);
+  --glass-panel: rgba(255, 255, 255, .72);
+  --glass-panel-soft: rgba(255, 255, 255, .5);
+  --glass-panel-strong: rgba(255, 255, 255, .86);
+  --glass-panel-clear: rgba(255, 255, 255, 0);
+  --glass-control-hover: rgba(226, 228, 231, .92);
+  --glass-control-active: rgba(207, 210, 214, .95);
+  --scrim: rgba(0, 0, 0, .5);
+  --scrim-strong: rgba(245, 246, 247, .92);
+  --scrim-medium: rgba(0, 0, 0, .35);
+  --scrim-soft: rgba(0, 0, 0, .12);
+  --scrim-faint: rgba(0, 0, 0, .04);
+  --scrim-solid: #000000;
+  --scrollbar-thumb: rgba(0, 0, 0, .35);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, .55);
+
+  /* 阴影：浅色下必须显著减弱 */
+  --shadow-color: rgba(0, 0, 0, .14);
+  --shadow-color-strong: rgba(0, 0, 0, .22);
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, .16);
+  --text-shadow-color: rgba(0, 0, 0, .12);
+  --text-shadow-color-strong: rgba(0, 0, 0, .18);
+}

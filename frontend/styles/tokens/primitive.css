@@ -1,0 +1,35 @@
+:root {
+  --space-0: 0;
+  --space-20: 2px;
+  --space-40: 4px;
+  --space-60: 6px;
+  --space-80: 8px;
+  --space-100: 10px;
+  --space-120: 12px;
+  --space-160: 16px;
+  --space-200: 20px;
+  --space-240: 24px;
+  --space-280: 28px;
+  --space-320: 32px;
+  --space-400: 40px;
+  --space-480: 48px;
+  --stroke-thin: 1px;
+  --stroke-thick: 2px;
+  --radius: 0;
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --font-caption2: 10px/14px var(--font-ui);
+  --font-caption1: 12px/16px var(--font-ui);
+  --font-body: 14px/20px var(--font-ui);
+  --font-subtitle2: 16px/22px var(--font-ui);
+  --font-subtitle1: 20px/26px var(--font-ui);
+  --font-title3: 24px/32px var(--font-ui);
+  --motion-fast: .16s;
+  --motion-normal: .24s;
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --sidebar-motion-duration: .5s;
+  --sidebar-motion-ease: var(--motion-ease);
+  --gallery-filter-duration: .5s;
+}

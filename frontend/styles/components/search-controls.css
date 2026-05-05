@@ -1,0 +1,248 @@
+.search-box {
+  padding: 8px 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.search-input-wrap {
+  --search-control-gap: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--glass-panel);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color .2s ease, background .2s ease;
+  overflow: hidden;
+}
+
+.search-input-wrap:focus-within {
+  border-color: var(--accent-dim);
+  background: var(--glass-control-hover);
+}
+
+.search-input-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-icon-area {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
+}
+
+.search-icon-area::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--border-hairline);
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.search-input {
+  display: block;
+  flex: none;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 0;
+  font-size: .85rem;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.search-input::placeholder {
+  color: var(--muted);
+  opacity: .7;
+}
+
+.search-meta-btn {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: help;
+  opacity: .72;
+  transition: color .2s ease, opacity .2s ease;
+  user-select: none;
+  padding: 0 var(--search-control-gap);
+  position: relative;
+  outline: none;
+  z-index: 3;
+}
+
+.search-meta-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.search-meta-btn::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--border-hairline);
+}
+
+.search-meta-btn.active {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.search-meta-btn.meta-db {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.search-meta-btn.meta-fs {
+  color: var(--muted);
+  opacity: .72;
+}
+
+@media (hover: hover) {
+  .search-meta-btn.meta-db:hover {
+    color: var(--accent);
+  }
+  .search-meta-btn.meta-fs:hover {
+    color: var(--muted);
+    opacity: .9;
+  }
+}
+@media (hover: none) {
+  .search-meta-btn.meta-db:active {
+    color: var(--accent);
+  }
+  .search-meta-btn.meta-fs:active {
+    color: var(--muted);
+  }
+}
+
+.search-clear-btn {
+  display: flex;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+  transition: width .25s ease, min-width .25s ease, opacity .25s ease, visibility .25s ease, color .2s ease;
+  user-select: none;
+  padding: 0;
+  outline: none;
+  position: relative;
+  z-index: 3;
+}
+
+.search-clear-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.search-clear-btn::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--border-hairline);
+}
+
+.search-input-wrap.has-search-value .search-clear-btn {
+  width: 30px;
+  min-width: 30px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@media (hover: hover) {
+  .search-clear-btn:hover {
+    color: var(--text);
+  }
+}
+@media (hover: none) {
+  .search-clear-btn:active {
+    color: var(--text);
+  }
+}
+
+.search-go-btn {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  margin: 4px 4px 4px var(--search-control-gap);
+  border: none;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  color: var(--text-on-active);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .2s ease;
+  user-select: none;
+  white-space: nowrap;
+  align-self: stretch;
+  position: relative;
+  z-index: 3;
+}
+
+@media (hover: hover) {
+  .search-go-btn:hover {
+    background: var(--accent);
+  }
+}
+@media (hover: none) {
+  .search-go-btn:active {
+    background: var(--accent);
+  }
+}

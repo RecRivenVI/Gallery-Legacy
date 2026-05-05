@@ -1,0 +1,199 @@
+{
+  "change_visibility_at": null,
+  "comment_count": 6,
+  "commenter_count": 6,
+  "content": "<p>Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/ &amp;</p>",
+  "current_user_can_comment": true,
+  "current_user_can_delete": false,
+  "current_user_can_view": true,
+  "current_user_has_liked": false,
+  "embed": null,
+  "has_ti_violation": false,
+  "image": {
+    "url": "https://example.invalid/synthetic/1.gif",
+    "thumb_url": "https://example.invalid/synthetic/2.gif",
+    "large_url": "https://example.invalid/synthetic/3.gif",
+    "thumb_square_url": "https://example.invalid/synthetic/4.gif",
+    "thumb_square_large_url": "https://example.invalid/synthetic/5.gif",
+    "width": 1006,
+    "height": 1007
+  },
+  "is_paid": false,
+  "like_count": 1008,
+  "meta_image_url": "https://example.invalid/synthetic/9.png",
+  "min_cents_pledged_to_view": 0,
+  "moderation_status": "synthetic-10",
+  "patreon_url": "https://example.invalid/synthetic/11",
+  "pledge_url": "https://example.invalid/synthetic/12",
+  "pls_one_liners_by_category": [],
+  "post_file": {
+    "url": "https://example.invalid/synthetic/13.gif",
+    "width": 1014,
+    "height": 1015,
+    "state": "synthetic-16",
+    "media_id": 1017,
+    "image_colors": {
+      "dominant_color": "synthetic-18",
+      "text_color": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "palette": [
+        "synthetic-19",
+        "synthetic-20",
+        "synthetic-21",
+        "synthetic-22",
+        "synthetic-23"
+      ],
+      "average_colors_of_corners": {
+        "top_left": "synthetic-24",
+        "top_right": "synthetic-25",
+        "bottom_left": "synthetic-26",
+        "bottom_right": "synthetic-27"
+      }
+    }
+  },
+  "post_level_suspension_removal_date": null,
+  "post_metadata": {
+    "platform": {},
+    "image_order": [
+      "811111111"
+    ]
+  },
+  "post_type": "synthetic-28",
+  "preview_asset_type": "synthetic-29",
+  "published_at": "2026-01-01T00:00:00Z",
+  "teaser_text": null,
+  "thumbnail": {
+    "original": "https://example.invalid/synthetic/30.gif",
+    "default": "https://example.invalid/synthetic/31.gif",
+    "default_blurred": "https://example.invalid/synthetic/32.gif",
+    "default_small": "https://example.invalid/synthetic/33.gif",
+    "default_large": "https://example.invalid/synthetic/34.gif",
+    "default_blurred_small": "https://example.invalid/synthetic/35.gif",
+    "thumbnail": "https://example.invalid/synthetic/36.gif",
+    "thumbnail_large": "https://example.invalid/synthetic/37.gif",
+    "thumbnail_small": "https://example.invalid/synthetic/38.gif",
+    "url": "https://example.invalid/synthetic/39.gif",
+    "width": 1040,
+    "height": 1041
+  },
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "upgrade_url": "https://example.invalid/synthetic/42",
+  "url": "https://example.invalid/synthetic/43",
+  "video_preview": null,
+  "was_posted_by_campaign_owner": true,
+  "id": 1044,
+  "images": [
+    {
+      "download_url": "https://example.invalid/synthetic/45.gif",
+      "file_name": "synthetic-46.gif",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/47.gif",
+        "original": "https://example.invalid/synthetic/48.gif",
+        "default": "https://example.invalid/synthetic/49.gif",
+        "default_blurred": "https://example.invalid/synthetic/50.gif",
+        "default_small": "https://example.invalid/synthetic/51.gif",
+        "default_large": "https://example.invalid/synthetic/52.gif",
+        "default_blurred_small": "https://example.invalid/synthetic/53.gif",
+        "thumbnail": "https://example.invalid/synthetic/54.gif",
+        "thumbnail_large": "https://example.invalid/synthetic/55.gif",
+        "thumbnail_small": "https://example.invalid/synthetic/56.gif"
+      },
+      "metadata": {
+        "dimensions": {
+          "h": 1057,
+          "w": 1058
+        }
+      }
+    }
+  ],
+  "attachments": [],
+  "attachments_media": [
+    {
+      "download_url": "https://example.invalid/synthetic/59.mp4",
+      "file_name": "synthetic-60.mp4",
+      "image_urls": {
+        "url": "https://example.invalid/synthetic/61.mp4",
+        "original": "https://example.invalid/synthetic/62.mp4",
+        "default": "https://example.invalid/synthetic/63.mp4",
+        "default_blurred": "https://example.invalid/synthetic/64.mp4",
+        "default_small": "https://example.invalid/synthetic/65.mp4",
+        "default_large": "https://example.invalid/synthetic/66.mp4",
+        "default_blurred_small": "https://example.invalid/synthetic/67.mp4",
+        "thumbnail": "https://example.invalid/synthetic/68.mp4",
+        "thumbnail_large": "https://example.invalid/synthetic/69.mp4",
+        "thumbnail_small": "https://example.invalid/synthetic/70.mp4"
+      },
+      "metadata": {
+        "dimensions": {
+          "w": 1071,
+          "h": 1072
+        }
+      }
+    }
+  ],
+  "date": "2026-01-01T00:00:00Z",
+  "campaign": {
+    "avatar_photo_image_urls": {
+      "original": "https://example.invalid/synthetic/73.png",
+      "default": "https://example.invalid/synthetic/74.png",
+      "default_small": "https://example.invalid/synthetic/75.png",
+      "default_large": "https://example.invalid/synthetic/76.png",
+      "default_blurred": "https://example.invalid/synthetic/77.png",
+      "default_blurred_small": "https://example.invalid/synthetic/78.png",
+      "thumbnail": "https://example.invalid/synthetic/79.png",
+      "thumbnail_large": "https://example.invalid/synthetic/80.png",
+      "thumbnail_small": "https://example.invalid/synthetic/81.png"
+    },
+    "avatar_photo_url": "https://example.invalid/synthetic/82.png",
+    "currency": "synthetic-83",
+    "earnings_visibility": "synthetic-84",
+    "is_monthly": true,
+    "is_nsfw": true,
+    "name": "synthetic-85",
+    "show_audio_post_download_links": true,
+    "url": "https://example.invalid/synthetic/86"
+  },
+  "tags": [
+    "synthetic-87",
+    "synthetic-88"
+  ],
+  "creator": {
+    "about": null,
+    "created": "2026-01-01T00:00:00Z",
+    "current_user_block_status": "synthetic-89",
+    "facebook": null,
+    "first_name": "synthetic-90",
+    "full_name": "synthetic-91",
+    "gender": 0,
+    "image_url": "https://example.invalid/synthetic/92.png",
+    "last_name": "",
+    "social_connections": {
+      "discord": null,
+      "facebook": null,
+      "google": null,
+      "instagram": null,
+      "reddit": null,
+      "spotify": null,
+      "spotify_open_access": null,
+      "tiktok": null,
+      "twitch": null,
+      "twitter": {
+        "url": "https://example.invalid/synthetic/93",
+        "user_id": "8111111111111111111"
+      },
+      "twitter2": null,
+      "twitter_new_app": null,
+      "vimeo": null,
+      "youtube": null
+    },
+    "thumb_url": "https://example.invalid/synthetic/94.png",
+    "twitch": null,
+    "twitter": null,
+    "url": "https://example.invalid/synthetic/95",
+    "vanity": "synthetic-96",
+    "youtube": null,
+    "id": "81111111",
+    "date": "2026-01-01T00:00:00Z"
+  },
+  "category": "synthetic-97",
+  "subcategory": "synthetic-98"
+}

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "workSorts": [
+    "date_desc",
+    "date_asc",
+    "title_asc",
+    "title_desc",
+    "name_asc",
+    "name_desc"
+  ],
+  "authorSorts": [
+    "name_asc",
+    "name_desc",
+    "latest_desc",
+    "latest_asc",
+    "posts_desc",
+    "posts_asc"
+  ],
+  "mediaFilters": [
+    "all",
+    "image",
+    "video"
+  ],
+  "runtimeStates": [
+    "STARTING",
+    "READY",
+    "STOPPING",
+    "STOPPED",
+    "FAILED"
+  ],
+  "scanStates": [
+    "IDLE",
+    "SCANNING",
+    "BUILDING_SEARCH",
+    "VALIDATING",
+    "PUBLISHING",
+    "READY",
+    "FAILED"
+  ]
+}

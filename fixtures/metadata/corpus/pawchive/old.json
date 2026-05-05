@@ -1,0 +1,62 @@
+{
+  "id": "811111",
+  "user": "8111111",
+  "service": "fanbox",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content": "",
+  "embed": {},
+  "shared_file": false,
+  "added": "synthetic-1",
+  "published": "2026-01-01T00:00:00Z",
+  "edited": "2026-01-01T00:00:00Z",
+  "file": {
+    "name": "synthetic-2.jpeg",
+    "path": "synthetic-3.jpeg",
+    "type": "file",
+    "url": "https://example.invalid/synthetic/4",
+    "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "filename": "synthetic-5",
+    "extension": "jpeg"
+  },
+  "attachments": [
+    {
+      "name": "synthetic-6.png",
+      "path": "synthetic-7.png",
+      "type": "synthetic-8",
+      "url": "https://example.invalid/synthetic/9.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "synthetic-10",
+      "extension": "png"
+    }
+  ],
+  "poll": null,
+  "captions": null,
+  "tags": [
+    "synthetic-11",
+    "synthetic-12"
+  ],
+  "origin": "synthetic-13",
+  "preview_state": "synthetic-14",
+  "has_full": true,
+  "preview_attempts": 0,
+  "detail_fetched": true,
+  "import_size_cap_gb": null,
+  "date": "2026-01-01T00:00:00Z",
+  "user_profile": {
+    "id": "8111111",
+    "name": "synthetic-15",
+    "service": "fanbox",
+    "indexed": "synthetic-16",
+    "updated": "2026-01-01T00:00:00Z",
+    "public_id": "synthetic-17",
+    "relation_id": null,
+    "ever_imported": true,
+    "kemono_favorited": 1018,
+    "import_size_cap_gb": null
+  },
+  "username": "synthetic-19",
+  "archives": [],
+  "count": 2,
+  "category": "synthetic-20",
+  "subcategory": "synthetic-21"
+}

@@ -1,0 +1,26 @@
+:root {
+  --font-ui: "MiSans", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  --sidebar-w: 260px;
+  --sidebar-collapsed-w: 48px;
+  --header-h: 48px;
+  --global-header-height: 0px;
+  --header-search-max-width: 480px;
+  --gallery-content-max-standard: 1280px;
+  --gallery-content-max-wide: 2640px;
+  --gallery-content-max: var(--gallery-content-max-standard);
+  --surface-base: var(--bg-main);
+  --surface-raised: var(--bg-surface);
+  --surface-overlay: var(--bg-elevated);
+  --surface-sunken: var(--bg-sidebar);
+  --control-rest: var(--bg-control);
+  --control-hover: var(--bg-control-hover);
+  --control-active: var(--bg-control-active);
+  --bg: var(--surface-base);
+  --surface: var(--surface-raised);
+  --surface2: var(--surface-overlay);
+  --accent: var(--accent-gray);
+  --accent-dim: var(--border-active);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+  --border: var(--border-subtle);
+}

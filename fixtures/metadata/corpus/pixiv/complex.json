@@ -1,0 +1,84 @@
+{
+  "id": 1001,
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "type": "ugoira",
+  "caption": "<p>Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/ &amp;</p>",
+  "restrict": 0,
+  "user": {
+    "id": 1002,
+    "name": "synthetic-3",
+    "account": "synthetic-4",
+    "profile_image_urls": {
+      "medium": "https://example.invalid/synthetic/5.png"
+    },
+    "is_followed": true,
+    "is_access_blocking_user": false,
+    "is_accept_request": false
+  },
+  "tags": [
+    "synthetic-6",
+    "synthetic-7",
+    "synthetic-8",
+    "synthetic-9",
+    "synthetic-10",
+    "synthetic-11"
+  ],
+  "tools": [
+    "synthetic-12"
+  ],
+  "create_date": "2026-01-01T00:00:00Z",
+  "page_count": 1,
+  "width": 1013,
+  "height": 1014,
+  "sanity_level": 6,
+  "x_restrict": 1,
+  "series": null,
+  "total_view": 1015,
+  "total_bookmarks": 1016,
+  "is_bookmarked": false,
+  "visible": true,
+  "is_muted": false,
+  "seasonal_effect_animation_urls": null,
+  "event_banners": null,
+  "total_comments": 1,
+  "illust_ai_type": 0,
+  "illust_book_style": 0,
+  "request": null,
+  "restriction_attributes": [
+    "synthetic-17"
+  ],
+  "frames": [
+    {
+      "file": "synthetic-18.jpg",
+      "delay": 1019
+    },
+    {
+      "file": "synthetic-20.jpg",
+      "delay": 1021
+    },
+    {
+      "file": "synthetic-22.jpg",
+      "delay": 1023
+    },
+    {
+      "file": "synthetic-24.jpg",
+      "delay": 1025
+    },
+    {
+      "file": "synthetic-26.jpg",
+      "delay": 1027
+    },
+    {
+      "file": "synthetic-28.jpg",
+      "delay": 1029
+    }
+  ],
+  "date_url": "2026-01-01T00:00:00Z",
+  "num": 0,
+  "date": "2026-01-01T00:00:00Z",
+  "count": 1,
+  "rating": "synthetic-30",
+  "suffix": "",
+  "category": "synthetic-31",
+  "subcategory": "synthetic-32"
+}

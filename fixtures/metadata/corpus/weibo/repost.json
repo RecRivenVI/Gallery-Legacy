@@ -1,0 +1,1036 @@
+{
+  "visible": {
+    "type": 0,
+    "list_id": 0
+  },
+  "created_at": "2026-01-01T00:00:00Z",
+  "id": 1001,
+  "idstr": "8111111111111111",
+  "mid": "8111111111111111",
+  "mblogid": "synthetic-2",
+  "user": {
+    "id": 1003,
+    "idstr": "8111111111",
+    "pc_new": 7,
+    "screen_name": "synthetic-4",
+    "profile_image_url": "https://example.invalid/synthetic/5.jpg",
+    "profile_url": "https://example.invalid/synthetic/6",
+    "verified": true,
+    "verified_type": 0,
+    "domain": "",
+    "weihao": "",
+    "verified_type_ext": 1,
+    "status_total_counter": {
+      "total_cnt_format": "synthetic-7",
+      "comment_cnt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "repost_cnt": "synthetic-8",
+      "like_cnt": "synthetic-9",
+      "total_cnt": "synthetic-10"
+    },
+    "avatar_large": "https://example.invalid/synthetic/11.jpg",
+    "avatar_hd": "https://example.invalid/synthetic/12.jpg",
+    "follow_me": false,
+    "following": true,
+    "mbrank": 4,
+    "mbtype": 1013,
+    "v_plus": 0,
+    "user_ability": 1014,
+    "planet_video": false,
+    "icon_list": [
+      {
+        "type": "synthetic-15",
+        "data": {
+          "mbrank": 4,
+          "mbtype": 1016,
+          "svip": 1,
+          "vvip": 1
+        }
+      },
+      {
+        "type": "synthetic-17",
+        "data": {
+          "value": "8",
+          "icon_img": "https://example.invalid/synthetic/18.png",
+          "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+          "url": "https://example.invalid/synthetic/19"
+        }
+      }
+    ]
+  },
+  "can_edit": false,
+  "source": "synthetic-20",
+  "favorited": false,
+  "rid": "synthetic-21",
+  "cardid": "synthetic-22",
+  "pic_ids": [],
+  "pic_num": 0,
+  "is_paid": false,
+  "pic_bg_new": "https://example.invalid/synthetic/23.png",
+  "mblog_vip_type": 0,
+  "number_display_strategy": {
+    "apply_scenario_flag": 1024,
+    "display_text_min_number": 1025,
+    "display_text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+  },
+  "reposts_count": 1026,
+  "comments_count": 1027,
+  "attitudes_count": 1028,
+  "attitudes_status": 0,
+  "isLongText": false,
+  "mlevel": 0,
+  "content_auth": 0,
+  "is_show_bulletin": 2,
+  "comment_manage_info": {
+    "comment_permission_type": -1,
+    "approval_comment_type": 0,
+    "comment_sort_type": 0
+  },
+  "repost_type": 1,
+  "share_repost_type": 0,
+  "topic_struct": [
+    {
+      "title": "",
+      "topic_url": "https://example.invalid/synthetic/29",
+      "topic_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "actionlog": {
+        "act_type": 1,
+        "act_code": 1030,
+        "oid": "synthetic-31",
+        "uuid": 1032,
+        "cardid": "",
+        "lcardid": "",
+        "uicode": "",
+        "luicode": "",
+        "fid": "synthetic-33",
+        "lfid": "",
+        "ext": "synthetic-34"
+      }
+    },
+    {
+      "title": "",
+      "topic_url": "https://example.invalid/synthetic/35",
+      "topic_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "actionlog": {
+        "act_type": 1,
+        "act_code": 1036,
+        "oid": "synthetic-37",
+        "uuid": 1038,
+        "cardid": "",
+        "lcardid": "",
+        "uicode": "",
+        "luicode": "",
+        "fid": "synthetic-39",
+        "lfid": "",
+        "ext": "synthetic-40"
+      }
+    },
+    {
+      "title": "",
+      "topic_url": "https://example.invalid/synthetic/41",
+      "topic_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "actionlog": {
+        "act_type": 1,
+        "act_code": 1042,
+        "oid": "synthetic-43",
+        "uuid": 1044,
+        "cardid": "",
+        "lcardid": "",
+        "uicode": "",
+        "luicode": "",
+        "fid": "synthetic-45",
+        "lfid": "",
+        "ext": "synthetic-46"
+      }
+    }
+  ],
+  "url_struct": [
+    {
+      "url_title": "https://example.invalid/synthetic/47",
+      "url_type_pic": "https://example.invalid/synthetic/48.png",
+      "ori_url": "https://example.invalid/synthetic/49",
+      "page_id": "8111111111111111111111",
+      "short_url": "https://example.invalid/synthetic/50",
+      "long_url": "https://example.invalid/synthetic/51",
+      "url_type": 1052,
+      "result": false,
+      "actionlog": {
+        "act_type": 1,
+        "act_code": 1053,
+        "oid": "synthetic-54",
+        "uuid": 1055,
+        "cardid": "",
+        "lcardid": "",
+        "uicode": "",
+        "luicode": "",
+        "fid": "synthetic-56",
+        "lfid": "",
+        "ext": "synthetic-57"
+      },
+      "storage_type": "synthetic-58",
+      "hide": 0,
+      "object_type": "",
+      "ttl": 1059,
+      "h5_target_url": "https://example.invalid/synthetic/60",
+      "need_save_obj": 0
+    }
+  ],
+  "mblogtype": 0,
+  "showFeedRepost": false,
+  "showFeedComment": false,
+  "pictureViewerSign": false,
+  "showPictureViewer": false,
+  "rcList": [],
+  "analysis_extra": "synthetic-61",
+  "readtimetype": "synthetic-62",
+  "mixed_count": 0,
+  "is_show_mixed": false,
+  "mblog_feed_back_menus_format": [],
+  "isAd": false,
+  "isSinglePayAudio": false,
+  "isMarkdown": false,
+  "text": "<p>Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/ &amp;</p>",
+  "text_raw": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "retweeted_status": {
+    "visible": {
+      "type": 0,
+      "list_id": 0
+    },
+    "created_at": "2026-01-01T00:00:00Z",
+    "id": 1063,
+    "idstr": "8111111111111111",
+    "mid": "8111111111111111",
+    "mblogid": "synthetic-64",
+    "user": {
+      "id": 1065,
+      "idstr": "8111111111",
+      "pc_new": 7,
+      "screen_name": "synthetic-66",
+      "profile_image_url": "https://example.invalid/synthetic/67.jpg",
+      "profile_url": "https://example.invalid/synthetic/68",
+      "verified": true,
+      "verified_type": 3,
+      "domain": "synthetic-69",
+      "weihao": "",
+      "verified_type_ext": 1070,
+      "status_total_counter": {
+        "total_cnt_format": "synthetic-71",
+        "comment_cnt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+        "repost_cnt": "synthetic-72",
+        "like_cnt": "synthetic-73",
+        "total_cnt": "synthetic-74"
+      },
+      "avatar_large": "https://example.invalid/synthetic/75.jpg",
+      "avatar_hd": "https://example.invalid/synthetic/76.jpg",
+      "follow_me": false,
+      "following": false,
+      "mbrank": 2,
+      "mbtype": 1077,
+      "v_plus": 0,
+      "user_ability": 1078,
+      "planet_video": false,
+      "icon_list": [
+        {
+          "type": "synthetic-79",
+          "data": {
+            "mbrank": 2,
+            "mbtype": 1080,
+            "svip": 1,
+            "vvip": 1
+          }
+        }
+      ]
+    },
+    "can_edit": false,
+    "textLength": 1081,
+    "annotations": [
+      {
+        "mapi_request": true
+      }
+    ],
+    "source": "synthetic-82",
+    "favorited": false,
+    "buttons": [
+      {
+        "type": "synthetic-83",
+        "name": "synthetic-84",
+        "params": {
+          "uid": 1085,
+          "disable_group": 1,
+          "extparams": {
+            "followcardid": "synthetic-86"
+          }
+        },
+        "actionlog": {
+          "act_code": "81",
+          "oid": "8111111111111111"
+        }
+      }
+    ],
+    "rid": "synthetic-87",
+    "cardid": "synthetic-88",
+    "pic_ids": [],
+    "geo": "",
+    "pic_num": 0,
+    "is_paid": false,
+    "mblog_vip_type": 0,
+    "number_display_strategy": {
+      "apply_scenario_flag": 1089,
+      "display_text_min_number": 1090,
+      "display_text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+    },
+    "reposts_count": 1091,
+    "comments_count": 1092,
+    "attitudes_count": 1093,
+    "attitudes_status": 0,
+    "continue_tag": {
+      "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "pic": "https://example.invalid/synthetic/94.png",
+      "scheme": "synthetic-95",
+      "cleaned": true
+    },
+    "isLongText": true,
+    "mlevel": 0,
+    "content_auth": 3,
+    "is_show_bulletin": 2,
+    "comment_manage_info": {
+      "comment_permission_type": -1,
+      "approval_comment_type": 0,
+      "comment_sort_type": 0,
+      "ai_play_picture_type": 0
+    },
+    "mblogtype": 0,
+    "showFeedRepost": false,
+    "showFeedComment": false,
+    "pictureViewerSign": false,
+    "showPictureViewer": false,
+    "rcList": [],
+    "content_auth_list": [
+      {
+        "content_auth": 3,
+        "show_type": 0,
+        "rank": 1096
+      }
+    ],
+    "mixed_count": 0,
+    "is_show_mixed": false,
+    "mblog_feed_back_menus_format": [],
+    "isAd": false,
+    "isSinglePayAudio": false,
+    "isMarkdown": false,
+    "text": "<p>Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/ &amp;</p>",
+    "text_raw": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "page_info": {
+      "type": "81",
+      "page_id": "8111111111111111111111",
+      "object_type": "synthetic-97",
+      "object_id": "synthetic-98",
+      "content1": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "content2": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "act_status": 1,
+      "media_info": {
+        "name": "synthetic-99",
+        "stream_url": "https://example.invalid/synthetic/100.mp4",
+        "stream_url_hd": "https://example.invalid/synthetic/101.mp4",
+        "format": "mp4",
+        "h5_url": "https://example.invalid/synthetic/102",
+        "mp4_sd_url": "https://example.invalid/synthetic/103.mp4",
+        "mp4_hd_url": "https://example.invalid/synthetic/104.mp4",
+        "h265_mp4_hd": "",
+        "h265_mp4_ld": "",
+        "inch_4_mp4_hd": "",
+        "inch_5_mp4_hd": "",
+        "inch_5_5_mp4_hd": "",
+        "mp4_720p_mp4": "https://example.invalid/synthetic/105.mp4",
+        "hevc_mp4_720p": "",
+        "prefetch_type": 1,
+        "prefetch_size": 1106,
+        "act_status": 1,
+        "protocol": "synthetic-107",
+        "media_id": "8111111111111111",
+        "origin_total_bitrate": 0,
+        "video_orientation": "synthetic-108",
+        "duration": 1109,
+        "forward_strategy": -1,
+        "search_scheme": "synthetic-110",
+        "is_short_video": 1,
+        "vote_is_show": 0,
+        "belong_collection": 0,
+        "titles_display_time": "8",
+        "show_progress_bar": 1,
+        "show_mute_button": true,
+        "ext_info": {
+          "video_orientation": "synthetic-111"
+        },
+        "next_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+        "kol_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+        "play_completion_actions": [
+          {
+            "type": "8",
+            "icon": "https://example.invalid/synthetic/112.png",
+            "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+            "link": "https://example.invalid/synthetic/113",
+            "btn_code": 1114,
+            "show_position": 1,
+            "actionlog": {
+              "oid": "8111111111111111111111",
+              "act_code": 1115,
+              "act_type": 0,
+              "source": "synthetic-116"
+            }
+          },
+          {
+            "type": 6,
+            "icon": "https://example.invalid/synthetic/117.jpg",
+            "text": "",
+            "display_mode": 2,
+            "display_starttime": 5,
+            "display_endtime": 1700000000,
+            "countdown_time": 5,
+            "show_position": 1118,
+            "scheme": "",
+            "link": "https://example.invalid/synthetic/119",
+            "btn_code": 1120,
+            "actionlog": {
+              "oid": "8111111111111111111111",
+              "act_code": 1121,
+              "act_type": 0,
+              "source": "synthetic-122",
+              "ext": "synthetic-123"
+            },
+            "ext": {
+              "uid": "8111111111",
+              "user_name": "synthetic-124",
+              "followers_count": 1125,
+              "verified": true,
+              "verified_type": 3,
+              "verified_type_ext": 1126,
+              "verified_reason": "synthetic-127",
+              "level": 3
+            },
+            "display_type": 0
+          }
+        ],
+        "video_publish_time": 1700000000,
+        "play_loop_type": 0,
+        "video_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+        "author_mid": "8111111111111111",
+        "author_name": "synthetic-128",
+        "is_playlist": 1,
+        "get_playlist_id": 1129,
+        "extra_info": {
+          "sceneid": "synthetic-130"
+        },
+        "video_download_strategy": {
+          "abandon_download": 0
+        },
+        "jump_to": 6,
+        "media_type": "synthetic-131",
+        "big_pic_info": {
+          "pic_big": {
+            "height": 1132,
+            "url": "https://example.invalid/synthetic/133.jpg",
+            "width": 1134
+          },
+          "pic_small": {
+            "height": 1135,
+            "url": "https://example.invalid/synthetic/136.jpg",
+            "width": 1137
+          },
+          "pic_middle": {
+            "height": 1138,
+            "url": "https://example.invalid/synthetic/139.jpg",
+            "width": 1140
+          }
+        },
+        "online_users": "synthetic-141",
+        "online_users_number": 1142,
+        "ttl": 1143,
+        "storage_type": "synthetic-144",
+        "is_keep_current_mblog": 0,
+        "author_info": {
+          "id": 1145,
+          "idstr": "8111111111",
+          "pc_new": 7,
+          "screen_name": "synthetic-146",
+          "profile_image_url": "https://example.invalid/synthetic/147.jpg",
+          "profile_url": "https://example.invalid/synthetic/148",
+          "verified": true,
+          "verified_type": 3,
+          "domain": "synthetic-149",
+          "weihao": "",
+          "verified_type_ext": 1150,
+          "status_total_counter": {
+            "total_cnt_format": "synthetic-151",
+            "comment_cnt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+            "repost_cnt": "synthetic-152",
+            "like_cnt": "synthetic-153",
+            "total_cnt": "synthetic-154"
+          },
+          "avatar_large": "https://example.invalid/synthetic/155.jpg",
+          "avatar_hd": "https://example.invalid/synthetic/156.jpg",
+          "follow_me": false,
+          "following": false,
+          "mbrank": 2,
+          "mbtype": 1157,
+          "v_plus": 0,
+          "user_ability": 1158,
+          "planet_video": false,
+          "verified_reason": "synthetic-159",
+          "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+          "location": "synthetic-160",
+          "gender": "synthetic-161",
+          "followers_count": 1162,
+          "followers_count_str": "synthetic-163",
+          "friends_count": 1164,
+          "statuses_count": 1165,
+          "url": "https://example.invalid/synthetic/166",
+          "svip": 1,
+          "vvip": 1,
+          "cover_image_phone": "https://example.invalid/synthetic/167.jpg"
+        },
+        "playback_list": [
+          {
+            "meta": {
+              "label": "synthetic-168",
+              "quality_index": 1169,
+              "quality_desc": "synthetic-170",
+              "quality_label": "synthetic-171",
+              "quality_class": "synthetic-172",
+              "type": 1,
+              "quality_group": 1173,
+              "is_hidden": false
+            },
+            "play_info": {
+              "type": 1,
+              "mime": "synthetic-174",
+              "protocol": "synthetic-175",
+              "label": "synthetic-176",
+              "url": "https://example.invalid/synthetic/177.mp4",
+              "bitrate": 1178,
+              "prefetch_range": "synthetic-179",
+              "video_codecs": "synthetic-180",
+              "fps": 1181,
+              "width": 1182,
+              "height": 1183,
+              "size": 1184,
+              "duration": 123.25,
+              "sar": "synthetic-185",
+              "audio_codecs": "synthetic-186",
+              "audio_sample_rate": 1187,
+              "quality_label": "synthetic-188",
+              "quality_class": "synthetic-189",
+              "quality_desc": "synthetic-190",
+              "audio_channels": 2,
+              "audio_sample_fmt": "synthetic-191",
+              "audio_bits_per_sample": 0,
+              "watermark": "synthetic-192",
+              "extension": {
+                "transcode_info": {
+                  "pcdn_rule_id": 0,
+                  "pcdn_jank": 0,
+                  "origin_video_dr": "synthetic-193",
+                  "ab_strategies": "synthetic-194"
+                }
+              },
+              "video_decoder": "synthetic-195",
+              "prefetch_enabled": true,
+              "tcp_receive_buffer": 1196
+            }
+          },
+          {
+            "meta": {
+              "label": "synthetic-197",
+              "quality_index": 1198,
+              "quality_desc": "synthetic-199",
+              "quality_label": "synthetic-200",
+              "quality_class": "synthetic-201",
+              "type": 1,
+              "quality_group": 1202,
+              "is_hidden": false
+            },
+            "play_info": {
+              "type": 1,
+              "mime": "synthetic-203",
+              "protocol": "synthetic-204",
+              "label": "synthetic-205",
+              "url": "https://example.invalid/synthetic/206.mp4",
+              "bitrate": 1207,
+              "prefetch_range": "synthetic-208",
+              "video_codecs": "synthetic-209",
+              "fps": 1210,
+              "width": 1211,
+              "height": 1212,
+              "size": 1213,
+              "duration": 123.25,
+              "sar": "synthetic-214",
+              "audio_codecs": "synthetic-215",
+              "audio_sample_rate": 1216,
+              "quality_label": "synthetic-217",
+              "quality_class": "synthetic-218",
+              "quality_desc": "synthetic-219",
+              "audio_channels": 2,
+              "audio_sample_fmt": "synthetic-220",
+              "audio_bits_per_sample": 0,
+              "watermark": "synthetic-221",
+              "extension": {
+                "transcode_info": {
+                  "pcdn_rule_id": 0,
+                  "pcdn_jank": 0,
+                  "origin_video_dr": "synthetic-222",
+                  "ab_strategies": "synthetic-223"
+                }
+              },
+              "video_decoder": "synthetic-224",
+              "prefetch_enabled": true,
+              "tcp_receive_buffer": 1225
+            }
+          },
+          {
+            "meta": {
+              "label": "synthetic-226",
+              "quality_index": 1227,
+              "quality_desc": "synthetic-228",
+              "quality_label": "synthetic-229",
+              "quality_class": "synthetic-230",
+              "type": 1,
+              "quality_group": 1231,
+              "is_hidden": false
+            },
+            "play_info": {
+              "type": 1,
+              "mime": "synthetic-232",
+              "protocol": "synthetic-233",
+              "label": "synthetic-234",
+              "url": "https://example.invalid/synthetic/235.mp4",
+              "bitrate": 1236,
+              "prefetch_range": "synthetic-237",
+              "video_codecs": "synthetic-238",
+              "fps": 1239,
+              "width": 1240,
+              "height": 1241,
+              "size": 1242,
+              "duration": 123.25,
+              "sar": "synthetic-243",
+              "audio_codecs": "synthetic-244",
+              "audio_sample_rate": 1245,
+              "quality_label": "synthetic-246",
+              "quality_class": "synthetic-247",
+              "quality_desc": "synthetic-248",
+              "audio_channels": 2,
+              "audio_sample_fmt": "synthetic-249",
+              "audio_bits_per_sample": 0,
+              "watermark": "synthetic-250",
+              "extension": {
+                "transcode_info": {
+                  "pcdn_rule_id": 0,
+                  "pcdn_jank": 0,
+                  "origin_video_dr": "synthetic-251",
+                  "ab_strategies": "synthetic-252"
+                }
+              },
+              "video_decoder": "synthetic-253",
+              "prefetch_enabled": true,
+              "tcp_receive_buffer": 1254
+            }
+          }
+        ]
+      },
+      "page_pic": "https://example.invalid/synthetic/255.jpg",
+      "page_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "page_url": "https://example.invalid/synthetic/256",
+      "pic_info": {
+        "pic_big": {
+          "height": "811",
+          "url": "https://example.invalid/synthetic/257.jpg",
+          "width": "8111"
+        },
+        "pic_small": {
+          "height": "811",
+          "url": "https://example.invalid/synthetic/258.jpg",
+          "width": "8111"
+        },
+        "pic_middle": {
+          "url": "https://example.invalid/synthetic/259.jpg",
+          "height": "811",
+          "width": "8111"
+        }
+      },
+      "oid": "8111111111",
+      "type_icon": "https://example.invalid/synthetic/260",
+      "author_id": "8111111111",
+      "authorid": "8111111111",
+      "warn": "",
+      "actionlog": {
+        "act_type": 1,
+        "act_code": 1261,
+        "lcardid": "",
+        "fid": "synthetic-262",
+        "mid": "8111111111111111",
+        "oid": "synthetic-263",
+        "uuid": 1264,
+        "source": "synthetic-265",
+        "ext": "synthetic-266"
+      },
+      "short_url": "https://example.invalid/synthetic/267"
+    }
+  },
+  "page_info": {
+    "type": "81",
+    "page_id": "8111111111111111111111",
+    "object_type": "synthetic-268",
+    "object_id": "synthetic-269",
+    "content1": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "content2": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "act_status": 1,
+    "media_info": {
+      "name": "synthetic-270",
+      "stream_url": "https://example.invalid/synthetic/271.mp4",
+      "stream_url_hd": "https://example.invalid/synthetic/272.mp4",
+      "format": "mp4",
+      "h5_url": "https://example.invalid/synthetic/273",
+      "mp4_sd_url": "https://example.invalid/synthetic/274.mp4",
+      "mp4_hd_url": "https://example.invalid/synthetic/275.mp4",
+      "h265_mp4_hd": "",
+      "h265_mp4_ld": "",
+      "inch_4_mp4_hd": "",
+      "inch_5_mp4_hd": "",
+      "inch_5_5_mp4_hd": "",
+      "mp4_720p_mp4": "https://example.invalid/synthetic/276.mp4",
+      "hevc_mp4_720p": "",
+      "prefetch_type": 1,
+      "prefetch_size": 1277,
+      "act_status": 1,
+      "protocol": "synthetic-278",
+      "media_id": "8111111111111111",
+      "origin_total_bitrate": 0,
+      "video_orientation": "synthetic-279",
+      "duration": 1280,
+      "forward_strategy": -1,
+      "search_scheme": "synthetic-281",
+      "is_short_video": 1,
+      "vote_is_show": 0,
+      "belong_collection": 0,
+      "titles_display_time": "8",
+      "show_progress_bar": 1,
+      "show_mute_button": true,
+      "ext_info": {
+        "video_orientation": "synthetic-282"
+      },
+      "next_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "kol_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "play_completion_actions": [
+        {
+          "type": "8",
+          "icon": "https://example.invalid/synthetic/283.png",
+          "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+          "link": "https://example.invalid/synthetic/284",
+          "btn_code": 1285,
+          "show_position": 1,
+          "actionlog": {
+            "oid": "8111111111111111111111",
+            "act_code": 1286,
+            "act_type": 0,
+            "source": "synthetic-287"
+          }
+        },
+        {
+          "type": 6,
+          "icon": "https://example.invalid/synthetic/288.jpg",
+          "text": "",
+          "display_mode": 2,
+          "display_starttime": 5,
+          "display_endtime": 1700000000,
+          "countdown_time": 5,
+          "show_position": 1289,
+          "scheme": "",
+          "link": "https://example.invalid/synthetic/290",
+          "btn_code": 1291,
+          "actionlog": {
+            "oid": "8111111111111111111111",
+            "act_code": 1292,
+            "act_type": 0,
+            "source": "synthetic-293",
+            "ext": "synthetic-294"
+          },
+          "ext": {
+            "uid": "8111111111",
+            "user_name": "synthetic-295",
+            "followers_count": 1296,
+            "verified": true,
+            "verified_type": 3,
+            "verified_type_ext": 1297,
+            "verified_reason": "synthetic-298",
+            "level": 3
+          },
+          "display_type": 0
+        }
+      ],
+      "video_publish_time": 1700000000,
+      "play_loop_type": 0,
+      "video_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "author_mid": "8111111111111111",
+      "author_name": "synthetic-299",
+      "is_playlist": 1,
+      "get_playlist_id": 1300,
+      "extra_info": {
+        "sceneid": "synthetic-301"
+      },
+      "video_download_strategy": {
+        "abandon_download": 0
+      },
+      "jump_to": 6,
+      "media_type": "synthetic-302",
+      "big_pic_info": {
+        "pic_big": {
+          "height": 1303,
+          "url": "https://example.invalid/synthetic/304.jpg",
+          "width": 1305
+        },
+        "pic_small": {
+          "height": 1306,
+          "url": "https://example.invalid/synthetic/307.jpg",
+          "width": 1308
+        },
+        "pic_middle": {
+          "height": 1309,
+          "url": "https://example.invalid/synthetic/310.jpg",
+          "width": 1311
+        }
+      },
+      "online_users": "synthetic-312",
+      "online_users_number": 1313,
+      "ttl": 1314,
+      "storage_type": "synthetic-315",
+      "is_keep_current_mblog": 0,
+      "author_info": {
+        "id": 1316,
+        "idstr": "8111111111",
+        "pc_new": 7,
+        "screen_name": "synthetic-317",
+        "profile_image_url": "https://example.invalid/synthetic/318.jpg",
+        "profile_url": "https://example.invalid/synthetic/319",
+        "verified": true,
+        "verified_type": 3,
+        "domain": "synthetic-320",
+        "weihao": "",
+        "verified_type_ext": 1321,
+        "status_total_counter": {
+          "total_cnt_format": "synthetic-322",
+          "comment_cnt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+          "repost_cnt": "synthetic-323",
+          "like_cnt": "synthetic-324",
+          "total_cnt": "synthetic-325"
+        },
+        "avatar_large": "https://example.invalid/synthetic/326.jpg",
+        "avatar_hd": "https://example.invalid/synthetic/327.jpg",
+        "follow_me": false,
+        "following": false,
+        "mbrank": 2,
+        "mbtype": 1328,
+        "v_plus": 0,
+        "user_ability": 1329,
+        "planet_video": false,
+        "verified_reason": "synthetic-330",
+        "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+        "location": "synthetic-331",
+        "gender": "synthetic-332",
+        "followers_count": 1333,
+        "followers_count_str": "synthetic-334",
+        "friends_count": 1335,
+        "statuses_count": 1336,
+        "url": "https://example.invalid/synthetic/337",
+        "svip": 1,
+        "vvip": 1,
+        "cover_image_phone": "https://example.invalid/synthetic/338.jpg"
+      },
+      "playback_list": [
+        {
+          "meta": {
+            "label": "synthetic-339",
+            "quality_index": 1340,
+            "quality_desc": "synthetic-341",
+            "quality_label": "synthetic-342",
+            "quality_class": "synthetic-343",
+            "type": 1,
+            "quality_group": 1344,
+            "is_hidden": false
+          },
+          "play_info": {
+            "type": 1,
+            "mime": "synthetic-345",
+            "protocol": "synthetic-346",
+            "label": "synthetic-347",
+            "url": "https://example.invalid/synthetic/348.mp4",
+            "bitrate": 1349,
+            "prefetch_range": "synthetic-350",
+            "video_codecs": "synthetic-351",
+            "fps": 1352,
+            "width": 1353,
+            "height": 1354,
+            "size": 1355,
+            "duration": 123.25,
+            "sar": "synthetic-356",
+            "audio_codecs": "synthetic-357",
+            "audio_sample_rate": 1358,
+            "quality_label": "synthetic-359",
+            "quality_class": "synthetic-360",
+            "quality_desc": "synthetic-361",
+            "audio_channels": 2,
+            "audio_sample_fmt": "synthetic-362",
+            "audio_bits_per_sample": 0,
+            "watermark": "synthetic-363",
+            "extension": {
+              "transcode_info": {
+                "pcdn_rule_id": 0,
+                "pcdn_jank": 0,
+                "origin_video_dr": "synthetic-364",
+                "ab_strategies": "synthetic-365"
+              }
+            },
+            "video_decoder": "synthetic-366",
+            "prefetch_enabled": true,
+            "tcp_receive_buffer": 1367
+          }
+        },
+        {
+          "meta": {
+            "label": "synthetic-368",
+            "quality_index": 1369,
+            "quality_desc": "synthetic-370",
+            "quality_label": "synthetic-371",
+            "quality_class": "synthetic-372",
+            "type": 1,
+            "quality_group": 1373,
+            "is_hidden": false
+          },
+          "play_info": {
+            "type": 1,
+            "mime": "synthetic-374",
+            "protocol": "synthetic-375",
+            "label": "synthetic-376",
+            "url": "https://example.invalid/synthetic/377.mp4",
+            "bitrate": 1378,
+            "prefetch_range": "synthetic-379",
+            "video_codecs": "synthetic-380",
+            "fps": 1381,
+            "width": 1382,
+            "height": 1383,
+            "size": 1384,
+            "duration": 123.25,
+            "sar": "synthetic-385",
+            "audio_codecs": "synthetic-386",
+            "audio_sample_rate": 1387,
+            "quality_label": "synthetic-388",
+            "quality_class": "synthetic-389",
+            "quality_desc": "synthetic-390",
+            "audio_channels": 2,
+            "audio_sample_fmt": "synthetic-391",
+            "audio_bits_per_sample": 0,
+            "watermark": "synthetic-392",
+            "extension": {
+              "transcode_info": {
+                "pcdn_rule_id": 0,
+                "pcdn_jank": 0,
+                "origin_video_dr": "synthetic-393",
+                "ab_strategies": "synthetic-394"
+              }
+            },
+            "video_decoder": "synthetic-395",
+            "prefetch_enabled": true,
+            "tcp_receive_buffer": 1396
+          }
+        },
+        {
+          "meta": {
+            "label": "synthetic-397",
+            "quality_index": 1398,
+            "quality_desc": "synthetic-399",
+            "quality_label": "synthetic-400",
+            "quality_class": "synthetic-401",
+            "type": 1,
+            "quality_group": 1402,
+            "is_hidden": false
+          },
+          "play_info": {
+            "type": 1,
+            "mime": "synthetic-403",
+            "protocol": "synthetic-404",
+            "label": "synthetic-405",
+            "url": "https://example.invalid/synthetic/406.mp4",
+            "bitrate": 1407,
+            "prefetch_range": "synthetic-408",
+            "video_codecs": "synthetic-409",
+            "fps": 1410,
+            "width": 1411,
+            "height": 1412,
+            "size": 1413,
+            "duration": 123.25,
+            "sar": "synthetic-414",
+            "audio_codecs": "synthetic-415",
+            "audio_sample_rate": 1416,
+            "quality_label": "synthetic-417",
+            "quality_class": "synthetic-418",
+            "quality_desc": "synthetic-419",
+            "audio_channels": 2,
+            "audio_sample_fmt": "synthetic-420",
+            "audio_bits_per_sample": 0,
+            "watermark": "synthetic-421",
+            "extension": {
+              "transcode_info": {
+                "pcdn_rule_id": 0,
+                "pcdn_jank": 0,
+                "origin_video_dr": "synthetic-422",
+                "ab_strategies": "synthetic-423"
+              }
+            },
+            "video_decoder": "synthetic-424",
+            "prefetch_enabled": true,
+            "tcp_receive_buffer": 1425
+          }
+        }
+      ]
+    },
+    "page_pic": "https://example.invalid/synthetic/426.jpg",
+    "page_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "page_url": "https://example.invalid/synthetic/427",
+    "pic_info": {
+      "pic_big": {
+        "height": "811",
+        "url": "https://example.invalid/synthetic/428.jpg",
+        "width": "8111"
+      },
+      "pic_small": {
+        "height": "811",
+        "url": "https://example.invalid/synthetic/429.jpg",
+        "width": "8111"
+      },
+      "pic_middle": {
+        "url": "https://example.invalid/synthetic/430.jpg",
+        "height": "811",
+        "width": "8111"
+      }
+    },
+    "oid": "8111111111",
+    "type_icon": "https://example.invalid/synthetic/431",
+    "author_id": "8111111111",
+    "authorid": "8111111111",
+    "warn": "",
+    "actionlog": {
+      "act_type": 1,
+      "act_code": 1432,
+      "lcardid": "",
+      "fid": "synthetic-433",
+      "mid": "8111111111111111",
+      "oid": "synthetic-434",
+      "uuid": 1435,
+      "source": "synthetic-436",
+      "ext": "synthetic-437"
+    },
+    "short_url": "https://example.invalid/synthetic/438"
+  },
+  "like": null,
+  "date": "2026-01-01T00:00:00Z",
+  "count": 1,
+  "category": "synthetic-439",
+  "subcategory": "synthetic-440"
+}

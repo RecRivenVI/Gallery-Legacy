@@ -1,0 +1,15 @@
+:root {
+  --control-h-sm: 24px;
+  --control-h-md: 32px;
+  --control-h-lg: 40px;
+  --pager-control-h: var(--control-h-md);
+  --control-gap: var(--space-80);
+  --content-pad-desktop: var(--space-240);
+  --content-pad-mobile: var(--space-160);
+  --section-gap: var(--space-160);
+}
+
+.theme-switching,
+.theme-switching * {
+  transition: none;
+}

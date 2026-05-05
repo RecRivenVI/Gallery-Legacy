@@ -1,0 +1,250 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "accessType": "synthetic-2",
+  "content": "",
+  "gameID": null,
+  "author": "00000000-0000-4000-8000-000000000003",
+  "languageCodes": null,
+  "postMedia": [
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "postID": "00000000-0000-4000-8000-000000000005",
+      "url": "https://example.invalid/synthetic/6",
+      "type": "image",
+      "thumbUrl": "https://example.invalid/synthetic/7",
+      "blurUrl": "https://example.invalid/synthetic/8",
+      "previewUrl": "https://example.invalid/synthetic/9",
+      "sort": 0
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "postID": "00000000-0000-4000-8000-000000000011",
+      "url": "https://example.invalid/synthetic/12",
+      "type": "image",
+      "thumbUrl": "https://example.invalid/synthetic/13",
+      "blurUrl": "https://example.invalid/synthetic/14",
+      "previewUrl": "https://example.invalid/synthetic/15",
+      "sort": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "postID": "00000000-0000-4000-8000-000000000017",
+      "url": "https://example.invalid/synthetic/18",
+      "type": "image",
+      "thumbUrl": "https://example.invalid/synthetic/19",
+      "blurUrl": "https://example.invalid/synthetic/20",
+      "previewUrl": "https://example.invalid/synthetic/21",
+      "sort": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "postID": "00000000-0000-4000-8000-000000000023",
+      "url": "https://example.invalid/synthetic/24",
+      "type": "image",
+      "thumbUrl": "https://example.invalid/synthetic/25",
+      "blurUrl": "https://example.invalid/synthetic/26",
+      "previewUrl": "https://example.invalid/synthetic/27",
+      "sort": 3
+    }
+  ],
+  "postSummary": {
+    "id": "00000000-0000-4000-8000-000000000028",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z",
+    "post_id": "00000000-0000-4000-8000-000000000029",
+    "count_like": 1,
+    "count_share": 0,
+    "count_comment": 0,
+    "count_bookmark": 0
+  },
+  "userMemberships": [
+    {
+      "membership_setting_id": "00000000-0000-4000-8000-000000000030",
+      "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+      "is_active": true
+    }
+  ],
+  "deletedAt": null,
+  "authorUser": {
+    "avatar": "https://example.invalid/synthetic/31",
+    "id": "00000000-0000-4000-8000-000000000032",
+    "nickname": "synthetic-33",
+    "isMembershipEnabled": true,
+    "roles": [],
+    "profile": {
+      "customization": {
+        "badges": [
+          "synthetic-34",
+          "synthetic-35"
+        ],
+        "border": {
+          "selected": "",
+          "options": null,
+          "url": "https://example.invalid/synthetic/36"
+        },
+        "emojis": null
+      }
+    },
+    "active": true,
+    "deletedAt": "synthetic-37",
+    "tags": [
+      "synthetic-38"
+    ],
+    "isSuspended": false
+  },
+  "isAllowToSee": true,
+  "isPassed": false,
+  "postPrices": null,
+  "publishAt": null,
+  "pinnedAt": null,
+  "baseLanguage": null,
+  "postTags": [
+    {
+      "id": "00000000-0000-4000-8000-000000000039",
+      "name": "synthetic-40"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "name": "synthetic-42"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "name": "synthetic-44"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000045",
+      "name": "synthetic-46"
+    }
+  ],
+  "isPinned": false,
+  "post_id": "00000000-0000-4000-8000-000000000047",
+  "post_url": "https://example.invalid/synthetic/48",
+  "date": "2026-01-01T00:00:00Z",
+  "date_updated": "2026-01-01T00:00:00Z",
+  "tags": [
+    "synthetic-49",
+    "synthetic-50",
+    "synthetic-51",
+    "synthetic-52"
+  ],
+  "links": [],
+  "count": 4,
+  "category": "synthetic-53",
+  "subcategory": "synthetic-54",
+  "user": {
+    "id": "00000000-0000-4000-8000-000000000055",
+    "email": "",
+    "nickname": "synthetic-56",
+    "firstName": "synthetic-57",
+    "lastName": "",
+    "avatar": "https://example.invalid/synthetic/58",
+    "active": true,
+    "verified": true,
+    "gender": null,
+    "birthDate": null,
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "deviceID": null,
+    "profile": {
+      "facebookUrl": null,
+      "youtubeUrl": null,
+      "twitchUrl": null,
+      "voiceUrl": null,
+      "steamUrl": null,
+      "instagramUrl": null,
+      "tiktokUrl": null,
+      "discordUrl": null,
+      "twitterUrl": "https://example.invalid/synthetic/59",
+      "verified": null,
+      "articles": null,
+      "article": null,
+      "languageCodes": [
+        "synthetic-60"
+      ],
+      "customization": {
+        "border": {
+          "selected": "",
+          "url": "https://example.invalid/synthetic/61",
+          "options": null
+        },
+        "emojis": null,
+        "badges": [
+          "synthetic-62",
+          "synthetic-63"
+        ]
+      },
+      "countryCode": "synthetic-64",
+      "region": null,
+      "schedules": null,
+      "otherUrl": "https://example.invalid/synthetic/65",
+      "extensions": {
+        "title": {
+          "text": "",
+          "font": "synthetic-66",
+          "toggle": false
+        },
+        "titleColor": {
+          "key": "synthetic-67",
+          "value": "synthetic-68"
+        },
+        "baseBackgroundColor": {
+          "key": "synthetic-69",
+          "value": "synthetic-70"
+        },
+        "templateType": {
+          "key": "synthetic-71",
+          "value": "synthetic-72"
+        }
+      }
+    },
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-01T00:00:00Z",
+    "userSummary": null,
+    "lastActivity": "synthetic-73",
+    "lastActivityStatus": "synthetic-74",
+    "isMembershipEnabled": true,
+    "userInterests": [
+      {
+        "id": "00000000-0000-4000-8000-000000000075",
+        "createdAt": "2026-01-01T00:00:00Z",
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "name": "synthetic-76",
+        "description": "",
+        "sort": 0,
+        "deletedAt": null
+      }
+    ],
+    "isDonationEnabled": true,
+    "is2FAEnabled": true,
+    "enableSupporterCount": false,
+    "isTopSupportersEnabled": false,
+    "isGoalDonationEnabled": true,
+    "tier": "synthetic-77",
+    "userType": "synthetic-78",
+    "isSuspended": false,
+    "tags": [
+      "synthetic-79"
+    ],
+    "has_service": false,
+    "has_commission": false,
+    "has_membership": true,
+    "has_ppv": false,
+    "signUpReason": null,
+    "verifiedStatus": true,
+    "verifiedBadge": [
+      "synthetic-80"
+    ],
+    "phoneArea": null,
+    "phoneNumber": null
+  }
+}

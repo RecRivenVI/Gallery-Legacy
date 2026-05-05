@@ -1,0 +1,103 @@
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 表面 */
+  --bg-main: #0b0c0e;
+  --bg-sidebar: #0d0f12;
+  --bg-surface: #121316;
+  --bg-elevated: #161719;
+  --surface-inset: #08090b;
+  --surface-well: #0f1114;
+  --surface-media: #141518;
+
+  /* 控件 */
+  --bg-control: #181a1d;
+  --bg-control-hover: #222428;
+  --bg-control-active: #3a3c40;
+  --state-layer: #2f3236;
+  --state-layer-press: #25272b;
+  --state-layer-ring: #6a6e76;
+
+  /* 描边 */
+  --border-subtle: #24262a;
+  --border-active: #676a70;
+  --border-hairline: rgba(255, 255, 255, .08);
+  --border-hairline-strong: rgba(255, 255, 255, .12);
+  --border-emphasis: #ffffff;
+
+  /* 文字 */
+  --text-primary: #f1f1f1;
+  --text-secondary: #b3b5ba;
+  --text-muted: #8b8f96;
+  --text-disabled: #666970;
+  --text-on-accent: #ffffff;
+  --text-on-active: #ffffff;
+
+  /* 强调色：本项目的 accent 是暖金，用于选中态、激活态与品牌标题渐变 */
+  --accent-gray: #d0d2d6;
+  --accent: #b8860b;
+  --accent-strong: #d4a853;
+  --accent-soft: #f0d68a;
+  --accent-highlight: #ffffff;
+  --accent-surface: rgba(184, 134, 11, .15);
+  --accent-surface-hover: rgba(184, 134, 11, .3);
+  --accent-surface-veil: rgba(38, 33, 12, .55);
+  --accent-border: rgba(184, 134, 11, .25);
+  --accent-border-hover: rgba(184, 134, 11, .5);
+  --accent-ring: rgba(212, 168, 83, .65);
+  --accent-glow: rgba(212, 168, 83, .24);
+  --accent-focus: rgba(212, 168, 83, .38);
+  --accent-wash: rgba(212, 168, 83, .18);
+
+  /* 语义状态 */
+  --danger: #e5484d;
+  --danger-text: #f2e7e7;
+  --danger-surface: #3a2020;
+  --danger-surface-strong: #773333;
+  --danger-surface-veil: rgba(244, 67, 54, .1);
+  --danger-border: rgba(244, 67, 54, .4);
+  --danger-border-soft: #714040;
+  --danger-border-strong: #9b4a4a;
+  --success: #46a758;
+  --success-text: #81c784;
+  --success-surface-veil: rgba(76, 175, 80, .1);
+  --success-border: rgba(76, 175, 80, .4);
+  --warning: #f5a524;
+  --info: #62a0ea;
+  --info-text: #d7fffb;
+  --info-surface: #1d4d49;
+  --info-border: #2a726c;
+
+  /* 状态层 */
+  --focus-ring: #8f949d;
+  --state-hover: rgba(255, 255, 255, .045);
+  --state-pressed: rgba(255, 255, 255, .10);
+  --state-selected: rgba(255, 255, 255, .08);
+  --state-focus: rgba(143, 148, 157, .32);
+  --state-veil: #ffffff;
+
+  /* 玻璃层与遮罩 */
+  --header-glass: rgba(13, 15, 18, .82);
+  --glass-panel: rgba(18, 18, 22, .55);
+  --glass-panel-soft: rgba(18, 18, 22, .38);
+  --glass-panel-strong: rgba(18, 18, 22, .7);
+  --glass-panel-clear: rgba(18, 18, 22, 0);
+  --glass-control-hover: rgba(30, 30, 33, .75);
+  --glass-control-active: rgba(58, 60, 64, .85);
+  --scrim: rgba(0, 0, 0, .68);
+  --scrim-strong: rgba(10, 11, 13, .86);
+  --scrim-medium: rgba(0, 0, 0, .46);
+  --scrim-soft: rgba(0, 0, 0, .18);
+  --scrim-faint: rgba(0, 0, 0, .04);
+  --scrim-solid: #000000;
+  --scrollbar-thumb: rgba(255, 255, 255, .55);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, .8);
+
+  /* 阴影 */
+  --shadow-color: rgba(0, 0, 0, .32);
+  --shadow-color-strong: rgba(0, 0, 0, .5);
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, .36);
+  --text-shadow-color: rgba(0, 0, 0, .45);
+  --text-shadow-color-strong: rgba(0, 0, 0, .5);
+}

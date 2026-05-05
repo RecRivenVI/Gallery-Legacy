@@ -1,0 +1,63 @@
+{
+  "id": "81111111",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "feeRequired": 0,
+  "publishedDatetime": "2026-01-01T00:00:00Z",
+  "updatedDatetime": "2026-01-01T00:00:00Z",
+  "tags": [],
+  "isLiked": false,
+  "likeCount": 1001,
+  "isCommentingRestricted": true,
+  "commentCount": 0,
+  "isRestricted": false,
+  "user": {
+    "creatorId": "synthetic-2",
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "hasAdultContent": true,
+    "coverImageUrl": "https://example.invalid/synthetic/3",
+    "profileLinks": [
+      "https://example.invalid/synthetic/4",
+      "https://example.invalid/synthetic/5"
+    ],
+    "profileItems": [],
+    "isFollowed": true,
+    "isSupported": false,
+    "isStopped": false,
+    "isAcceptingRequest": false,
+    "hasBoothShop": false,
+    "hasPublishedPost": true,
+    "category": "synthetic-6",
+    "userId": "811111111",
+    "name": "synthetic-7",
+    "iconUrl": "https://example.invalid/synthetic/8"
+  },
+  "creatorId": "synthetic-9",
+  "hasAdultContent": true,
+  "type": "image",
+  "coverImageUrl": "https://example.invalid/synthetic/10",
+  "excerpt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "nextPost": {
+    "id": "81111111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "prevPost": null,
+  "imageForShare": "https://example.invalid/synthetic/11",
+  "isPinned": false,
+  "archives": [],
+  "date": "2026-01-01T00:00:00Z",
+  "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "isCoverImage": false,
+  "plan": {
+    "id": "",
+    "title": "",
+    "fee": 0,
+    "description": "",
+    "coverImageUrl": "https://example.invalid/synthetic/12",
+    "creatorId": "synthetic-13",
+    "hasAdultContent": null,
+    "paymentMethod": null
+  },
+  "category": "synthetic-14",
+  "subcategory": "synthetic-15"
+}

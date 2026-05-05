@@ -1,0 +1,494 @@
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  margin-bottom: 8px;
+  min-height: 36px;
+  padding: 0 24px;
+  width: 100%;
+}
+
+.pagination-wrap::before {
+  content: "";
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pagination-sort-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pagination-sort-slot:empty {
+  display: flex;
+}
+
+.pagination-toolbar-entrance {
+  animation: fadeIn .24s ease forwards;
+}
+
+.pagination-toolbar-exit {
+  animation: fadeOut .16s ease forwards;
+}
+
+.pagination-wrap .pagination {
+  margin-bottom: 0;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--pager-control-h);
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: .78rem;
+  color: var(--text);
+  background: var(--glass-panel);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+  user-select: none;
+}
+
+.sort-btn-label,
+.scan-btn-label {
+  display: inline-block;
+  transition: opacity .13s ease;
+}
+
+.sort-btn-label-switching,
+.scan-btn-label-switching {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .sort-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+    background: var(--glass-control-hover);
+  }
+}
+@media (hover: none) {
+  .sort-btn:active {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+    background: var(--glass-control-hover);
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  flex: 1 1 720px;
+  width: auto;
+  max-width: 720px;
+  min-width: 0;
+}
+
+.pagination-no-pager {
+  justify-content: flex-end;
+}
+
+.pagination-no-pager::before {
+  display: none;
+}
+
+.pagination-no-pager .pagination-sort-slot {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.pg-prev {
+  margin-right: 0;
+}
+.pg-next {
+  margin-left: 0;
+}
+
+.pg-btn,
+.pg-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--pager-control-h);
+  width: var(--pager-control-h);
+  min-width: var(--pager-control-h);
+  max-width: var(--pager-control-h);
+  height: var(--pager-control-h);
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 8px;
+  font-size: .78rem;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--glass-panel);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    color .2s ease,
+    border-color .2s ease,
+    background .2s ease,
+    opacity .2s ease,
+    backdrop-filter var(--gallery-filter-duration) ease,
+    -webkit-backdrop-filter var(--gallery-filter-duration) ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+@media (hover: hover) {
+  .pg-btn:hover,
+  .pg-num:hover {
+    color: var(--accent);
+    border-color: var(--border-hairline);
+    background: var(--glass-control-hover);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+@media (hover: none) {
+  .pg-btn:active,
+  .pg-num:active {
+    color: var(--accent);
+    border-color: var(--border-hairline);
+    background: var(--glass-control-hover);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+.pg-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pg-disabled {
+  opacity: .3;
+  pointer-events: none;
+  cursor: default;
+}
+
+.pg-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: .8rem;
+  color: var(--text);
+  opacity: .35;
+}
+
+.pager-slider-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 560px;
+  height: var(--pager-control-h);
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--glass-panel-soft);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 1;
+  transition:
+    opacity .16s ease,
+    backdrop-filter var(--gallery-filter-duration) ease,
+    -webkit-backdrop-filter var(--gallery-filter-duration) ease;
+}
+
+.pager-slider-viewport {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  cursor: grab;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pager-slider-viewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.pager-slider-viewport.dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.pager-slider-viewport:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -2px;
+}
+
+.pager-slider-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  height: 100%;
+  padding: 0;
+}
+
+.pager-slider-page {
+  position: relative;
+  flex: 0 0 calc(var(--pager-control-h) - 2px);
+  width: calc(var(--pager-control-h) - 2px);
+  min-width: calc(var(--pager-control-h) - 2px);
+  max-width: calc(var(--pager-control-h) - 2px);
+  height: calc(var(--pager-control-h) - 2px);
+  border-radius: 0;
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.pager-slider-page + .pager-slider-page::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  width: 1px;
+  height: 16px;
+  background: var(--border-hairline-strong);
+  pointer-events: none;
+}
+
+.pager-slider-page.pg-active {
+  border-radius: 8px;
+}
+
+@media (hover: hover) {
+  .pager-slider-page:hover {
+    border-radius: 8px;
+    background: var(--glass-control-hover);
+    border-color: var(--border-hairline);
+  }
+}
+
+@media (hover: none) {
+  .pager-slider-page:active {
+    border-radius: 8px;
+    background: var(--glass-control-hover);
+    border-color: var(--border-hairline);
+  }
+}
+
+/* 虚拟化滑块：轨道宽度与按钮 left 由 JS 按固定槽宽注入；按钮绝对定位、按视口回收。 */
+.pager-slider-track.pager-virtual {
+  position: relative;
+  width: max-content; /* 由 JS 以内联 px 覆盖为总宽度 */
+  padding: 0;
+}
+
+.pager-slider-track.pager-virtual .pager-slider-page {
+  position: absolute;
+  top: 0;
+}
+
+/* 槽位分隔线：每个按钮左缘一条短竖线，首页（data-page="1"）不画。 */
+.pager-slider-track.pager-virtual .pager-slider-page::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 16px;
+  background: var(--border-hairline-strong);
+  pointer-events: none;
+}
+
+.pager-slider-track.pager-virtual .pager-slider-page[data-page="1"]::before {
+  display: none;
+}
+
+.pager-edge-btn {
+  flex: 0 0 auto;
+}
+
+.pager-step-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.pager-slider-gap {
+  flex: 0 0 auto;
+}
+
+.pager-slider-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 58px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pager-slider-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--glass-panel-strong), var(--glass-panel-clear));
+}
+
+.pager-slider-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--glass-panel-strong), var(--glass-panel-clear));
+}
+
+@media (max-width: 1024px) {
+  .pagination-wrap {
+    padding: 0;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .pagination-wrap::before {
+    display: none;
+  }
+
+  .pagination {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .pagination-sort-slot {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .pagination-sort-slot:empty {
+    display: none;
+  }
+
+  .pagination-no-pager {
+    justify-content: flex-end;
+  }
+
+  .pagination-no-pager .pagination-sort-slot {
+    margin-left: auto;
+  }
+
+  .pager-step-btn {
+    display: none;
+  }
+
+  .pager-slider-wrap {
+    max-width: none;
+  }
+}
+
+/* ---- 数据库视图工具栏：媒体类型 / 排序 / 每页数量（设计图筛选栏） ---- */
+
+.db-filterbar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 4px 24px 10px;
+  width: 100%;
+}
+
+.db-filterbar.db-filterbar-active {
+  display: flex;
+}
+
+.db-filterbar .filter-spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.filter-seg {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-hairline);
+  background: var(--glass-panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.filter-seg .seg-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, var(--text-secondary));
+  font-size: .78rem;
+  height: var(--pager-control-h);
+  padding: 0 14px;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+  user-select: none;
+}
+
+.filter-seg .seg-btn + .seg-btn {
+  border-left: 1px solid var(--border-hairline);
+}
+
+.filter-seg .seg-btn.active {
+  background: var(--glass-control-active);
+  color: var(--text-on-active);
+}
+
+@media (hover: hover) {
+  .filter-seg .seg-btn:not(.active):hover {
+    color: var(--text, var(--text-primary));
+    background: var(--glass-control-hover);
+  }
+}
+
+.filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: var(--pager-control-h);
+  padding: 0 30px 0 12px;
+  border-radius: 8px;
+  font-size: .78rem;
+  color: var(--text, var(--text-primary));
+  background-color: var(--glass-panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b3b5ba' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 14px;
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background-color .2s ease;
+}
+
+@media (hover: hover) {
+  .filter-select:hover {
+    border-color: var(--accent-dim, var(--border-active));
+    background-color: var(--glass-control-hover);
+  }
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-dim, var(--border-active));
+}
+
+.filter-select option {
+  color: var(--text-primary);
+}

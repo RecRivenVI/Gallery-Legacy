@@ -1,0 +1,104 @@
+{
+  "id": "8111111",
+  "user": "81111111",
+  "service": "fanbox",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "embed": {},
+  "shared_file": false,
+  "added": "synthetic-1",
+  "published": "2026-01-01T00:00:00Z",
+  "edited": null,
+  "file": {
+    "name": "synthetic-2.jpg",
+    "path": "synthetic-3.jpg",
+    "type": "file",
+    "url": "https://example.invalid/synthetic/4.jpg",
+    "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "filename": "00000000-0000-4000-8000-000000000005",
+    "extension": "jpg"
+  },
+  "attachments": [
+    {
+      "name": "synthetic-6.png",
+      "path": "synthetic-7.png",
+      "type": "synthetic-8",
+      "url": "https://example.invalid/synthetic/9.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000010",
+      "extension": "png"
+    },
+    {
+      "name": "synthetic-11.png",
+      "path": "synthetic-12.png",
+      "type": "synthetic-13",
+      "url": "https://example.invalid/synthetic/14.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000015",
+      "extension": "png"
+    },
+    {
+      "name": "synthetic-16.png",
+      "path": "synthetic-17.png",
+      "type": "synthetic-18",
+      "url": "https://example.invalid/synthetic/19.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000020",
+      "extension": "png"
+    },
+    {
+      "name": "synthetic-21.png",
+      "path": "synthetic-22.png",
+      "type": "synthetic-23",
+      "url": "https://example.invalid/synthetic/24.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000025",
+      "extension": "png"
+    },
+    {
+      "name": "synthetic-26.png",
+      "path": "synthetic-27.png",
+      "type": "synthetic-28",
+      "url": "https://example.invalid/synthetic/29.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000030",
+      "extension": "png"
+    },
+    {
+      "name": "synthetic-31.png",
+      "path": "synthetic-32.png",
+      "type": "synthetic-33",
+      "url": "https://example.invalid/synthetic/34.png",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "filename": "00000000-0000-4000-8000-000000000035",
+      "extension": "png"
+    }
+  ],
+  "poll": null,
+  "captions": null,
+  "tags": [],
+  "origin": "synthetic-36",
+  "preview_state": "synthetic-37",
+  "has_full": false,
+  "preview_attempts": 0,
+  "detail_fetched": true,
+  "import_size_cap_gb": null,
+  "date": "2026-01-01T00:00:00Z",
+  "user_profile": {
+    "id": "81111111",
+    "name": "synthetic-38",
+    "service": "fanbox",
+    "indexed": "synthetic-39",
+    "updated": "2026-01-01T00:00:00Z",
+    "public_id": null,
+    "relation_id": null,
+    "ever_imported": true,
+    "kemono_favorited": 1040,
+    "import_size_cap_gb": null
+  },
+  "username": "synthetic-41",
+  "archives": [],
+  "count": 1042,
+  "category": "synthetic-43",
+  "subcategory": "synthetic-44"
+}

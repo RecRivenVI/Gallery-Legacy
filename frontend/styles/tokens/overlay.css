@@ -1,0 +1,38 @@
+/* 主题无关的覆盖层 chrome。
+   灯箱与媒体角标/悬浮按钮永远浮在图片之上，其可读性取决于图片而不是主题，
+   因此这一组刻意不随 data-theme 翻转——两种主题下都保持深底浅字。
+   这是唯一允许存在“不参与主题”的颜色分组，新增前请先确认元素确实压在媒体上。 */
+:root {
+  --lb-scrim: rgba(0, 0, 0, .7);
+  --lb-scrim-strong: rgba(0, 0, 0, .72);
+  --lb-surface: rgba(0, 0, 0, .5);
+  --lb-shadow: rgba(0, 0, 0, .3);
+  --lb-shadow-strong: rgba(0, 0, 0, .7);
+  --lb-shadow-text: #000000;
+  --lb-fg: #ffffff;
+  --lb-fg-dim: rgba(255, 255, 255, .9);
+  --lb-fg-muted: rgba(255, 255, 255, .72);
+  --lb-fg-invert: #111111;
+  --lb-border: rgba(255, 255, 255, .3);
+  --lb-border-mid: rgba(255, 255, 255, .4);
+  --lb-border-hover: rgba(255, 255, 255, .5);
+  --lb-border-strong: rgba(255, 255, 255, .7);
+  --lb-border-track: rgba(255, 255, 255, .15);
+  --lb-state: rgba(255, 255, 255, .15);
+  --lb-state-strong: rgba(255, 255, 255, .5);
+  --lb-state-solid: rgba(255, 255, 255, .7);
+  --lb-success: #81c784;
+  --lb-success-border: rgba(76, 175, 80, .4);
+  --lb-success-state: rgba(76, 175, 80, .1);
+
+  --media-chrome-bg: rgba(8, 8, 10, .66);
+  --media-chrome-bg-soft: rgba(8, 8, 10, .6);
+  --media-chrome-bg-strong: rgba(8, 8, 10, .72);
+  --media-chrome-hover: rgba(30, 30, 33, .9);
+  --media-chrome-fg: #eaeaea;
+  --media-chrome-fg-strong: #ffffff;
+  --media-chrome-accent: #b9e6dd;
+  --media-chrome-border: rgba(255, 255, 255, .14);
+  --media-chrome-success: #81c784;
+  --media-chrome-success-border: rgba(76, 175, 80, .5);
+}

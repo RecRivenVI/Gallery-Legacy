@@ -1,0 +1,462 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "provenance": "Reconstructed structural regression examples. All content, identities and locations are synthetic. No original provenance is distributed.",
+  "cases": [
+    {
+      "platformId": "pixiv",
+      "name": "complex",
+      "fixture": "corpus/pixiv/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pixiv/complex"
+    },
+    {
+      "platformId": "pixiv",
+      "name": "current",
+      "fixture": "corpus/pixiv/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pixiv/current"
+    },
+    {
+      "platformId": "pixiv",
+      "name": "middle",
+      "fixture": "corpus/pixiv/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pixiv/middle"
+    },
+    {
+      "platformId": "pixiv",
+      "name": "old",
+      "fixture": "corpus/pixiv/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pixiv/old"
+    },
+    {
+      "platformId": "pixivFANBOX",
+      "name": "complex",
+      "fixture": "corpus/fanbox/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fanbox/complex"
+    },
+    {
+      "platformId": "pixivFANBOX",
+      "name": "current",
+      "fixture": "corpus/fanbox/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fanbox/current"
+    },
+    {
+      "platformId": "pixivFANBOX",
+      "name": "middle",
+      "fixture": "corpus/fanbox/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fanbox/middle"
+    },
+    {
+      "platformId": "pixivFANBOX",
+      "name": "old",
+      "fixture": "corpus/fanbox/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fanbox/old"
+    },
+    {
+      "platformId": "Gank",
+      "name": "complex",
+      "fixture": "corpus/gank/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:gank/complex"
+    },
+    {
+      "platformId": "Gank",
+      "name": "current",
+      "fixture": "corpus/gank/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:gank/current"
+    },
+    {
+      "platformId": "Gank",
+      "name": "middle",
+      "fixture": "corpus/gank/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:gank/middle"
+    },
+    {
+      "platformId": "Gank",
+      "name": "old",
+      "fixture": "corpus/gank/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:gank/old"
+    },
+    {
+      "platformId": "Fantia",
+      "name": "complex",
+      "fixture": "corpus/fantia/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fantia/complex"
+    },
+    {
+      "platformId": "Fantia",
+      "name": "current",
+      "fixture": "corpus/fantia/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fantia/current"
+    },
+    {
+      "platformId": "Fantia",
+      "name": "middle",
+      "fixture": "corpus/fantia/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fantia/middle"
+    },
+    {
+      "platformId": "Fantia",
+      "name": "old",
+      "fixture": "corpus/fantia/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:fantia/old"
+    },
+    {
+      "platformId": "Patreon",
+      "name": "complex",
+      "fixture": "corpus/patreon/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:patreon/complex"
+    },
+    {
+      "platformId": "Patreon",
+      "name": "current",
+      "fixture": "corpus/patreon/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:patreon/current"
+    },
+    {
+      "platformId": "Patreon",
+      "name": "middle",
+      "fixture": "corpus/patreon/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:patreon/middle"
+    },
+    {
+      "platformId": "Patreon",
+      "name": "old",
+      "fixture": "corpus/patreon/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:patreon/old"
+    },
+    {
+      "platformId": "Pawchive",
+      "name": "complex",
+      "fixture": "corpus/pawchive/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pawchive/complex"
+    },
+    {
+      "platformId": "Pawchive",
+      "name": "current",
+      "fixture": "corpus/pawchive/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pawchive/current"
+    },
+    {
+      "platformId": "Pawchive",
+      "name": "middle",
+      "fixture": "corpus/pawchive/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pawchive/middle"
+    },
+    {
+      "platformId": "Pawchive",
+      "name": "old",
+      "fixture": "corpus/pawchive/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pawchive/old"
+    },
+    {
+      "platformId": "Pawchive",
+      "name": "service-conflict",
+      "fixture": "corpus/pawchive/service-conflict.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:pawchive/service-conflict"
+    },
+    {
+      "platformId": "X",
+      "name": "complex",
+      "fixture": "corpus/x/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:x/complex"
+    },
+    {
+      "platformId": "X",
+      "name": "current",
+      "fixture": "corpus/x/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:x/current"
+    },
+    {
+      "platformId": "X",
+      "name": "middle",
+      "fixture": "corpus/x/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:x/middle"
+    },
+    {
+      "platformId": "X",
+      "name": "old",
+      "fixture": "corpus/x/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:x/old"
+    },
+    {
+      "platformId": "微博",
+      "name": "complex",
+      "fixture": "corpus/weibo/complex.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/complex"
+    },
+    {
+      "platformId": "微博",
+      "name": "current",
+      "fixture": "corpus/weibo/current.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/current"
+    },
+    {
+      "platformId": "微博",
+      "name": "markdown-edge",
+      "fixture": "corpus/weibo/markdown-edge.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/markdown-edge"
+    },
+    {
+      "platformId": "微博",
+      "name": "middle",
+      "fixture": "corpus/weibo/middle.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/middle"
+    },
+    {
+      "platformId": "微博",
+      "name": "old",
+      "fixture": "corpus/weibo/old.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/old"
+    },
+    {
+      "platformId": "微博",
+      "name": "repost",
+      "fixture": "corpus/weibo/repost.json",
+      "synthetic": true,
+      "coverage": [
+        "generation-specific shape",
+        "object/array and number/string forms",
+        "null/missing",
+        "synthetic Unicode/text"
+      ],
+      "source": "synthetic:weibo/repost"
+    }
+  ]
+}

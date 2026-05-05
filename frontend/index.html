@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>画廊</title>
+  
+  <link rel="icon" type="image/svg+xml" href="/frontend/assets/app-icon.svg">
+  <link rel="alternate icon" type="image/png" href="/frontend/assets/app-icon.png">
+  <link rel="stylesheet" href="/frontend/styles/main.css">
+<script src="/frontend/shared/theme-init.js"></script>
+</head>
+
+<body>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-platform-list" id="sidebarPlatformList"></div>
+    <div class="sidebar-footer">
+      <span class="app-version" id="appVersion"></span>
+    </div>
+  </div>
+
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+  <div class="sidebar-dim" id="sidebarDim">
+    <div class="sidebar-dim-arrow" id="sidebarDimArrow"></div>
+  </div>
+  <div class="mobile-content-scrim" id="mobileContentScrim"></div>
+
+  <header class="global-header" id="globalHeader">
+    <div class="global-title-row">
+      <button class="global-sidebar-toggle entrance" id="sidebarToggleBtn" type="button" aria-label="展开侧边栏" aria-controls="sidebar" aria-expanded="false" style="animation-delay:.02s">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+          <line x1="5" y1="7" x2="19" y2="7"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <line x1="5" y1="17" x2="19" y2="17"/>
+        </svg>
+      </button>
+      <h1 class="entrance" style="animation-delay:.02s"><img class="app-title-icon" src="/frontend/assets/app-icon.svg" alt="">画廊</h1>
+      <div class="header-search-row">
+        <div class="search-box" id="searchBox">
+          <div class="search-input-wrap entrance" style="animation-delay:.10s">
+          <span class="search-icon-area">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <div class="search-input-area">
+            <input type="text" class="search-input" placeholder="搜索作品、作者或标签">
+          </div>
+          <button class="search-clear-btn" title="清空搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="search-meta-btn" title="当前页面搜索来源"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></button>
+          <button class="search-go-btn">搜索</button>
+          </div>
+        </div>
+        <button class="header-filter-toggle" id="headerFilterToggle" type="button" aria-label="筛选" aria-expanded="false" aria-controls="dbFilterbar">
+          <svg class="hft-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          <svg class="hft-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="header-actions entrance" style="animation-delay:.12s">
+        <button class="connection-state connecting" id="connectionState" type="button" title="正在连接" aria-label="实时连接状态"><i></i><span>连接中</span></button>
+        <button class="header-action-btn" id="settingsBtn" type="button" title="设置" aria-label="设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="header-action-btn header-avatar-btn" id="avatarBtn" type="button" title="用户" aria-label="用户">
+          <span class="header-avatar">画</span>
+        </button>
+      </div>
+    </div>
+    <div class="breadcrumb" id="breadcrumb"><a href="#" class="breadcrumb-home entrance" data-path="/" style="animation-delay:.08s">首页</a></div>
+    <div class="meta entrance" id="meta" style="animation-delay:.04s"></div>
+    <div class="db-filterbar" id="dbFilterbar"></div>
+    <div class="global-toolbar" id="globalToolbar"></div>
+  </header>
+
+  <div class="wrap">
+    <div id="content"></div>
+    <div class="bottom-pagination" id="bottomPagination"></div>
+  </div>
+
+  <div class="header-popover popup-menu" id="settingsPopover">
+    <div class="popover-title">设置</div>
+    <div class="setting-row"><span class="setting-label">隐私模糊</span>
+      <div class="setting-seg" data-setting="privacy">
+        <button data-value="off">关闭</button><button data-value="on">开启</button>
+      </div>
+    </div>
+    <div class="setting-row"><span class="setting-label">主题</span>
+      <div class="setting-seg" data-setting="theme">
+        <button data-value="system">跟随系统</button><button data-value="dark">深色</button><button data-value="light">浅色</button>
+      </div>
+    </div>
+    <div class="setting-row"><span class="setting-label">布局</span>
+      <div class="setting-seg" data-setting="viewMode">
+        <button data-value="grid">默认</button><button data-value="compact">紧凑</button><button data-value="list">列表</button>
+      </div>
+    </div>
+    <div class="setting-row"><span class="setting-label">宽度</span>
+      <div class="setting-seg" data-setting="contentWidth">
+        <button data-value="standard">默认</button><button data-value="wide">全屏</button>
+      </div>
+    </div>
+    <div class="setting-row"><span class="setting-label">每页数量</span>
+      <div class="setting-seg" data-setting="pageSize">
+        <button data-value="24">24</button><button data-value="48">48</button><button data-value="72">72</button><button data-value="96">96</button><button data-value="120">120</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-popover popup-menu" id="avatarMenu">
+    <div class="menu-item muted">本地画廊（无账号）</div>
+    <div class="menu-item" id="avatarSettingsEntry">打开设置</div>
+    <div class="menu-item" id="avatarHomeEntry">返回首页</div>
+  </div>
+  <div class="gallery-toast" id="galleryToast" role="status" aria-live="polite"></div>
+
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-panel">
+      <div class="detail-cover" id="detailCover">
+        <button class="detail-close" id="detailClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="detail-meta" id="detailMeta"></div>
+    </div>
+  </div>
+
+  <div class="lb-overlay">
+    <div class="lb-slider"></div>
+  </div>
+  <button class="lb-btn lb-close">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <button class="lb-btn lb-prev">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+  </button>
+  <button class="lb-btn lb-next">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+  </button>
+  <button class="lb-btn lb-download">
+    <svg class="dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19,12 12,19 5,12"/></svg>
+    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+    <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <button class="lb-btn lb-copy">
+    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+  </button>
+  <button class="lb-btn lb-hide">
+    <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    <svg class="eye-off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+  </button>
+  <div class="lb-bottom">
+    <div class="lb-counter"></div>
+    <div class="lb-zoom-wrap">
+      <span class="lb-zoom-label">100%</span>
+      <input type="range" class="lb-zoom-slider" min="50" max="400" value="100" step="5">
+    </div>
+  </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<script type="module" src="/frontend/gallery/main.js"></script>
+</body>
+
+</html>

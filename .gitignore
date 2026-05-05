@@ -1,0 +1,19 @@
+# Rebuildable output. Source, tests, fixtures and schemas stay visible.
+node_modules/
+/dist/
+/coverage/
+/test-results/
+/playwright-report/
+/config/*.local.json
+/runtime/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.pid
+.DS_Store
+Thumbs.db

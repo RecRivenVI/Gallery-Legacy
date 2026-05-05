@@ -1,0 +1,65 @@
+html.has-cs {
+  scrollbar-width: none;
+}
+
+html.has-cs::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.cs-bar {
+  position: fixed;
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  width: 6px;
+  z-index: 99999;
+  opacity: .15;
+  transition: opacity .25s ease;
+}
+
+.cs-bar.dragging {
+  opacity: .6;
+}
+
+.cs-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  border-radius: 3px;
+  background: var(--scrollbar-thumb);
+  cursor: grab;
+  will-change: top, height;
+  touch-action: none;
+}
+
+@media (hover: hover) {
+  .cs-bar:hover {
+    opacity: .4;
+  }
+  .cs-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+}
+@media (hover: none) {
+  .cs-bar:active {
+    opacity: .4;
+  }
+  .cs-thumb:active {
+    background: var(--scrollbar-thumb-hover);
+  }
+}
+
+@media (pointer: coarse) {
+  .cs-bar {
+    opacity: .2;
+    width: 5px;
+    right: 3px;
+  }
+}
+
+.lb-overlay.active ~ .cs-bar {
+  opacity: 0;
+  pointer-events: none;
+}

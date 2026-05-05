@@ -1,0 +1,261 @@
+{
+  "id": "8111111",
+  "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "feeRequired": 0,
+  "publishedDatetime": "2026-01-01T00:00:00Z",
+  "updatedDatetime": "2026-01-01T00:00:00Z",
+  "tags": [
+    "synthetic-1"
+  ],
+  "isLiked": false,
+  "likeCount": 1002,
+  "isCommentingRestricted": false,
+  "commentCount": 2,
+  "isRestricted": false,
+  "user": {
+    "creatorId": "synthetic-3",
+    "description": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "hasAdultContent": true,
+    "coverImageUrl": "https://example.invalid/synthetic/4",
+    "profileLinks": [
+      "https://example.invalid/synthetic/5",
+      "https://example.invalid/synthetic/6",
+      "https://example.invalid/synthetic/7"
+    ],
+    "profileItems": [
+      {
+        "id": "synthetic-8",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/9",
+        "thumbnailUrl": "https://example.invalid/synthetic/10"
+      },
+      {
+        "id": "synthetic-11",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/12",
+        "thumbnailUrl": "https://example.invalid/synthetic/13"
+      },
+      {
+        "id": "synthetic-14",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/15",
+        "thumbnailUrl": "https://example.invalid/synthetic/16"
+      },
+      {
+        "id": "synthetic-17",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/18",
+        "thumbnailUrl": "https://example.invalid/synthetic/19"
+      },
+      {
+        "id": "synthetic-20",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/21",
+        "thumbnailUrl": "https://example.invalid/synthetic/22"
+      },
+      {
+        "id": "synthetic-23",
+        "type": "image",
+        "imageUrl": "https://example.invalid/synthetic/24",
+        "thumbnailUrl": "https://example.invalid/synthetic/25"
+      }
+    ],
+    "isFollowed": true,
+    "isSupported": false,
+    "isStopped": false,
+    "isAcceptingRequest": false,
+    "hasBoothShop": false,
+    "hasPublishedPost": true,
+    "category": "synthetic-26",
+    "userId": "81111111",
+    "name": "synthetic-27",
+    "iconUrl": "https://example.invalid/synthetic/28"
+  },
+  "creatorId": "synthetic-29",
+  "hasAdultContent": true,
+  "type": "article",
+  "coverImageUrl": "https://example.invalid/synthetic/30",
+  "excerpt": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "nextPost": {
+    "id": "8111111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "prevPost": {
+    "id": "8111111",
+    "title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+    "publishedDatetime": "2026-01-01T00:00:00Z"
+  },
+  "imageForShare": "https://example.invalid/synthetic/31",
+  "isPinned": false,
+  "archives": [],
+  "articleBody": {
+    "blocks": [
+      {
+        "type": "synthetic-32",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-33",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-34",
+        "text": ""
+      },
+      {
+        "type": "synthetic-35",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-36",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      },
+      {
+        "type": "synthetic-37",
+        "text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/"
+      }
+    ],
+    "imageMap": {
+      "synthetic-key-38": {
+        "id": "synthetic-39",
+        "extension": "gif",
+        "width": 1040,
+        "height": 1041,
+        "originalUrl": "https://example.invalid/synthetic/42.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/43"
+      },
+      "synthetic-key-44": {
+        "id": "synthetic-45",
+        "extension": "gif",
+        "width": 1046,
+        "height": 1047,
+        "originalUrl": "https://example.invalid/synthetic/48.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/49"
+      },
+      "synthetic-key-50": {
+        "id": "synthetic-51",
+        "extension": "gif",
+        "width": 1052,
+        "height": 1053,
+        "originalUrl": "https://example.invalid/synthetic/54.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/55"
+      },
+      "synthetic-key-56": {
+        "id": "synthetic-57",
+        "extension": "gif",
+        "width": 1058,
+        "height": 1059,
+        "originalUrl": "https://example.invalid/synthetic/60.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/61"
+      },
+      "synthetic-key-62": {
+        "id": "synthetic-63",
+        "extension": "gif",
+        "width": 1064,
+        "height": 1065,
+        "originalUrl": "https://example.invalid/synthetic/66.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/67"
+      },
+      "synthetic-key-68": {
+        "id": "synthetic-69",
+        "extension": "png",
+        "width": 1070,
+        "height": 1071,
+        "originalUrl": "https://example.invalid/synthetic/72.png",
+        "thumbnailUrl": "https://example.invalid/synthetic/73"
+      },
+      "synthetic-key-74": {
+        "id": "synthetic-75",
+        "extension": "png",
+        "width": 1076,
+        "height": 1077,
+        "originalUrl": "https://example.invalid/synthetic/78.png",
+        "thumbnailUrl": "https://example.invalid/synthetic/79"
+      },
+      "synthetic-key-80": {
+        "id": "synthetic-81",
+        "extension": "gif",
+        "width": 1082,
+        "height": 1083,
+        "originalUrl": "https://example.invalid/synthetic/84.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/85"
+      },
+      "synthetic-key-86": {
+        "id": "synthetic-87",
+        "extension": "gif",
+        "width": 1088,
+        "height": 1089,
+        "originalUrl": "https://example.invalid/synthetic/90.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/91"
+      },
+      "synthetic-key-92": {
+        "id": "synthetic-93",
+        "extension": "gif",
+        "width": 1094,
+        "height": 1095,
+        "originalUrl": "https://example.invalid/synthetic/96.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/97"
+      },
+      "synthetic-key-98": {
+        "id": "synthetic-99",
+        "extension": "gif",
+        "width": 1100,
+        "height": 1101,
+        "originalUrl": "https://example.invalid/synthetic/102.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/103"
+      },
+      "synthetic-key-104": {
+        "id": "synthetic-105",
+        "extension": "gif",
+        "width": 1106,
+        "height": 1107,
+        "originalUrl": "https://example.invalid/synthetic/108.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/109"
+      },
+      "synthetic-key-110": {
+        "id": "synthetic-111",
+        "extension": "gif",
+        "width": 1112,
+        "height": 1113,
+        "originalUrl": "https://example.invalid/synthetic/114.gif",
+        "thumbnailUrl": "https://example.invalid/synthetic/115"
+      },
+      "synthetic-key-116": {
+        "id": "synthetic-117",
+        "extension": "png",
+        "width": 1118,
+        "height": 1119,
+        "originalUrl": "https://example.invalid/synthetic/120.png",
+        "thumbnailUrl": "https://example.invalid/synthetic/121"
+      },
+      "synthetic-key-122": {
+        "id": "synthetic-123",
+        "extension": "jpeg",
+        "width": 1124,
+        "height": 1125,
+        "originalUrl": "https://example.invalid/synthetic/126",
+        "thumbnailUrl": "https://example.invalid/synthetic/127"
+      }
+    },
+    "fileMap": {},
+    "embedMap": {},
+    "urlEmbedMap": {}
+  },
+  "content": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "date": "2026-01-01T00:00:00Z",
+  "text": null,
+  "isCoverImage": false,
+  "plan": {
+    "id": "",
+    "title": "",
+    "fee": 0,
+    "description": "",
+    "coverImageUrl": "https://example.invalid/synthetic/128",
+    "creatorId": "synthetic-129",
+    "hasAdultContent": null,
+    "paymentMethod": null
+  },
+  "category": "synthetic-130",
+  "subcategory": "synthetic-131"
+}

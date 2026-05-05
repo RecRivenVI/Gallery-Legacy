@@ -1,0 +1,40 @@
+{
+  "post_id": 1001,
+  "post_url": "https://example.invalid/synthetic/2",
+  "post_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "comment": "",
+  "rating": "adult",
+  "posted_at": "synthetic-3",
+  "date": "2026-01-01T00:00:00Z",
+  "fanclub_id": 1004,
+  "fanclub_user_id": 1005,
+  "fanclub_user_name": "synthetic-6",
+  "fanclub_name": "synthetic-7",
+  "fanclub_url": "https://example.invalid/synthetic/8",
+  "tags": [
+    "synthetic-9"
+  ],
+  "num": 1010,
+  "content_count": 3,
+  "content_num": 3,
+  "content_category": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content_title": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "content_filename": "",
+  "content_id": 1011,
+  "content_comment": "{  \"ops\": [ { \"insert\": \"Synthetic 🧪\\n\" } ] }",
+  "plan": {
+    "id": 0,
+    "price": 0,
+    "limit": 0,
+    "name": "",
+    "description": "",
+    "thumb": "https://example.invalid/synthetic/12.png"
+  },
+  "blogpost_text": "Synthetic 中文 🧪​\r\n第二行 #话题# https://example.invalid/",
+  "category": "synthetic-13",
+  "subcategory": "synthetic-14",
+  "file_id": "811111",
+  "file_url": "https://example.invalid/synthetic/15",
+  "filename": "synthetic-16",
+  "extension": "png"
+}

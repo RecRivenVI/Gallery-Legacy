@@ -1,0 +1,14 @@
+import { init as initModel } from "./model.js";
+import { init as initPagination } from "./components/pagination.js";
+import { init as initScroll } from "./components/scroll.js";
+import { init as initPreferences } from "./preferences.js";
+import { init as initEvents } from "./events.js";
+import { init as initSettings } from "./components/settings.js";
+import { init as initApp } from "./app.js";
+initModel();
+initPagination();
+initScroll();
+initPreferences();
+initEvents();
+initSettings();
+initApp();
