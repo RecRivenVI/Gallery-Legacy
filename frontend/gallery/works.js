@@ -38,6 +38,13 @@ import {
 } from "./components/pagination.js";
 import { authorRoutePath } from "./routes.js";
 
+function itemRoutePath(item) {
+  if (item && item.routePath) return item.routePath;
+  return item && item.parentPath === "/"
+    ? "/" + item.name
+    : (item && item.parentPath ? item.parentPath + "/" : "/") + (item?.name || "");
+}
+
 function renderSearchMeta(data) {
   var text =
     (data.query ? '搜索 "' + data.query + '" ' : "") +
@@ -81,12 +88,12 @@ function renderSearchGrid(data) {
   if (data.items.length === 0) {
     replaceContentWithMotion(
       el,
-      '<div class="empty entrance" style="animation-delay:.14s">未找到匹配的结果</div>',
+      '<div class="empty entrance" style="animation-delay:.14s">' + (data.complete === false ? '搜索未完整完成，请缩小范围或检查目录权限；不能据此判定没有结果。' : '未找到匹配的结果') + '</div>',
       "search-empty",
     );
     return;
   }
-  var html = '<div class="grid' + gridViewClass() + '">';
+  var html = (data.complete === false ? '<p role="status">搜索仅返回已检查范围内的结果；达到上限或有不可读取目录，请缩小搜索范围。</p>' : '') + '<div class="grid' + gridViewClass() + '">';
   for (var i = 0; i < data.items.length; i++) {
     var item = data.items[i];
     if (item.kind === "dir") {
@@ -100,10 +107,7 @@ function renderSearchGrid(data) {
 }
 
 function renderSearchDirCard(item, isDb) {
-  var dirPath =
-    item.parentPath === "/"
-      ? "/" + item.name
-      : item.parentPath + "/" + item.name;
+  var dirPath = itemRoutePath(item);
   var key = isDb ? dbWorkCardKey(item, dirPath) : "dir:" + dirPath;
   var cover = mediaCoverHtml(
     cardCoverHtml(dirPath, item.cover, item.coverType),
@@ -114,9 +118,9 @@ function renderSearchDirCard(item, isDb) {
   return (
     workCardDataAttrs(
       '<div class="card dir card--media" data-path="' +
-        dirPath +
+        escAttr(dirPath) +
         '" data-search-path="' +
-        dirPath +
+        escAttr(dirPath) +
         '"' +
         motionIdentityAttrs(key) +
         ' data-badges="' +
@@ -148,9 +152,9 @@ function renderSearchMediaCard(item) {
     '<div class="card img card--media' +
     (isVid ? " card-video" : "") +
     '" data-search-parent="' +
-    item.parentPath +
+    escAttr(item.parentPath) +
     '" data-search-media="' +
-    escHtml(item.name) +
+    escAttr(item.name) +
     '"' +
     motionIdentityAttrs("media:" + fullPath) +
     ">" +
@@ -265,7 +269,7 @@ function renderAllWorksGrid(data) {
   var html = '<div class="grid' + gridViewClass() + '">';
   for (var i = 0; i < data.items.length; i++) {
     var item = data.items[i];
-    var fullPath = (item.parentPath || "") + "/" + item.name;
+    var fullPath = itemRoutePath(item);
     html += renderAllWorksCard(item, fullPath);
   }
   html += "</div>";
@@ -283,7 +287,7 @@ function renderAllWorksCard(item, fullPath) {
     if (item.authorId && item.platform && state.view !== "authorWorks") {
       author = mediaAuthorHtml(
         item.subtitle,
-        authorRoutePath(item.platform, item.authorId),
+        item.authorRoute || authorRoutePath(item.platform, item.authorId),
         false,
       );
     } else {
@@ -293,7 +297,7 @@ function renderAllWorksCard(item, fullPath) {
   var time = mediaTimeHtml(item.date ? formatCardDate(item.date) : "");
   var openTag =
     '<div class="card dir card--media" data-path="' +
-    fullPath +
+    escAttr(fullPath) +
     '"' +
     motionIdentityAttrs(dbWorkCardKey(item, fullPath));
   return (
@@ -323,4 +327,5 @@ export {
   renderAllWorksToolbar,
   renderAllWorksGrid,
   renderAllWorksCard,
+  itemRoutePath,
 };

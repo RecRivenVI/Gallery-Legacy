@@ -47,7 +47,7 @@ test("Gallery search, exact tag, authors, sorting, pagination and WebM viewer wo
     clip,
     path.join(f.bindings.pixiv, "100/2026-01-02_00-00-00_2/clip.webm"),
   );
-  f.build();
+  await f.build();
   f.publish();
   const runtime = createRuntimeBootstrap({ config: f.config });
   f.cleanup.push(() => runtime.close());

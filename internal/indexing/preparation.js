@@ -9,9 +9,12 @@ const {
 } = require("./preparation-contract.js");
 const {
   createStreamingAuthorPreparation,
+  mapPreparedEntry,
+  prepareMetadataEntry,
   prepareAuthorObservation,
   preparePlatformSnapshot,
 } = require("./prepare.js");
+const { createPreparationPool } = require("./preparation-pool.js");
 const { validatePlatformObservation } = require("./preparation-validation.js");
 
 module.exports = {
@@ -21,6 +24,9 @@ module.exports = {
   SnapshotPreparationContractError,
   WORK_FAILURE_STAGES,
   createStreamingAuthorPreparation,
+  createPreparationPool,
+  mapPreparedEntry,
+  prepareMetadataEntry,
   prepareAuthorObservation,
   preparePlatformSnapshot,
   validatePlatformObservation,

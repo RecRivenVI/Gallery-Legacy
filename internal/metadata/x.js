@@ -4,7 +4,7 @@ const { addFieldSource, beginAdapt, finalize, richText, selectField, setIdentiti
 const { asBoolean, asId, asInteger, asObject, asText, firstValid, httpUrl, normalizeTags, oneOrMany, parseTimestamp } = require("./helpers.js");
 
 const PLATFORM_ID = "X";
-const VERSION = 2;
+const VERSION = 3;
 
 function relation(result, type, value, path) {
   if (value === 0 || value === "0" || value === "") return null;
@@ -20,6 +20,10 @@ function adapt(context) {
   const d = result.diagnostics; const user = asObject(metadata.user, d, "user") || {}; const author = asObject(metadata.author, d, "author") || {};
   setIdentities(result, context, [{ path: "tweet_id", value: metadata.tweet_id }, { path: "id", value: metadata.id }], [{ path: "user.id", value: user.id }, { path: "author.id", value: author.id }]);
   result.work.publishedAtMs = selectField(result, "work.publishedAtMs", [{ path: "date", value: metadata.date }], parseTimestamp);
+  if (result.work.publishedAtMs !== null) {
+    result.work.title = new Date(result.work.publishedAtMs).toISOString();
+    addFieldSource(result, "work.title", "metadata", "date");
+  }
   result.work.language = selectField(result, "work.language", [{ path: "lang", value: metadata.lang }], asText);
   result.authorProfile.displayName = selectField(result, "authorProfile.displayName", [{ path: "user.name", value: user.name }, { path: "author.name", value: author.name }], asText);
   result.authorProfile.handle = selectField(result, "authorProfile.handle", [{ path: "user.nick", value: user.nick }, { path: "author.nick", value: author.nick }], asText);

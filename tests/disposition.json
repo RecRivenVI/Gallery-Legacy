@@ -1,6 +1,28 @@
 {
   "version": 1,
   "purpose": "Audit record, never used by the test runner for exclusion",
+  "restoredCapabilities": [
+    {
+      "capability": "physical-keyed incremental and scoped generation rebuild",
+      "decision": "MIGRATE",
+      "reason": "The retired source-keyed mutation planner remains obsolete. Current behavior uses immutable candidate copying, filesystem identity comparison, complete-scope deletion, and a complete new Search file with reuse of unchanged records when the baseline format permits.",
+      "coveredBy": [
+        "tests/indexing/incremental.test.js",
+        "tests/indexing/streaming.test.js",
+        "tests/publication/generation.test.js"
+      ]
+    },
+    {
+      "capability": "transactional live batch visibility beside immutable generations",
+      "decision": "MIGRATE",
+      "reason": "Complete observed work batches update an instance-owned live Catalog and namespaced Search atomically while READY generations remain immutable; deletion still waits for a successful complete checkpoint.",
+      "coveredBy": [
+        "tests/indexing/live.test.js",
+        "tests/server/live.test.js",
+        "tests/frontend/live.test.js"
+      ]
+    }
+  ],
   "previousExcludedUnits": [
     {
       "formerFile": "catalog-mutation-plan-contract.test.js",

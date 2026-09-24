@@ -6,10 +6,11 @@ const path = require("node:path");
 const Database = require("better-sqlite3");
 const { hashDatabaseFile } = require("../catalog/file-hash.js");
 const { noLinks, overlap, physicalPath } = require("../library/io-paths.js");
-const { bindSources } = require("../library/platforms.js");
+const { bindSources, PLATFORM_REGISTRY } = require("../library/platforms.js");
 
 const { validateCatalog } = require("../catalog/validation.js");
 const { buildCatalog } = require("../indexing/build.js");
+const { updateCatalog } = require("../indexing/incremental.js");
 const {
   RUNTIME_SEARCH_INDEX_VERSION,
   buildSearchIndex,
@@ -571,6 +572,7 @@ function prepareCandidate(instanceRoot, generationId, generationsRoot = null) {
 }
 
 function finishCandidate(paths, nowMs = Date.now(), options = {}) {
+  options.checkCancelled?.();
   const finalization =
     options.finalization ||
     (options.finalizeGeneration || finalizeGenerationSqlite)(
@@ -579,6 +581,7 @@ function finishCandidate(paths, nowMs = Date.now(), options = {}) {
     );
   const validated = collectEvidence(paths, "VALIDATED", nowMs);
   validated.finalization = finalization;
+  options.checkCancelled?.();
   atomicWriteJson(paths.manifestPath, validated);
   const ready = { ...validated, state: "READY", readyAtMs: nowMs };
   atomicWriteJson(paths.manifestPath, ready);
@@ -588,7 +591,7 @@ function finishCandidate(paths, nowMs = Date.now(), options = {}) {
   });
 }
 
-function buildGeneration({
+async function buildGeneration({
   instanceRoot,
   generationId,
   generationsRoot = null,
@@ -600,6 +603,7 @@ function buildGeneration({
   onProgress = null,
   onCatalogReport = null,
   requireCompleteCatalog = true,
+  checkCancelled = () => {},
 } = {}) {
   for (const source of bindSources(catalogOptions.platformRoots)) {
     if (overlap(physicalPath(instanceRoot), physicalPath(source.physicalRoot)))
@@ -610,6 +614,7 @@ function buildGeneration({
   }
   const paths = prepareCandidate(instanceRoot, generationId, generationsRoot);
   try {
+    checkCancelled();
     emitProgress(onProgress, {
       phase: "CATALOG_BUILD_START",
       state: "SCANNING",
@@ -618,8 +623,10 @@ function buildGeneration({
     });
     const catalogLog =
       typeof catalogOptions.log === "function" ? catalogOptions.log : null;
-    const built = buildCatalog({
+    const catalogBuilder = catalogOptions.baseCatalogPath ? updateCatalog : buildCatalog;
+    const built = await catalogBuilder({
       ...catalogOptions,
+      checkCancelled,
       catalogPath: paths.catalogPath,
       onProgress: (event) =>
         emitProgress(onProgress, { ...event, generationId }),
@@ -640,7 +647,7 @@ function buildGeneration({
     } catch (error) {
       throw error;
     }
-    if (built.report.state !== "READY" || built.report.platforms.length !== 8) {
+    if (built.report.state !== "READY" || built.report.platforms.length !== PLATFORM_REGISTRY.length) {
       const error = new Error(
         `Catalog build did not complete all registry platforms: ${built.report.state}`,
       );
@@ -661,6 +668,7 @@ function buildGeneration({
       generationId,
     });
     const catalogFinalization = finalizeSqliteFile(paths.catalogPath);
+    checkCancelled();
     emitProgress(onProgress, {
       phase: "SEARCH_BUILD_START",
       state: "BUILDING_SEARCH",
@@ -668,8 +676,9 @@ function buildGeneration({
     });
     const searchLog =
       typeof searchOptions.log === "function" ? searchOptions.log : null;
-    buildSearchIndex({
+    const searchReport = buildSearchIndex({
       ...searchOptions,
+      checkCancelled,
       catalogPath: paths.catalogPath,
       searchIndexPath: paths.searchIndexPath,
       log: (line) => {
@@ -691,6 +700,7 @@ function buildGeneration({
       phase: "SEARCH_FINALIZE",
       state: "VALIDATING",
       generationId,
+      searchReport,
     });
     const searchFinalization =
       finalizeGeneration === finalizeGenerationSqlite
@@ -709,6 +719,7 @@ function buildGeneration({
       generationId,
     });
     const result = finishCandidate(paths, nowMs(), {
+      checkCancelled,
       finalization,
       finalizeGeneration,
       finalizationOptions,
@@ -746,6 +757,12 @@ function publishGeneration(instanceRoot, generationId, options = {}) {
       .join("/"),
     publishedAtMs: (options.nowMs || (() => Date.now()))(),
   };
+  if (fs.existsSync(pointerPath)) {
+    const previous = readManifest(pointerPath);
+    if (previous.generationId !== id && GENERATION_ID_PATTERN.test(previous.generationId || ""))
+      pointer.previousGenerationId = previous.generationId;
+    else if (previous.previousGenerationId) pointer.previousGenerationId = previous.previousGenerationId;
+  }
   atomicWriteJson(pointerPath, pointer, options.atomicWriteHooks || {});
   return Object.freeze({ ...resolved, pointerPath, pointer });
 }

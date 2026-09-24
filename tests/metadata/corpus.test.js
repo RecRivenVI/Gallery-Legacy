@@ -71,7 +71,7 @@ for (const item of corpus.cases)
     );
   });
 test("shape describes type, not primitive values; policies are explicit and no allowlist gates adaptation", () => {
-  assert.equal(SHAPE_POLICIES.length, 8);
+  assert.equal(SHAPE_POLICIES.length, 9);
   assert.equal(corpus.cases.length, 35);
   const hash = (v) => metadataShapeForPlatform("微博", v).hash;
   assert.equal(

@@ -1,9 +1,10 @@
 # 安全与隐私
 
-目标是个人、localhost、可信 LAN，不提供账户、OAuth、RBAC、多租户或公网安全承诺。
+目标是个人、localhost、可信 LAN，以及显式配置的公网只读 Gallery。不提供账户、OAuth、RBAC、多租户或匿名公网的内容保密承诺；公网开启读取就意味着可访问这些内容。
 
 - source roots 严格只读；JS 写入口有实例 write guard，SQLite/编码器输出另由显式路径边界约束。没有源文件修改能力。
-- Host 必须对应已配置的本地地址；带 Origin 的请求必须同源。没有 wildcard CORS。管理操作仅允许来自本机网络边界。
+- Host/Origin 使用显式 allowlist，不提供 wildcard CORS。管理操作通过 instanceId、进程身份和私有 token 保护的 Windows 本机管道；HTTP 即使经 loopback 代理转发，也不能启动扫描或停止/重启服务。不要把域名 allowlist 当作图库内容认证。
+- HTTP 响应携带 `X-Robots-Tag`，`robots.txt` 声明禁止爬虫索引。这只是自愿遵守的爬虫提示，不是鉴权或访问控制，不能据此认为公网中的私人内容已受保护。
 - 输入非法返回稳定 4xx/error code；响应不输出内部 stack、私人绝对路径。内部数据库中的原始 metadata 是私有实例数据，不属于公开源码。
 - READY generation 只读、没有原地修改出口。cache/temp/log/session 与 generation 分离。
 - 只在可信机器上运行；路径/owner 检查不是抵御拥有同等 OS 文件权限的恶意进程的沙箱。

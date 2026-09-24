@@ -2,7 +2,6 @@ import { escHtml, state } from "../model.js";
 import { fetchPlatformsView } from "../view-data.js";
 import {
   decodeRoutePart,
-  miscNavigate,
   navigate,
   parseAuthorRoute,
   parseHash,
@@ -147,6 +146,19 @@ var Sidebar = (function () {
       html += "</div>";
       visibleIndex++;
     }
+    var fileRoots = platforms.filter(function (platform) {
+      return platform.fileRoot;
+    });
+    if (fileRoots.length) {
+      html += '<div class="galleries-title">文件浏览</div>';
+      for (var root of fileRoots) {
+        html +=
+          '<button type="button" class="platform-sub" data-action="files" data-platform-id="' +
+          sidebarAttr(root.id) + '" data-route="' + sidebarAttr(root.routePath) + '" title="' + sidebarAttr(root.name) + '">' +
+          browseActionIconHtml("files") + '<span class="platform-label">' +
+          escHtml(root.name) + '</span></button>';
+      }
+    }
     el.style.opacity = "0";
     el.innerHTML = html;
     requestAnimationFrame(function () {
@@ -265,10 +277,7 @@ var Sidebar = (function () {
 
   function setActiveByPath(urlPath) {
     if (!urlPath || urlPath === "/") {
-      var firstRoot = platforms.find(function (platform) {
-        return platform.fileRoot;
-      });
-      setActive(firstRoot ? firstRoot.id : null);
+      setActive(firstContentPlatformId());
       return;
     }
     if (urlPath.indexOf("/@all/") === 0) {
@@ -299,12 +308,12 @@ var Sidebar = (function () {
     var list = document.getElementById("sidebarPlatformList");
     if (!list) return;
     list.addEventListener("click", function (e) {
-      // 浏览区仅剩「所有文件」入口：点击进入杂项 / 所有文件视图。
+      // File roots are independent read-only routes, never platform/search scope.
       var sub = e.target.closest(".platform-sub");
       if (sub) {
         var rootId = sub.getAttribute("data-platform-id");
         setActive(rootId);
-        miscNavigate(1, rootId);
+        navigate(sub.getAttribute("data-route"), 1, "asc");
         closeMobileSidebarIfNeeded();
         return;
       }

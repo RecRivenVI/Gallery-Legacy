@@ -5,9 +5,32 @@ const { fixture } = require("../support/runtime.js");
 const {
   createRuntimeBootstrap,
 } = require("../../internal/runtime/bootstrap.js");
+test("crawler directives cover pages, APIs and errors without replacing access control", async (t) => {
+  const f = await fixture(t);
+  await f.build();
+  f.publish();
+  const runtime = createRuntimeBootstrap({ config: f.config });
+  f.cleanup.push(() => runtime.close());
+  await runtime.start();
+  for (const [route, status] of [["/", 200], ["/api/v1/health", 200], ["/missing", 404]]) {
+    const response = await fetch(f.config.url + route);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow, noarchive, nosnippet");
+    await response.arrayBuffer();
+  }
+  const robots = await fetch(f.config.url + "/robots.txt");
+  assert.equal(robots.status, 200);
+  assert.equal(await robots.text(), "User-agent: *\nDisallow: /\n");
+  const head = await fetch(f.config.url + "/robots.txt", { method: "HEAD" });
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), "");
+  assert.equal((await fetch(f.config.url + "/robots.txt", {
+    headers: { Origin: "https://untrusted.invalid" },
+  })).status, 403);
+});
 test("API structured filters, cursors, invalid input and origin boundary", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const r = createRuntimeBootstrap({ config: f.config });
   f.cleanup.push(() => r.close());

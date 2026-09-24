@@ -13,7 +13,7 @@ test("query encoding keeps exact tags, Unicode and independent controls", async 
   assert.equal(params.get("q"), "Alpha & Beta");
   assert.equal(params.get("tag"), "R-18 || 字符 🧪");
   const protocol = require("../../protocol/protocol.json"),
-    defaults = { sort: "date_desc", mediaType: "all", pageSize: 48 };
+    defaults = { sort: "date_desc", mediaType: "all", pageSize: 48, hideEmpty: true };
   assert.deepEqual(
     querySettings(new URLSearchParams(), defaults, protocol, false),
     defaults,

@@ -25,7 +25,7 @@ const {
 const PREVIOUS_SCHEMA_V3_SNAPSHOT_SHA256 =
   "f2893607bc77931de8de964a3f1f49b4996e7a01c7e350e2e1cdf8097b640e8b";
 const EXPECTED_SCHEMA_V4_SNAPSHOT_SHA256 =
-  "0e83c8c72b79ed7b870c1b3f7babf7edd15a72862fac0dd7d9021e78eeb4171b";
+  "df78c5ec52e3d3288bcaa880161306ea094e0c5de20d979861c3b1e7965c916a";
 
 test("fresh DB creates deterministic Filesystem Authority Schema v4", () => {
   const db = openCatalog();
@@ -79,7 +79,7 @@ test("catalog state and platform rows freeze registry and filesystem authority c
     );
     assert.equal(stored.filesystem_authority_contract_version, 1n);
     const platforms = insertPlatforms(db);
-    assert.equal(platforms.length, 8);
+    assert.equal(platforms.length, 9);
     assert.deepEqual(
       platforms.map((row) => row.platform_id),
       PLATFORM_REGISTRY.map((row) => row.id),

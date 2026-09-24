@@ -9,7 +9,7 @@ const {
 } = require("../../internal/runtime/bootstrap.js");
 test("published Catalog cannot be paired with different configured source roots", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const config = {
     ...f.config,

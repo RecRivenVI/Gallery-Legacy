@@ -4,6 +4,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { writeJson } = require("../instance/files.js");
 
 const THUMBNAIL_CACHE_VERSION = 2;
 const THUMBNAIL_CONTENT_TYPE = "image/webp";
@@ -283,6 +284,9 @@ function createThumbnailCache({
       resolvedRoot,
       path.join(resolvedCacheRoot, key.slice(0, 2), `${key}.webp`),
     );
+    // Private provenance for selective orphan cleanup; not part of a generation.
+    const reference = target + ".json";
+    if (!fs.existsSync(reference)) writeJson(reference, { version: 1, source: path.resolve(resolved.candidateReal), size: resolved.stat.size.toString(), mtimeNs: resolved.stat.mtimeNs.toString() });
     if (validCachedFile(target))
       return {
         path: target,

@@ -231,11 +231,12 @@ function escAttr(s) {
 
 function workCardDataAttrs(openTag, item) {
   var path =
-    item.parentPath != null
+    item.routePath ||
+    (item.parentPath != null
       ? item.parentPath === "/"
         ? "/" + item.name
         : item.parentPath + "/" + item.name
-      : item.path || "";
+      : item.path || "");
   return (
     openTag +
     ' data-d-title="' +

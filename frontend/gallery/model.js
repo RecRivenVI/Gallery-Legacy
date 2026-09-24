@@ -1,4 +1,5 @@
 import { apiUrl } from "./view-data.js";
+import { request } from "../shared/api.js";
 import { makeQueryHash } from "./query.js";
 import { renderMetaText } from "./components/results.js";
 import { LB } from "./viewer/player.js";
@@ -99,12 +100,15 @@ const initialState = {
   totalPages: 1,
   breadcrumbs: [],
   searchQuery: "",
+  queryRevision: null,
+  queryEpoch: null,
   searchTag: "",
   searchMeta: true,
   miscMode: false,
   view: "browse",
   pageSize: readPersistedPageSize(persistedViewMode, persistedContentWidth),
   mediaType: localStorage.getItem("gallery_media_type") || "all",
+  hideEmpty: localStorage.getItem("gallery_hide_empty") !== "0",
   worksSort: localStorage.getItem("gallery_works_sort") || "date_desc",
   authorSort: localStorage.getItem("gallery_author_sort") || "name_asc",
   viewMode: persistedViewMode,
@@ -156,11 +160,11 @@ function normalizeSearchSource(source) {
 }
 
 function searchSourceForView() {
-  return "db";
+  return state.path?.startsWith("/f/") ? "fs" : "db";
 }
 
-function resolveSearchSource() {
-  return "db";
+function resolveSearchSource(source, path = state.path) {
+  return path?.startsWith("/f/") ? "fs" : "db";
 }
 
 function cancelRouteScrollAnimation() {
@@ -440,14 +444,15 @@ function absoluteUrl(url) {
   return new URL(url, window.location.href).href;
 }
 
-function copyMediaLink(parentPath, mediaName, page, onSuccess) {
-  copyText(
-    location.origin +
-      location.pathname +
-      "#" +
-      makeQueryHash(parentPath, { page, q: "", tag: "", media: mediaName }),
-    onSuccess,
-  );
+async function copyMediaLink(parentPath, mediaName, page, onSuccess) {
+  try {
+    let stable = parentPath;
+    if (/^\/work\/\d+$/.test(parentPath))
+      stable = (await request("works/" + parentPath.split("/").at(-1))).stableId;
+    const link = await request("short-links", {}, { method: "POST", body: JSON.stringify({ path: stable, media: mediaName }) });
+    copyText(location.origin + link.url, onSuccess);
+    return link.url;
+  } catch (error) { showError("复制链接失败：" + (error.code || "REQUEST_FAILED")); return null; }
 }
 
 function buildSearchHash(urlPath, query, source, page, tag) {
@@ -595,8 +600,11 @@ export function init() {
               "page",
               "order",
               "searchQuery",
+              "queryRevision",
+              "queryEpoch",
               "searchTag",
               "mediaType",
+              "hideEmpty",
               "worksSort",
               "authorSort",
               "pageSize",

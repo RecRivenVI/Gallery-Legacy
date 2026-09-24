@@ -4,7 +4,7 @@ const { beginAdapt, finalize, richText, selectField, setIdentities, setPrimaryRi
 const { asBoolean, asId, asInteger, asObject, asText, httpUrl, normalizeTags, oneOrMany, parseTimestamp, stableObjectEntries } = require("./helpers.js");
 
 const PLATFORM_ID = "Patreon";
-const VERSION = 2;
+const VERSION = 3;
 
 function adapt(context) {
   const { result, metadata } = beginAdapt(PatreonAdapter, context);

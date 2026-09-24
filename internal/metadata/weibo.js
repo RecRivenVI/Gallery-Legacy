@@ -1,10 +1,10 @@
 "use strict";
 
-const { beginAdapt, finalize, richText, selectField, setIdentities, setPrimaryRichText } = require("./contract.js");
+const { addFieldSource, beginAdapt, finalize, richText, selectField, setIdentities, setPrimaryRichText } = require("./contract.js");
 const { asBoolean, asId, asInteger, asObject, asText, fallback, firstValid, httpUrl, normalizeTags, oneOrMany, parseTimestamp, stableObjectEntries } = require("./helpers.js");
 
 const PLATFORM_ID = "微博";
-const VERSION = 2;
+const VERSION = 3;
 
 function bodySource(metadata, result) {
   const diagnostics = result.diagnostics;
@@ -47,6 +47,11 @@ function adapt(context) {
   // idstr和目录身份优先；unsafe number只用于诊断，绝不stringify。
   setIdentities(result, context, [{ path: "idstr", value: metadata.idstr }, { path: "mid", value: metadata.mid }, { path: "id", value: metadata.id }], [{ path: "user.idstr", value: user.idstr }, { path: "user.id", value: user.id }]);
   result.work.publishedAtMs = selectField(result, "work.publishedAtMs", [{ path: "date", value: metadata.date }, { path: "created_at", value: metadata.created_at }], parseTimestamp);
+  if (result.work.publishedAtMs !== null) {
+    result.work.title = new Date(result.work.publishedAtMs).toISOString();
+    const evidence = result.fieldSources.find(f => f.field === "work.publishedAtMs");
+    addFieldSource(result, "work.title", "metadata", evidence.sourcePath);
+  }
   result.work.language = selectField(result, "work.language", [{ path: "lang", value: metadata.lang }], asText);
   result.authorProfile.displayName = selectField(result, "authorProfile.displayName", [{ path: "user.screen_name", value: user.screen_name }], asText);
   result.authorProfile.handle = selectField(result, "authorProfile.handle", [{ path: "user.domain", value: user.domain }, { path: "user.weihao", value: user.weihao }], asText);

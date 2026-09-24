@@ -8,6 +8,7 @@ const PatreonAdapter = require("./patreon.js");
 const PawchiveAdapter = require("./pawchive.js");
 const XAdapter = require("./x.js");
 const WeiboAdapter = require("./weibo.js");
+const VeneraAdapter = require("./venera.js");
 
 const ADAPTERS = Object.freeze([
   PixivAdapter,
@@ -18,6 +19,7 @@ const ADAPTERS = Object.freeze([
   PawchiveAdapter,
   XAdapter,
   WeiboAdapter,
+  VeneraAdapter,
 ]);
 
 const ADAPTER_BY_PLATFORM = Object.freeze(Object.fromEntries(ADAPTERS.map(adapter => [adapter.PLATFORM_ID, adapter])));

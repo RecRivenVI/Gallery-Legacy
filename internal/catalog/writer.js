@@ -1,11 +1,13 @@
 "use strict";
 
+const crypto = require("node:crypto");
 const { CATALOG_SCHEMA_VERSION, createCatalogSchema } = require("./schema.js");
 const { mapCatalogState, mapPlatformRegistry } = require("./mapping.js");
 const { validateReconciledMediaPersistence } = require("./media-persistence.js");
 const { createAffectedCounts, recountAffectedCounts } = require("./counts.js");
 const { compareText } = require("../library/paths.js");
 const { stableJson } = require("./stable-json.js");
+const { PLATFORM_REGISTRY } = require("../library/platforms.js");
 
 class CatalogWriterError extends Error {
   constructor(code, message, details = null) {
@@ -22,6 +24,20 @@ function fail(code, message, details = null) {
 
 function naturalKey(...parts) {
   return parts.map(value => String(value)).join("\u0000");
+}
+
+const liveWriterConnections = new WeakMap();
+function isLiveWriter(db) {
+  if (!liveWriterConnections.has(db))
+    liveWriterConnections.set(db, !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='live_id_high_water'").get());
+  return liveWriterConnections.get(db);
+}
+
+function liveId(db, entity) {
+  if (!isLiveWriter(db)) return null;
+  const row = db.prepare("UPDATE live_id_high_water SET value=value+1 WHERE entity=? RETURNING value").get(entity);
+  if (!row) fail("live_id_high_water_missing", `Missing live ID high-water row: ${entity}`);
+  return row.value;
 }
 
 function comparisonValue(value) {
@@ -53,7 +69,23 @@ function normalizeDbInteger(value) {
   return Number(value);
 }
 
-function verifyCatalogContract(db) {
+function storedRegistryFingerprint(rows) {
+  const byId = new Map(rows.map((row) => [row.platform_id, row]));
+  const facts = PLATFORM_REGISTRY.map(({ id }) => byId.get(id)).map((row) => ({
+    adapterVersion: row.adapter_version,
+    enabled: row.enabled === 1,
+    family: row.family,
+    id: row.platform_id,
+    physicalRoot: row.physical_root,
+    physicalRootKey: row.physical_root_key,
+  }));
+  return crypto.createHash("sha256").update(stableJson(facts), "utf8").digest("hex");
+}
+
+// A finalized READY generation records the extraction versions that built it.
+// Older extraction versions remain readable; only a new candidate may advance
+// them.  Future versions are rejected because this code cannot interpret them.
+function verifyCatalogContract(db, { requireCurrentRegistry = false, allowLive = false, allowLegacyLive = false } = {}) {
   assertSafeIntegerConnection(db);
   const platformRoots = Object.fromEntries(db.prepare("SELECT platform_id,physical_root FROM platforms").all().map(row => [row.platform_id,row.physical_root]));
   const expected = mapCatalogState({ catalogRevision: 0, builtAtMs: 0, platformRoots });
@@ -77,9 +109,10 @@ function verifyCatalogContract(db) {
     normalizer_version: null,
     sanitizer_version: null,
     search_index_version: null,
-    platform_registry_fingerprint: expected.platform_registry_fingerprint,
   };
-  if (stableJson(actualFacts) !== stableJson(expectedFacts)) fail("catalog_contract_mismatch", "Catalog state versions or registry fingerprint drifted");
+  const comparableActualFacts = { ...actualFacts };
+  delete comparableActualFacts.platform_registry_fingerprint;
+  if (stableJson(comparableActualFacts) !== stableJson(expectedFacts)) fail("catalog_contract_mismatch", "Catalog state contract versions drifted");
   const actualPlatforms = db.prepare(`SELECT platform_id,family,physical_root,physical_root_key,enabled,adapter_version,shape_policy_version FROM platforms ORDER BY platform_id`).all().map(row => ({
     ...row,
     enabled: normalizeDbInteger(row.enabled),
@@ -87,7 +120,36 @@ function verifyCatalogContract(db) {
     shape_policy_version: normalizeDbInteger(row.shape_policy_version),
   }));
   const expectedPlatforms = mapPlatformRegistry(platformRoots).slice().sort((left, right) => compareText(left.platform_id, right.platform_id));
-  if (stableJson(actualPlatforms) !== stableJson(expectedPlatforms)) fail("catalog_contract_mismatch", "Catalog platform rows drifted from the registry");
+  if (actualPlatforms.length !== expectedPlatforms.length) fail("catalog_contract_mismatch", "Catalog platform registry identity drifted");
+  if (actualFacts.platform_registry_fingerprint !== storedRegistryFingerprint(actualPlatforms))
+    fail("catalog_contract_mismatch", "Catalog registry fingerprint does not describe its stored platform rows");
+  for (let index = 0; index < expectedPlatforms.length; index++) {
+    const actual = actualPlatforms[index], current = expectedPlatforms[index];
+    for (const field of ["platform_id", "family", "physical_root", "physical_root_key", "enabled"])
+      if (actual[field] !== current[field]) fail("catalog_contract_mismatch", `Catalog platform ${field} drifted from the registry`);
+    if (actual.adapter_version > current.adapter_version || actual.shape_policy_version > current.shape_policy_version)
+      fail("catalog_contract_future_version", "Catalog was built by a newer extraction implementation");
+    if (requireCurrentRegistry && (actual.adapter_version !== current.adapter_version || actual.shape_policy_version !== current.shape_policy_version))
+      fail("catalog_contract_stale_version", "Catalog extraction versions are not current");
+  }
+  const hasLive = !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='live_meta'").get();
+  if (hasLive && !allowLive) fail("catalog_live_mode_required", "Mutable live Catalog requires explicit live reader mode");
+  if (allowLive) {
+    const core = ["live_meta","live_id_high_water","live_work_sort","live_search_docs","live_work_tags","live_work_fts","live_short_fts","live_authors","live_tags"];
+    const stats = ["live_stats","live_metadata_stats","live_platform_stats"];
+    const required = allowLegacyLive ? core : [...core,...stats];
+    for (const name of required)
+      if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type IN ('table','view') AND name=?").get(name))
+        fail("catalog_live_contract_mismatch", `Live Catalog table missing: ${name}`);
+    const allowed = new Set([...core,...stats]);
+    for (const base of ["live_work_fts","live_short_fts"])
+      for (const suffix of ["_data","_idx","_content","_docsize","_config"]) allowed.add(base + suffix);
+    for (const row of db.prepare("SELECT type,name FROM sqlite_master WHERE (type='table' OR type='trigger') AND name LIKE 'live_%'").all())
+      if (row.type === "trigger" || !allowed.has(row.name))
+        fail("catalog_live_contract_mismatch", `Unexpected live Catalog object: ${row.name}`);
+    if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name='live_idx_relation_target_all' AND tbl_name='social_relations'").get())
+      fail("catalog_live_contract_mismatch", "Live relation target index is missing");
+  }
   return true;
 }
 
@@ -105,7 +167,7 @@ function initializeCatalog(db, { builtAtMs, platformRoots } = {}) {
       VALUES (@platform_id,@family,@physical_root,@physical_root_key,@enabled,@adapter_version,@shape_policy_version)`);
     for (const row of platforms) insert.run(row);
   })();
-  verifyCatalogContract(db);
+  verifyCatalogContract(db, { requireCurrentRegistry: true });
   return { state, platforms };
 }
 
@@ -161,9 +223,9 @@ function prepareBatch(inputs) {
 
 function upsertAuthorStatement(db) {
   return db.prepare(`INSERT INTO authors(
-    platform_id,relative_path,relative_path_key,folder_name,source_author_id,source_author_id_source,display_name,display_name_source,
+    author_id,platform_id,relative_path,relative_path_key,folder_name,source_author_id,source_author_id_source,display_name,display_name_source,
     handle,name_rank,work_count,latest_work_at_ms,latest_work_id,profile_state
-  ) VALUES (@platform_id,@relative_path,@relative_path_key,@folder_name,@source_author_id,@source_author_id_source,@display_name,@display_name_source,
+  ) VALUES (@author_id,@platform_id,@relative_path,@relative_path_key,@folder_name,@source_author_id,@source_author_id_source,@display_name,@display_name_source,
     @handle,@name_rank,0,NULL,NULL,@profile_state)
   ON CONFLICT(platform_id,relative_path_key) DO UPDATE SET
     relative_path=excluded.relative_path,folder_name=excluded.folder_name,source_author_id=excluded.source_author_id,
@@ -177,7 +239,8 @@ function upsertPhysicalAuthorsCore(db, authorRows, affectedCounts = createAffect
   const select = db.prepare("SELECT author_id FROM authors WHERE platform_id=? AND relative_path_key=?");
   const ids = new Map();
   for (const row of authorRows.slice().sort((left, right) => compareText(left.platform_id, right.platform_id) || compareText(left.relative_path_key, right.relative_path_key))) {
-    upsert.run(row);
+    const existing = select.get(row.platform_id, row.relative_path_key);
+    upsert.run({ ...row, author_id: existing?.author_id ?? liveId(db, "author") });
     const authorId = select.get(row.platform_id, row.relative_path_key).author_id;
     affectedCounts.authorIds.add(authorId);
     ids.set(naturalKey(row.platform_id, row.relative_path_key), authorId);
@@ -222,13 +285,14 @@ function upsertShapeRows(db, candidates, observedAtMs, affectedCounts) {
 }
 
 function upsertTags(db, candidates) {
-  const insert = db.prepare(`INSERT INTO tags(display_value,normalized_value,work_count) VALUES (@display_value,@normalized_value,0)
+  const insert = db.prepare(`INSERT INTO tags(tag_id,display_value,normalized_value,work_count) VALUES (@tag_id,@display_value,@normalized_value,0)
     ON CONFLICT(display_value) DO UPDATE SET display_value=excluded.display_value`);
   const select = db.prepare("SELECT tag_id,normalized_value FROM tags WHERE display_value=?");
   const ids = new Map();
   for (const candidate of candidates) for (const row of candidate.rows.tags || []) {
     if (ids.has(row.display_value)) continue;
-    insert.run(row);
+    const existing = select.get(row.display_value);
+    insert.run({ ...row, tag_id: existing?.tag_id ?? liveId(db, "tag") });
     const stored = select.get(row.display_value);
     if (stored.normalized_value !== row.normalized_value) fail("conflicting_tag_candidate", "Stored tag normalization conflicts with mapped candidate");
     ids.set(row.display_value, stored.tag_id);
@@ -264,15 +328,16 @@ function replaceMetadataChildren(db, workId, rows, tagIds, affectedCounts) {
 }
 
 function persistActualMedia(db, workId, authority) {
+  const live = isLiveWriter(db);
   db.prepare("UPDATE works SET cover_media_id=NULL WHERE work_id=?").run(workId);
   if (authority.filesystemFilesState === "complete") {
     db.prepare("DELETE FROM media_declarations WHERE work_id=?").run(workId);
-    db.prepare("DELETE FROM media WHERE work_id=?").run(workId);
+    if (!live) db.prepare("DELETE FROM media WHERE work_id=?").run(workId);
   }
   const insertMedia = db.prepare(`INSERT INTO media(
-    work_id,relative_path,relative_path_key,filesystem_file_name,filesystem_extension,filesystem_size,filesystem_mtime_ns,filesystem_media_type,
+    media_id,work_id,relative_path,relative_path_key,filesystem_file_name,filesystem_extension,filesystem_size,filesystem_mtime_ns,filesystem_media_type,
     source_media_id,metadata_ordinal,metadata_name,metadata_media_type,declared_size,remote_url,source_hash,duration_ms
-  ) VALUES (@work_id,@relative_path,@relative_path_key,@filesystem_file_name,@filesystem_extension,@filesystem_size,@filesystem_mtime_ns,@filesystem_media_type,
+  ) VALUES (@media_id,@work_id,@relative_path,@relative_path_key,@filesystem_file_name,@filesystem_extension,@filesystem_size,@filesystem_mtime_ns,@filesystem_media_type,
     @source_media_id,@metadata_ordinal,@metadata_name,@metadata_media_type,@declared_size,@remote_url,@source_hash,@duration_ms)
   ON CONFLICT(work_id,relative_path_key) DO UPDATE SET
     relative_path=excluded.relative_path,filesystem_file_name=excluded.filesystem_file_name,filesystem_extension=excluded.filesystem_extension,
@@ -282,8 +347,14 @@ function persistActualMedia(db, workId, authority) {
   const selectMedia = db.prepare("SELECT media_id FROM media WHERE work_id=? AND relative_path_key=?");
   const mediaIds = new Map();
   for (const row of authority.actualMediaRows) {
-    insertMedia.run({ ...row, work_id: workId });
+    const existing = selectMedia.get(workId, row.relative_path_key);
+    insertMedia.run({ ...row, work_id: workId, media_id: existing?.media_id ?? liveId(db, "media") });
     mediaIds.set(row.relative_path_key, selectMedia.get(workId, row.relative_path_key).media_id);
+  }
+  if (live && authority.filesystemFilesState === "complete") {
+    const keep = new Set(authority.actualMediaRows.map((row) => row.relative_path_key));
+    for (const row of db.prepare("SELECT media_id,relative_path_key FROM media WHERE work_id=?").all(workId))
+      if (!keep.has(row.relative_path_key)) db.prepare("DELETE FROM media WHERE media_id=?").run(row.media_id);
   }
   const insertDeclaration = db.prepare(`INSERT INTO media_declarations(
     work_id,ordinal,source_media_id,declared_name,declared_media_type,declared_size,remote_url,source_hash,duration_ms,match_state,matched_media_id
@@ -312,7 +383,7 @@ function persistActualMedia(db, workId, authority) {
   db.prepare("UPDATE works SET media_count=?,image_count=?,video_count=? WHERE work_id=?").run(counts.media_count, counts.image_count, counts.video_count, workId);
 }
 
-function applyProfiles(db, candidates, authorIds, shapeIds) {
+function applyProfiles(db, candidates, authorIds, shapeIds, preserveAuthorKeys = new Set()) {
   const groups = new Map();
   for (const candidate of candidates) {
     const key = naturalKey(candidate.rows.author.platform_id, candidate.rows.author.relative_path_key);
@@ -331,6 +402,7 @@ function applyProfiles(db, candidates, authorIds, shapeIds) {
   const updateValid = db.prepare("UPDATE authors SET latest_work_id=?,latest_work_at_ms=?,profile_state='valid' WHERE author_id=?");
   const clear = db.prepare("UPDATE authors SET latest_work_id=NULL,latest_work_at_ms=NULL,profile_state=? WHERE author_id=?");
   for (const [key, group] of groups) {
+    if (preserveAuthorKeys.has(key)) continue;
     const authorId = authorIds.get(key);
     deleteProfile.run(authorId);
     deleteAliases.run(authorId);
@@ -350,11 +422,27 @@ function applyProfiles(db, candidates, authorIds, shapeIds) {
   }
 }
 
-function applyMappedBatchCore(db, mappedCandidates, transactionContext, affectedCounts = createAffectedCounts()) {
+function applyMappedBatchCore(db, mappedCandidates, transactionContext, affectedCounts = createAffectedCounts(), options = {}) {
   assertSafeIntegerConnection(db);
   if (db.inTransaction !== true) fail("transaction_required", "Catalog mapped batch core requires an active transaction");
   const { observedAtMs } = validateTransactionContext(transactionContext);
   const prepared = prepareBatch(mappedCandidates);
+  const preserveAuthorKeys = new Set();
+  if (options.preserveExistingAuthorAuthority === true) {
+    const groups = new Map();
+    for (const candidate of prepared.candidates) {
+      const key = naturalKey(candidate.rows.author.platform_id,candidate.rows.author.relative_path_key);
+      if (!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(candidate);
+    }
+    const exists = db.prepare("SELECT 1 FROM authors WHERE platform_id=? AND relative_path_key=?");
+    for (const [key,group] of groups) {
+      const final = group.some((candidate) => candidate.liveProvisionalAuthor !== true
+        && (candidate.authorAuthorityFinal === true || candidate.rows.authorProfile));
+      const row = group[0].rows.author;
+      if (!final && exists.get(row.platform_id,row.relative_path_key)) preserveAuthorKeys.add(key);
+    }
+  }
   const shapeIds = upsertShapeRows(db, prepared.candidates, observedAtMs, affectedCounts);
   const authorRows = [];
   const authorByKey = new Map();
@@ -373,15 +461,22 @@ function applyMappedBatchCore(db, mappedCandidates, transactionContext, affected
       fail("conflicting_physical_author_candidate", "One physical author received conflicting non-authoritative facts");
     }
   }
+  if (preserveAuthorKeys.size) {
+    const selectStoredAuthor = db.prepare("SELECT * FROM authors WHERE platform_id=? AND relative_path_key=?");
+    for (const key of preserveAuthorKeys) {
+      const entry = authorByKey.get(key), stored = selectStoredAuthor.get(entry.row.platform_id,entry.row.relative_path_key);
+      authorRows[entry.rowIndex] = stored;
+    }
+  }
   const authorIds = upsertPhysicalAuthorsCore(db, authorRows, affectedCounts);
   const tagIds = upsertTags(db, prepared.candidates);
   const selectExisting = db.prepare("SELECT work_id,author_id,metadata_shape_id FROM works WHERE platform_id=? AND relative_path_key=?");
   const upsertWork = db.prepare(`INSERT INTO works(
-    platform_id,author_id,relative_path,relative_path_key,source_work_id,source_work_id_source,published_at_ms,updated_at_ms,sort_at_ms,sort_time_source,
+    work_id,platform_id,author_id,relative_path,relative_path_key,source_work_id,source_work_id_source,published_at_ms,updated_at_ms,sort_at_ms,sort_time_source,
     title,title_source,title_rank,language,is_adult,is_ai_generated,is_paid,is_restricted,is_sensitive,has_full,is_advertisement,
     image_count,video_count,media_count,cover_media_id,filesystem_state,filesystem_files_state,work_dir_mtime_ns,metadata_state,enrichment_state,
     metadata_mtime_ns,metadata_size,adapter_version,metadata_shape_id
-  ) VALUES (@platform_id,@author_id,@relative_path,@relative_path_key,@source_work_id,@source_work_id_source,@published_at_ms,@updated_at_ms,@sort_at_ms,@sort_time_source,
+  ) VALUES (@work_id,@platform_id,@author_id,@relative_path,@relative_path_key,@source_work_id,@source_work_id_source,@published_at_ms,@updated_at_ms,@sort_at_ms,@sort_time_source,
     @title,@title_source,@title_rank,@language,@is_adult,@is_ai_generated,@is_paid,@is_restricted,@is_sensitive,@has_full,@is_advertisement,
     0,0,0,NULL,@filesystem_state,@filesystem_files_state,@work_dir_mtime_ns,@metadata_state,@enrichment_state,@metadata_mtime_ns,@metadata_size,@adapter_version,@metadata_shape_id)
   ON CONFLICT(platform_id,relative_path_key) DO UPDATE SET
@@ -407,7 +502,7 @@ function applyMappedBatchCore(db, mappedCandidates, transactionContext, affected
       if (existing.metadata_shape_id !== null) affectedCounts.shapeIds.add(existing.metadata_shape_id);
       for (const row of db.prepare("SELECT tag_id FROM work_tags WHERE work_id=?").all(existing.work_id)) affectedCounts.tagIds.add(row.tag_id);
     }
-    upsertWork.run({ ...rows.work, author_id: authorId, metadata_shape_id: shapeId });
+    upsertWork.run({ ...rows.work, work_id: existing?.work_id ?? liveId(db, "work"), author_id: authorId, metadata_shape_id: shapeId });
     const workId = selectExisting.get(rows.work.platform_id, rows.work.relative_path_key).work_id;
     affectedCounts.authorIds.add(authorId);
     if (shapeId !== null) affectedCounts.shapeIds.add(shapeId);
@@ -415,7 +510,7 @@ function applyMappedBatchCore(db, mappedCandidates, transactionContext, affected
     persistActualMedia(db, workId, authority);
     appliedWorks.push({ platformId: rows.work.platform_id, relativePathKey: rows.work.relative_path_key, sourceWorkId: rows.work.source_work_id, authorId, workId, shapeId });
   }
-  applyProfiles(db, prepared.candidates, authorIds, shapeIds);
+  applyProfiles(db, prepared.candidates, authorIds, shapeIds, preserveAuthorKeys);
   return { applied: appliedWorks.length, deduplicated: prepared.duplicateCount, works: appliedWorks };
 }
 
@@ -426,6 +521,20 @@ function backfillUniqueRelationTargets(db) {
     SELECT min(w.work_id) FROM works w WHERE w.platform_id=social_relations.target_platform_id AND w.source_work_id=social_relations.target_source_work_id
     HAVING count(*)=1
   ) WHERE target_work_id IS NULL`).run();
+}
+
+function refreshRelationTargetsForIdentities(db, identities) {
+  if (db.inTransaction !== true) fail("transaction_required", "Relation target refresh requires an active transaction");
+  const facts = db.prepare("SELECT count(*) count,min(work_id) work_id FROM works WHERE platform_id=? AND source_work_id=?");
+  const update = db.prepare("UPDATE social_relations SET target_work_id=? WHERE target_platform_id=? AND target_source_work_id=?");
+  const unique = new Map();
+  for (const item of identities || [])
+    if (item?.platformId && item?.sourceWorkId) unique.set(naturalKey(item.platformId,item.sourceWorkId),item);
+  for (const item of unique.values()) {
+    const row = facts.get(item.platformId,item.sourceWorkId);
+    update.run(row.count === 1n ? row.work_id : null,item.platformId,item.sourceWorkId);
+  }
+  return unique.size;
 }
 
 function finalizeCatalogWrites(db, affectedCounts) {
@@ -454,6 +563,7 @@ module.exports = {
   applyMappedBatchCore,
   finalizeCatalogWrites,
   initializeCatalog,
+  refreshRelationTargetsForIdentities,
   upsertPhysicalAuthors,
   upsertPhysicalAuthorsCore,
   validateTransactionContext,

@@ -5,6 +5,7 @@ import {
   miscNavigate,
   parseAuthorRoute,
   parseHash,
+  isLegacyIntegerRoutePath,
 } from "./routes.js";
 import { Sidebar } from "./components/sidebar.js";
 import {
@@ -12,12 +13,12 @@ import {
   loadAuthorWorks,
   loadAuthors,
   loadDirectory,
+  loadStableRoute,
   loadSearchRoute,
   openDbFolderLightboxFromHash,
 } from "./controller.js";
 import { initSearchInputs } from "./components/search.js";
 import { checkRunningScan, initScanWS } from "./status.js";
-import { currentGeneration } from "../shared/api.js";
 
 function syncViewport() {
   document.documentElement.style.setProperty(
@@ -43,7 +44,7 @@ function syncGlobalHeaderHeight() {
 function handleTargetMedia(data) {
   if (data && data.targetMedia) {
     var cleanHash =
-      "#" + state.path + (state.page > 1 ? "?page=" + state.page : "");
+      "#" + state.path.split("/").map(encodeURIComponent).join("/") + (state.page > 1 ? "?page=" + state.page : "");
     history.replaceState(null, "", cleanHash);
     for (var i = 0; i < state.allMedia.length; i++) {
       if (state.allMedia[i].name === data.targetMedia) {
@@ -52,6 +53,26 @@ function handleTargetMedia(data) {
       }
     }
   }
+}
+
+function showLibraryWaiting(status) {
+  var hash = (window.location.hash || "").slice(1);
+  if (hash.indexOf("/f/") === 0 || status.libraryReady !== false) return;
+  if (LB.isOpen && LB.isOpen()) return;
+  var content = document.getElementById("content");
+  if (!content || content.querySelector(".card")) return;
+  var scan = status.scan || {};
+  var phase = scan.running
+    ? "正在" + (scan.phase || scan.state || "扫描")
+    : "等待首次完整扫描";
+  phase = String(phase).replace(/[&<>\"]/g, function (value) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[value];
+  });
+  content.innerHTML =
+    '<div class="empty entrance" role="status">' +
+    phase +
+    "；数据库就绪后会自动显示作品。" +
+    "</div>";
 }
 
 function loadCurrentGalleryRoute(refreshSidebar) {
@@ -65,15 +86,29 @@ function loadCurrentGalleryRoute(refreshSidebar) {
   return sidebarReady
     .then(function () {
       state.cursor = h.cursor;
+      // Integer IDs are allocated inside one Catalog generation.  Refuse old
+      // addresses explicitly; never reinterpret them against a replacement.
       if (
-        h.generation &&
-        h.generation !== currentGeneration() &&
-        (h.folder || /^\/(?:work|@author)\//.test(h.path))
+        isLegacyIntegerRoutePath(h.path) ||
+        (h.folder && isLegacyIntegerRoutePath(h.folder))
       ) {
-        showError("链接属于其他数据版本，请从平台列表重新选择作品或作者");
+        showError("旧作品/作者链接没有稳定地址，请从平台列表重新选择");
         return;
       }
-      if (h.search || h.tag) {
+      if (h.path.indexOf("/p/") === 0) {
+        return loadStableRoute(
+          h.path,
+          h.page,
+          h.order,
+          h.offset,
+          h.media,
+          h.search,
+          h.tag,
+        ).then(function (data) {
+          handleTargetMedia(data);
+          openDbFolderLightboxFromHash(h);
+        });
+      } else if (h.search || h.tag) {
         state.order = h.order;
         state.miscMode = h.path === "/";
         return loadSearchRoute(
@@ -155,6 +190,18 @@ export function init() {
       return;
     }
     loadCurrentGalleryRoute(false);
+  });
+  window.addEventListener("gallery-refresh-requested", function () {
+    if (LB.isOpen && LB.isOpen()) {
+      return;
+    }
+    state.queryEpoch = null;
+    state.queryRevision = null;
+    state.cursor = null;
+    loadCurrentGalleryRoute(false);
+  });
+  window.addEventListener("gallery-library-status", function (event) {
+    showLibraryWaiting((event && event.detail) || {});
   });
   (function boot() {
     LB.init();

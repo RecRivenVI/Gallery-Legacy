@@ -1,0 +1,37 @@
+"use strict";
+const test = require("node:test"), assert = require("node:assert/strict");
+const { compareNatural } = require("../../internal/media/order.js");
+const { fixture } = require("../support/runtime.js");
+const { CatalogReader } = require("../../internal/catalog/reader.js");
+test("numeric page order is deterministic without changing physical identity or counts", async (t) => {
+  assert.deepEqual(["10.jpg", "2.jpg", "1.jpg"].sort(compareNatural), ["1.jpg", "2.jpg", "10.jpg"]);
+  assert.ok(compareNatural("9999999999999999999999.jpg", "10000000000000000000000.jpg") < 0);
+  const f = await fixture(t, { empty: true });
+  f.work("chapter 2", undefined, { "10.jpg": f.PNG, "1.jpg": f.PNG, "2.jpg": f.PNG }, "Synthetic Book 中文", "Venera");
+  f.work("chapter 10", "{", { "1.webm": "synthetic" }, "Synthetic Book 中文", "Venera");
+  const g = await f.build();
+  const r = new CatalogReader(g.catalogPath, g.generationId, f.bindings); f.cleanup.push(() => r.close());
+  const stable = "/p/Venera/Synthetic Book 中文/chapter 2";
+  const work = r.resolvePublicPath(stable).item;
+  assert.equal(work.title, "Synthetic Book 中文");
+  assert.equal(work.sourceWorkId, null);
+  assert.equal(work.stableId, stable);
+  assert.deepEqual(work.media.map((m) => m.fileName), ["1.jpg", "2.jpg", "10.jpg"]);
+  assert.deepEqual(r.chapters("/p/Venera/Synthetic Book 中文").map((w) => w.stableId), [stable, "/p/Venera/Synthetic Book 中文/chapter 10"]);
+  assert.equal(r.stats().works, 2); assert.equal(r.stats().media, 4);
+  assert.equal(r.resolvePublicPath("/p/Venera/../escape"), null);
+});
+test("cover and Gank preview visibility never removes actual media", async (t) => {
+  const f = await fixture(t, { empty: true });
+  f.work("work", { category: "ganknow", content: "https://mega.nz/file/synthetic" }, { "1.jpg": f.PNG, "2.jpg": f.PNG, "10.jpg": f.PNG, "cover.png": f.PNG, ".cover.png": f.PNG }, "author", "Gank");
+  f.work("disabled", undefined, { ".nocover": "", "cover.png": f.PNG, "1.jpg": f.PNG });
+  f.work("archive", undefined, { "part.cbz": "synthetic", "1.jpg": f.PNG, "10.jpg": f.PNG }, "author", "Gank");
+  const g = await f.build();
+  const r = new CatalogReader(g.catalogPath, g.generationId); f.cleanup.push(() => r.close());
+  const w = r.resolvePublicPath("/p/Gank/author/work").item;
+  assert.equal(w.counts.media, 5);
+  assert.equal(w.media.filter((m) => m.defaultVisible).length, 1);
+  assert.equal(w.cover.fileName, "1.jpg");
+  assert.equal(r.resolvePublicPath("/p/pixiv/100/disabled").item.cover, null);
+  assert.equal(r.resolvePublicPath("/p/Gank/author/archive").item.media.find((m) => m.fileName === "1.jpg").role, "preview");
+});

@@ -4,7 +4,8 @@ export function encodeQuery(route, values) {
   for (const [key, value] of Object.entries(values))
     if (value !== null && value !== undefined && value !== "")
       params.set(key, String(value));
-  return route + (params.size ? "?" + params : "");
+  const path = route.split("/").map((part, index) => index < 2 ? part : encodeURIComponent(part)).join("/");
+  return path + (params.size ? "?" + params : "");
 }
 export function querySettings(params, defaults, contract, authors) {
   const options = authors ? contract?.authorSorts : contract?.workSorts;
@@ -22,6 +23,8 @@ export function querySettings(params, defaults, contract, authors) {
   const size = Number(raw);
   return {
     sort,
+    hideEmpty: ["0", "1"].includes(params.get("hideEmpty"))
+      ? params.get("hideEmpty") === "1" : defaults.hideEmpty !== false,
     mediaType: ["all", "image", "video"].includes(media) ? media : "all",
     pageSize: Number.isInteger(size) && size >= 1 && size <= 200 ? size : 48,
   };

@@ -8,7 +8,7 @@ const {
 } = require("../../internal/runtime/bootstrap.js");
 test("ES-module Gallery and browser Manager use the public protocol", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const runtime = createRuntimeBootstrap({ config: f.config });
   f.cleanup.push(() => runtime.close());

@@ -4,7 +4,7 @@ const { beginAdapt, finalize, richText, selectField, setIdentities, setPrimaryRi
 const { asInteger, asObject, asText, httpUrl, isObject, normalizeTags, oneOrMany, parseTimestamp } = require("./helpers.js");
 
 const PLATFORM_ID = "pixiv";
-const VERSION = 2;
+const VERSION = 3;
 
 function adapt(context) {
   const { result, metadata } = beginAdapt(PixivAdapter, context);
@@ -17,7 +17,9 @@ function adapt(context) {
   result.authorProfile.handle = selectField(result, "authorProfile.handle", [{ path: "user.account", value: user.account }], asText);
   result.authorProfile.avatarUrl = httpUrl(asObject(user.profile_image_urls, d, "user.profile_image_urls")?.medium, d, "user.profile_image_urls.medium");
   const caption = asText(metadata.caption, d, "caption");
+  const text = caption === null ? asText(metadata.text, d, "text") : null;
   if (caption !== null) setPrimaryRichText(result, richText("caption", "html", caption));
+  else if (text !== null) setPrimaryRichText(result, richText("text", "plain", text), 2);
   const tags = oneOrMany(metadata.tags, d, "tags").map((tag, index) => typeof tag === "string" ? tag : asText(asObject(tag, d, `tags[${index}]`)?.name, d, `tags[${index}].name`));
   result.tags = normalizeTags(tags);
   result.work.flags.aiGenerated = metadata.illust_ai_type === undefined ? null : asInteger(metadata.illust_ai_type, d, "illust_ai_type", { allowString: true }) === 2;

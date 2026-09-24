@@ -46,7 +46,7 @@ test("Gallery and Manager render Chinese, English and digits with platform fonts
     user: { id: "100", name: "测试作者" },
     tags: ["测试"],
   });
-  f.build();
+  await f.build();
   f.publish();
   const runtime = createRuntimeBootstrap({ config: f.config });
   f.cleanup.push(() => runtime.close());

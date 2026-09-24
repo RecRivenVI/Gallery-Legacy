@@ -91,13 +91,17 @@ function mediaFilterConditions(type, alias = "") {
   });
 }
 class QueryIndex {
-  constructor(file, facts) {
-    if (!fs.existsSync(file))
+  constructor(file, facts, options = {}) {
+    this.prefix = options.prefix || "";
+    if (!["", "live_"].includes(this.prefix)) throw new TypeError("Unsupported Search table prefix");
+    this.ownsDb = !options.db;
+    if (!options.db && !fs.existsSync(file))
       throw Object.assign(new Error("Search index missing"), {
         code: "SEARCH_MISSING",
       });
-    this.db = new Database(file, { readonly: true, fileMustExist: true });
+    this.db = options.db || new Database(file, { readonly: true, fileMustExist: true });
     this.db.defaultSafeIntegers(true);
+    if (this.prefix === "live_") return;
     try {
       const s = this.db
         .prepare("SELECT * FROM index_state WHERE singleton=1")
@@ -114,12 +118,17 @@ class QueryIndex {
           code: "SEARCH_BINDING_MISMATCH",
         });
     } catch (e) {
-      this.db.close();
+      if (this.ownsDb) this.db.close();
       throw e;
     }
   }
   close() {
-    this.db.close();
+    if (this.ownsDb) this.db.close();
+  }
+  bindUnreadableWorks(ids) {
+    const hidden = new Set(ids);
+    this.db.function("gallery_readable_work", { deterministic: true, safeIntegers: true },
+      (id) => hidden.has(id) ? 0 : 1);
   }
   workPage({
     platformId = null,
@@ -128,6 +137,7 @@ class QueryIndex {
     tag = null,
     sort = "date_desc",
     mediaType = "all",
+    hideEmpty = false,
     cursor = null,
     limit = 48,
     offset = 0,
@@ -135,7 +145,8 @@ class QueryIndex {
     const order = WORK_SORTS[sort];
     if (!order)
       throw Object.assign(new Error("Invalid sort"), { code: "INVALID_SORT" });
-    let from = "work_sort s";
+    const table = (name) => this.prefix + name;
+    let from = table("work_sort") + " s";
     const conditions = [],
       args = [];
     let mode = "browse";
@@ -148,20 +159,33 @@ class QueryIndex {
       args.push(authorId);
     }
     conditions.push(...mediaFilterConditions(mediaType, "s"));
+    if (hideEmpty) conditions.push(this.prefix ? "s.has_readable=1" : "gallery_readable_work(s.work_id)=1");
     if (tag !== null) {
       conditions.push(
-        "EXISTS(SELECT 1 FROM work_tags wt JOIN tags t USING(tag_id) WHERE wt.work_id=s.work_id AND t.display_value=?)",
+        `EXISTS(SELECT 1 FROM ${table("work_tags")} wt JOIN ${table("tags")} t USING(tag_id) WHERE wt.work_id=s.work_id AND t.display_value=?)`,
       );
       args.push(tag);
       mode = "tag_exact";
     }
     const text = normalizeSearchText(query);
     if (text) {
-      from += " JOIN search_docs d ON d.work_id=s.work_id";
-      if ([...text].length <= 2) {
-        from += " JOIN short_fts sf ON sf.rowid=s.work_id";
+      from += ` JOIN ${table("search_docs")} d ON d.work_id=s.work_id`;
+      if (this.prefix && [...text].length <= 2) {
         const first = [...text].find((c) => c !== " ") || text;
-        conditions.push("short_fts MATCH ?");
+        conditions.push(`((s.work_id IN (SELECT rowid FROM ${table("short_fts")} WHERE ${table("short_fts")} MATCH ?)
+          AND (instr(d.title,?)>0 OR instr(d.tags,?)>0 OR instr(d.body,?)>0))
+          OR EXISTS(SELECT 1 FROM ${table("authors")} la WHERE la.author_id=s.author_id AND instr(la.name_key,?)>0))`);
+        args.push("u" + first.codePointAt(0).toString(16),text,text,text,text);
+        mode = "short_exact";
+      } else if (this.prefix) {
+        conditions.push(`(s.work_id IN (SELECT rowid FROM ${table("work_fts")} WHERE ${table("work_fts")} MATCH ?)
+          OR EXISTS(SELECT 1 FROM ${table("authors")} la WHERE la.author_id=s.author_id AND instr(la.name_key,?)>0))`);
+        args.push('"' + text.replace(/"/g, '""') + '"',text);
+        mode = "trigram_fts";
+      } else if ([...text].length <= 2) {
+        from += ` JOIN ${table("short_fts")} sf ON sf.rowid=s.work_id`;
+        const first = [...text].find((c) => c !== " ") || text;
+        conditions.push(table("short_fts") + " MATCH ?");
         args.push("u" + first.codePointAt(0).toString(16));
         conditions.push(
           "(instr(d.title,?)>0 OR instr(d.author,?)>0 OR instr(d.tags,?)>0 OR instr(d.body,?)>0)",
@@ -169,8 +193,8 @@ class QueryIndex {
         args.push(text, text, text, text);
         mode = "short_exact";
       } else {
-        from += " JOIN work_fts f ON f.rowid=s.work_id";
-        conditions.push("work_fts MATCH ?");
+        from += ` JOIN ${table("work_fts")} f ON f.rowid=s.work_id`;
+        conditions.push(table("work_fts") + " MATCH ?");
         args.push('"' + text.replace(/"/g, '""') + '"');
         mode = "trigram_fts";
       }
@@ -231,6 +255,7 @@ class QueryIndex {
     limit = 48,
     offset = 0,
   } = {}) {
+    const authorsTable = this.prefix + "authors";
     const order = AUTHOR_SORTS[sort];
     if (!order)
       throw Object.assign(new Error("Invalid sort"), { code: "INVALID_SORT" });
@@ -249,7 +274,7 @@ class QueryIndex {
       ? " WHERE " + conditions.join(" AND ")
       : "";
     const total = Number(
-      this.db.prepare("SELECT count(*) n FROM authors" + filter).get(...args).n,
+      this.db.prepare("SELECT count(*) n FROM " + authorsTable + filter).get(...args).n,
     );
     if (cursor) {
       conditions.push(
@@ -270,7 +295,7 @@ class QueryIndex {
       .prepare(
         "SELECT author_id," +
           order.column +
-          " sort_value FROM authors WHERE " +
+          " sort_value FROM " + authorsTable + " WHERE " +
           conditions.join(" AND ") +
           " ORDER BY " +
           order.column +
@@ -297,6 +322,7 @@ class QueryIndex {
     limit = 48,
     offset = 0,
   } = {}) {
+    const table = (name) => this.prefix + name;
     const conditions = [],
       args = [],
       text = normalizeSearchText(query);
@@ -309,7 +335,7 @@ class QueryIndex {
       args.push(text);
     }
     const from =
-      "tags t JOIN work_tags wt USING(tag_id) JOIN work_sort s USING(work_id)";
+      `${table("tags")} t JOIN ${table("work_tags")} wt USING(tag_id) JOIN ${table("work_sort")} s USING(work_id)`;
     const where = conditions.length ? " WHERE " + conditions.join(" AND ") : "";
     const total = Number(
       this.db

@@ -4,6 +4,8 @@ var ScanWS = (function () {
   var listeners = [];
   var openListeners = [];
   var stateListeners = [];
+  var liveListeners = [];
+  var statusListeners = [];
   var reconnectAttempt = 0;
   var reconnectCountdown = null;
 
@@ -48,9 +50,15 @@ var ScanWS = (function () {
       try {
         var data = JSON.parse(e.data);
         if (data && data.type === "status") {
+          if(data.data?.live)for(const callback of liveListeners){try{callback(data.data.live);}catch{}}
+          for (var s = 0; s < statusListeners.length; s++) {
+            try {
+              statusListeners[s](data.data);
+            } catch (err) {}
+          }
           for (var i = 0; i < listeners.length; i++) {
             try {
-              listeners[i](data.data.scan);
+              listeners[i](data.data && data.data.scan);
             } catch (err) {}
           }
         }
@@ -119,6 +127,8 @@ var ScanWS = (function () {
     onScanStatus: onScanStatus,
     onOpen: onOpen,
     onState: onState,
+    onLiveStatus(callback){liveListeners.push(callback);},
+    onStatus(callback){statusListeners.push(callback);},
   };
 })();
 

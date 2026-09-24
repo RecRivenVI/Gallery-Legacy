@@ -46,8 +46,15 @@ test("Writer accepts prepared physical facts without filesystem access or platfo
 
 test("Formal runtime uses the single streaming builder and published generation", () => {
   const builder = source("internal/indexing/build.js"),
+    incremental = source("internal/indexing/incremental.js"),
+    engine = source("internal/indexing/engine.js"),
     runtime = source("internal/runtime/bootstrap.js");
-  assert.match(builder, /observePlatformWorksStreaming/);
+  assert.match(builder, /executeCatalogBuild/);
+  assert.match(incremental, /executeCatalogBuild/);
+  assert.match(engine, /createObservationProducer/);
+  assert.match(engine, /createPreparationPool/);
+  for (const implementation of [builder, incremental, engine])
+    assert.doesNotMatch(implementation, /observePlatformWorksStreaming|preflightPlatformTopology/);
   assert.match(runtime, /resolveActiveGeneration/);
   assert.doesNotMatch(runtime, /tests\/|Gallery\/|preview/);
 });

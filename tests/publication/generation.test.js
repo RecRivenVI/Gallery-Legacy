@@ -14,9 +14,9 @@ const {
 const { hashDatabaseFile } = require("../../internal/catalog/file-hash.js");
 test("READY publication, atomic failure, rollback and immutability", async (t) => {
   const f = await fixture(t);
-  const first = f.build();
+  const first = await f.build();
   f.publish();
-  const second = f.build("second");
+  const second = await f.build("second");
   const before = fs.readFileSync(f.config.activeGenerationPath);
   assert.throws(() =>
     publishGeneration(f.config.instanceRoot, "second", {
@@ -52,7 +52,7 @@ test("READY publication, atomic failure, rollback and immutability", async (t) =
 });
 test("nested filesystem failure cannot publish and leaves prior active generation intact", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const before = fs.readFileSync(f.config.activeGenerationPath);
   const io = {
@@ -65,7 +65,7 @@ test("nested filesystem failure cannot publish and leaves prior active generatio
       return NODE_FS_IO.readdir(file, ...args);
     },
   };
-  assert.throws(() => f.build("incomplete", { io }), {
+  await assert.rejects(() => f.build("incomplete", { io }), {
     code: "GENERATION_CATALOG_INCOMPLETE",
   });
   assert.deepEqual(fs.readFileSync(f.config.activeGenerationPath), before);

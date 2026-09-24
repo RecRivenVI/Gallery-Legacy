@@ -36,7 +36,7 @@ test("public synthetic corpus covers every registry adapter without a private co
     ADAPTERS.map((item) => item.PLATFORM_ID),
     PLATFORM_REGISTRY.map((item) => item.id),
   );
-  assert.equal(ADAPTERS.length, 8);
+  assert.equal(ADAPTERS.length, 9);
   for (const platform of PLATFORM_REGISTRY)
     assert.equal(
       adapterForPlatform(platform.id).VERSION,
@@ -60,9 +60,14 @@ for (const item of corpus.cases) {
     const first = adapter.adapt(context);
     assert.equal(first.valid, true);
     assert.equal(first.contractVersion, ADAPTER_CONTRACT_VERSION);
-    assert.equal(typeof first.work.sourceWorkId, "string");
-    assert.equal(typeof first.authorProfile.sourceAuthorId, "string");
-    assert.equal(first.richText.primary.sourceText, item.body);
+    if (item.optionalSourceIdentity) {
+      assert.equal(first.work.sourceWorkId, null);
+      assert.equal(first.authorProfile.sourceAuthorId, null);
+    } else {
+      assert.equal(typeof first.work.sourceWorkId, "string");
+      assert.equal(typeof first.authorProfile.sourceAuthorId, "string");
+    }
+    assert.equal(first.richText.primary?.sourceText ?? null, item.body);
     assert.deepEqual(adapter.adapt(context), first);
     assert.equal(JSON.stringify(metadata), before);
     const shape = metadataShapeForPlatform(item.platformId, metadata);

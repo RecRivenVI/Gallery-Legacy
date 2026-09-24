@@ -1,0 +1,26 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),path=require("node:path"),fs=require("node:fs");
+const {_electron:electron}=require("playwright");const {fixture}=require("../support/runtime.js");const {stopRuntime}=require("../../internal/runtime/control.js");
+test("Manager exposes local config, backup, log, generation, access, storage and diagnostic workflows",async t=>{
+  const f=await fixture(t);await f.build();f.publish();const env={...process.env,GALLERY_NODE:process.execPath};delete env.ELECTRON_RUN_AS_NODE;
+  const host=await electron.launch({args:[path.resolve(__dirname,"../../desktop/main.js"),"--config",path.join(f.config.instanceRoot,"config.json")],env,timeout:60000});
+  f.cleanup.push(async()=>{await stopRuntime(f.config);await host.close();});
+  const page=await host.firstWindow();page.on("dialog",d=>d.accept());
+  await page.waitForFunction(()=>document.querySelector("#stop")&&!document.querySelector("#stop").disabled);
+  assert.equal(await page.locator(".manager-nav [data-tab]").count(),9);
+  await page.locator('[data-tab="validation"]').click();await page.waitForSelector("#validation-start");assert.equal(await page.locator('[data-check]').count(),12);
+  await page.locator('[data-tab="config"]').click();await page.waitForSelector("#config-save");
+  assert.equal(await page.locator('[data-field^="sources."]').count(),9);
+  await page.locator("#config-validate").click();await page.waitForFunction(()=>document.querySelector("#manager-notice").textContent.includes("配置合法"));
+  await page.locator("#config-save").click();await page.waitForFunction(()=>document.querySelector("#manager-notice").textContent.includes("已保存"));
+  assert.ok(fs.readdirSync(path.join(f.config.stateRoot,"config-backups")).length>0);
+  await page.locator('[data-tab="generations"]').click();await page.waitForSelector("#retention-plan");
+  await page.locator('[data-operation="generation.validate"]').click();await page.waitForFunction(()=>document.querySelector("#generation-result")?.textContent.includes('"valid": true'));
+  await page.locator('[data-tab="logs"]').click();await page.waitForSelector("#log-file");
+  await page.locator('[data-tab="access"]').click();await page.waitForSelector("#access-refresh");
+  await page.locator('[data-tab="storage"]').click();await page.waitForSelector("#cache-clear");
+  await page.locator('[data-tab="diagnostics"]').click();await page.locator("#diagnose").click();
+  await page.waitForFunction(()=>document.querySelector("#diagnostics-result")?.textContent.includes('"state": "PASS"'));
+  await page.locator('[data-tab="scan"]').click();await page.waitForSelector("#scope-check");
+  await page.locator("#scope-author").fill("100");await page.locator("#scope-check").click();await page.waitForFunction(()=>document.querySelector("#scope-result")?.textContent.includes('"catalogModified": false'));
+});

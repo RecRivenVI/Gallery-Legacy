@@ -327,6 +327,11 @@
 
 .platform-sub {
   display: flex;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
   align-items: center;
   padding: 5px 0 5px 8px;
   margin: 0 6px 6px 36px;

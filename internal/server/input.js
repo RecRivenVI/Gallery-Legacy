@@ -18,7 +18,7 @@ function identifier(value) {
   if (n < 1n || n > 9223372036854775807n) bad("INVALID_ID");
   return n;
 }
-function query(params, kind, generation) {
+function query(params, kind, generation, revision = null) {
   const allowed = new Set([
     "platform",
     "author",
@@ -26,10 +26,12 @@ function query(params, kind, generation) {
     "q",
     "sort",
     "mediaType",
+    "hideEmpty",
     "pageSize",
     "page",
     "cursor",
     "g",
+    "rev",
   ]);
   for (const key of params.keys())
     if (!allowed.has(key) || params.getAll(key).length !== 1)
@@ -43,7 +45,7 @@ function query(params, kind, generation) {
     bad("INVALID_QUERY");
   if (
     kind !== "works" &&
-    ["author", "tag", "mediaType"].some((key) => params.has(key))
+    ["author", "tag", "mediaType", "hideEmpty"].some((key) => params.has(key))
   )
     bad("INVALID_PARAMETER");
   if (kind === "tags" && params.has("sort")) bad("INVALID_PARAMETER");
@@ -59,12 +61,20 @@ function query(params, kind, generation) {
     bad("INVALID_SORT");
   const mediaType = params.get("mediaType") || "all";
   if (!protocol.mediaFilters.includes(mediaType)) bad("INVALID_MEDIA_FILTER");
+  if (params.has("hideEmpty") && !["0", "1"].includes(params.get("hideEmpty")))
+    bad("INVALID_PARAMETER");
+  const hideEmpty = params.get("hideEmpty") === "1";
   const pageSize = int(params.get("pageSize"), 48, 1, 200),
     page = int(params.get("page"), 1, 1, 1000000);
   const author = params.get("author");
   if (author) identifier(author);
   if (params.has("g") && params.get("g") !== generation)
     bad("GENERATION_CHANGED", 409);
+  if(params.has("rev")){
+    const requested=int(params.get("rev"),null,0,Number.MAX_SAFE_INTEGER);
+    if(revision === null)bad("INVALID_PARAMETER");
+    if(requested !== revision)bad("CONTENT_CHANGED",409);
+  }
   const result = {
     platformId: platform || null,
     authorId: author ? BigInt(author) : null,
@@ -72,9 +82,11 @@ function query(params, kind, generation) {
     tag,
     sort,
     mediaType,
+    hideEmpty,
     limit: pageSize,
     page,
     pageSize,
+    revision,
   };
   const key = crypto
     .createHash("sha256")
@@ -88,24 +100,26 @@ function query(params, kind, generation) {
         tag,
         sort,
         mediaType,
+        hideEmpty,
         pageSize,
+        revision,
       ]),
     )
     .digest("hex");
   if (params.has("cursor"))
-    result.cursor = decodeCursor(params.get("cursor"), key, kind, sort);
+    result.cursor = decodeCursor(params.get("cursor"), key, kind, sort, revision);
   return { ...result, key };
 }
-function encodeCursor(position, key) {
+function encodeCursor(position, key, revision = null) {
   return position
     ? Buffer.from(
-        JSON.stringify({ v: 1, key, position }, (_, v) =>
+        JSON.stringify({ v: 1, key, position, revision }, (_, v) =>
           typeof v === "bigint" ? v.toString() : v,
         ),
       ).toString("base64url")
     : null;
 }
-function decodeCursor(value, key, kind, sort) {
+function decodeCursor(value, key, kind, sort, revision = null) {
   if (!value || value.length > 4096 || !/^[A-Za-z0-9_-]+$/.test(value))
     bad("INVALID_CURSOR");
   let data;
@@ -114,6 +128,7 @@ function decodeCursor(value, key, kind, sort) {
   } catch {
     bad("INVALID_CURSOR");
   }
+  if(revision !== null && Number.isSafeInteger(data?.revision) && data.revision !== revision)bad("CONTENT_CHANGED",409);
   if (!data || data.v !== 1 || data.key !== key) bad("CURSOR_CONTEXT_MISMATCH");
   const p = data.position;
   if (!p || typeof p !== "object") bad("INVALID_CURSOR");

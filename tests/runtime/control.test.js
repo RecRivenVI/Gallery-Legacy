@@ -1,0 +1,30 @@
+"use strict";
+const test = require("node:test"), assert = require("node:assert/strict"), net = require("node:net"), fs = require("node:fs"), path = require("node:path");
+const { fixture } = require("../support/runtime.js");
+const { createRuntimeBootstrap } = require("../../internal/runtime/bootstrap.js");
+const { control, stopRuntime, startRuntime } = require("../../internal/runtime/control.js");
+const { pipeName } = require("../../internal/instance/ownership.js");
+test("a new Manager controls the verified instance, not only a child it launched", async (t) => {
+  const f = await fixture(t); await f.build(); f.publish();
+  const r = createRuntimeBootstrap({ config: f.config }); f.cleanup.push(() => r.close());
+  f.cleanup.push(() => stopRuntime(f.config));
+  await r.start();
+  assert.equal((await control(f.config, "status")).pid, process.pid);
+  await control(f.config, "manager", { pid: process.pid });
+  assert.equal(r.status().managerPid, process.pid);
+  await control(f.config, "manager", { pid: null });
+  assert.equal(r.status().managerPid, null);
+  const response = await new Promise((resolve, reject) => {
+    const socket = net.connect(pipeName(f.config)); let text = "";
+    socket.once("connect", () => socket.write(JSON.stringify({ instanceId: f.config.instanceId, token: "not-the-owner", operation: "stop" }) + "\n"));
+    socket.on("data", (c) => text += c); socket.once("end", () => resolve(JSON.parse(text))); socket.once("error", reject);
+  });
+  assert.equal(response.ok, false); assert.equal(r.status().state, "READY");
+  await stopRuntime(f.config);
+  assert.equal(r.status().state, "STOPPED");
+  const started = await startRuntime(f.config, path.join(f.config.instanceRoot, "config.json"));
+  assert.equal(started.state, "READY"); assert.notEqual(started.pid, process.pid);
+  assert.equal((await control(f.config, "status")).pid, started.pid);
+  await stopRuntime(f.config);
+  assert.equal(fs.existsSync(path.join(f.config.stateRoot, "runtime.lock")), false);
+});

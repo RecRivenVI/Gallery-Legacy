@@ -42,9 +42,9 @@ function syncAllSearchInputStates() {
 
 function syncSearchSourceIndicator(source) {
   var btns = document.querySelectorAll(".search-meta-btn");
-  var resolvedSource = "db";
+  var resolvedSource = searchSourceForView();
   var isDb = resolvedSource === "db";
-  var title = "搜索作品、作者和标签；标签筛选独立生效";
+  var title = isDb ? "搜索作品、作者和标签；标签筛选独立生效" : "在当前文件目录下搜索名称（有界只读搜索）";
   for (var i = 0; i < btns.length; i++) {
     btns[i].classList.add("meta-status");
     btns[i].classList.toggle("active", isDb);

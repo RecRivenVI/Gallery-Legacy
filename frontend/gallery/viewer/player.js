@@ -107,7 +107,10 @@ var LB = (function () {
       t.kind = "subtitles";
       t.srclang = lang;
       t.label = label;
-      t.src = apiUrl("media", prefix + "/" + name);
+      const source = new URL(apiUrl("media", prefix + "/" + fileName), location.origin);
+      source.pathname = source.pathname.replace("/api/v1/media/", "/api/v1/subtitles/").replace("/api/v1/file-media", "/api/v1/file-subtitles");
+      source.searchParams.set("lang", lang);
+      t.src = source.pathname + source.search;
       if (isDefault) t.default = true;
       video.appendChild(t);
     }

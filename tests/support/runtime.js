@@ -7,7 +7,19 @@ const { sources } = require("./sources.js");
 const { normalizeRuntimeConfig, ensureLayout } = require("../../internal/instance/config.js");
 const { buildGeneration, publishGeneration } = require("../../internal/publication/generations.js");
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ZkAAAAASUVORK5CYII=", "base64");
-async function freePort() { const server = net.createServer(); await new Promise(resolve => server.listen(0, "127.0.0.1", resolve)); const port = server.address().port; await new Promise(resolve => server.close(resolve)); return port; }
+const FETCH_BLOCKED_PORTS = new Set([1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080]);
+async function freePort({ createServer = () => net.createServer() } = {}) {
+  // Windows may allocate a low ephemeral port that Fetch/Chromium refuses
+  // (for example 6000 or 10080). Other non-privileged low ports remain valid.
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const server = createServer();
+    await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+    const port = server.address().port;
+    await new Promise(resolve => server.close(resolve));
+    if (port >= 1024 && !FETCH_BLOCKED_PORTS.has(port)) return port;
+  }
+  throw new Error("No browser-safe ephemeral port available");
+}
 async function fixture(t, { empty = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-test-"));
   const cleanup = [];
@@ -17,7 +29,7 @@ async function fixture(t, { empty = false } = {}) {
   const config = normalizeRuntimeConfig({ instanceRoot: path.join(root, "instance"), sources: bindings, port: await freePort() });
   ensureLayout(config);
   fs.writeFileSync(path.join(config.instanceRoot, "config.json"), JSON.stringify({ instanceRoot: config.instanceRoot, sources: bindings, port: config.port }));
-  function work(name, metadata, files = { "cover.png": PNG }, author = "100", platform = "pixiv") {
+  function work(name, metadata, files = { "1.png": PNG }, author = "100", platform = "pixiv") {
     const dir = path.join(bindings[platform], author, name); fs.mkdirSync(dir, { recursive: true });
     if (metadata !== undefined) fs.writeFileSync(path.join(dir, "metadata.json"), typeof metadata === "string" ? metadata : JSON.stringify(metadata));
     for (const [file, value] of Object.entries(files)) { const dest = path.join(dir, file); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, value); }
@@ -31,7 +43,7 @@ async function fixture(t, { empty = false } = {}) {
     work("2026-01-05_00-00-00_5", "[]");
     work("freeform", { title: "Gamma", user: { name: "Empty IDs" } }, { "only.webm": "synthetic video bytes" }, "freeform-author");
   }
-  function build(id = "first", options = {}) { return buildGeneration({ instanceRoot: config.instanceRoot, generationId: id, catalogOptions: { platformRoots: bindings, nestedSampleLimit: 8, ...options } }); }
+  async function build(id = "first", options = {}) { return await buildGeneration({ instanceRoot: config.instanceRoot, generationId: id, catalogOptions: { platformRoots: bindings, nestedSampleLimit: 8, ...options } }); }
   function publish(id = "first") { return publishGeneration(config.instanceRoot, id); }
   return { root, config, bindings, work, build, publish, PNG, cleanup };
 }

@@ -4,7 +4,7 @@ const { beginAdapt, finalize, richText, selectField, setIdentities, setPrimaryRi
 const { asBoolean, asId, asInteger, asObject, asText, httpUrl, normalizeTags, oneOrMany, parseTimestamp } = require("./helpers.js");
 
 const PLATFORM_ID = "Gank";
-const VERSION = 2;
+const VERSION = 4;
 
 function adapt(context) {
   const { result, metadata } = beginAdapt(GankAdapter, context);
@@ -37,5 +37,19 @@ function adapt(context) {
   return finalize(result);
 }
 
-const GankAdapter = Object.freeze({ PLATFORM_ID, VERSION, adapt });
+// These production preview rules only affect presentation; every eligible disk
+// file remains actual media, regardless of metadata or presentation visibility.
+function presentationSources(metadata, files) {
+  const archive = files.find((f) => /\.(zip|rar|7z|tar|gz|bz2|xz|tgz|tbz|tbz2|txz|zst|lz|lz4|cab|cbz|cbr|cb7)$/i.test(f.fileName));
+  if (archive) return [{ field: "media.extractedPreviews", sourceKind: "filesystem", sourcePath: archive.relativePath, priority: 1 }];
+  if (metadata?.category !== "ganknow") return [];
+  const hasLink = (value) => typeof value === "string" && /https:\/\/mega(?:\.nz|\.co\.nz)\/(?:file|folder)\//i.test(value);
+  for (const key of ["content", "links"]) {
+    const value = metadata[key];
+    if (hasLink(value) || (Array.isArray(value) && value.some(hasLink)))
+      return [{ field: "media.extractedPreviews", sourceKind: "metadata", sourcePath: "$." + key, priority: 1 }];
+  }
+  return [];
+}
+const GankAdapter = Object.freeze({ PLATFORM_ID, VERSION, adapt, presentationSources });
 module.exports = GankAdapter;

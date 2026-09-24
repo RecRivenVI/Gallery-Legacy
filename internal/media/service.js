@@ -11,6 +11,8 @@ const MIME = {
   ".webp": "image/webp",
   ".gif": "image/gif",
   ".avif": "image/avif",
+  ".bmp": "image/bmp", ".ico": "image/x-icon", ".tif": "image/tiff", ".tiff": "image/tiff",
+  ".avi": "video/x-msvideo", ".ogv": "video/ogg",
   ".svg": "image/svg+xml",
   ".mp4": "video/mp4",
   ".m4v": "video/mp4",
@@ -96,9 +98,7 @@ function createMediaService(reader, config) {
       fail("MEDIA_UNAVAILABLE", 404);
     }
   }
-  return {
-    async serve(req, res, id, thumbnail) {
-      const file = resolve(id);
+  async function serveResolved(req, res, file, thumbnail) {
       if (thumbnail) {
         const cached = await cache.thumbnailFor(file);
         return stream(
@@ -118,10 +118,23 @@ function createMediaService(reader, config) {
         MIME[path.extname(file.candidateReal).toLowerCase()] ||
           "application/octet-stream",
       );
+  }
+  return {
+    serveResolved,
+    serveSubtitle(req, res, file, lang) {
+      if (!["zh-CN", "en-US"].includes(lang) || file.media.filesystem_media_type !== "video") fail("SUBTITLE_INVALID", 400);
+      const name = path.basename(file.candidateReal, path.extname(file.candidateReal)) + "." + lang + ".vtt";
+      const target = path.join(path.dirname(file.candidateReal), name);
+      let stat;
+      try { noLinks(target); stat = fs.lstatSync(target, { bigint: true }); } catch { fail("SUBTITLE_NOT_FOUND", 404); }
+      if (!stat.isFile() || stat.size > 4n * 1024n * 1024n) fail("SUBTITLE_UNAVAILABLE", 404);
+      return stream(req, res, target, stat, "text/vtt; charset=utf-8");
     },
+    resolve,
+    serve(req, res, id, thumbnail) { return serveResolved(req, res, resolve(id), thumbnail); },
     async close() {
       await cache.close?.();
     },
   };
 }
-module.exports = { createMediaService, stream };
+module.exports = { createMediaService, stream, MIME };

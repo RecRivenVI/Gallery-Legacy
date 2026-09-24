@@ -43,11 +43,27 @@ export async function request(resource, parameters = {}, options = {}) {
       code: "INVALID_RESPONSE",
     });
   }
-  if (!response.ok)
+  if (!response.ok) {
+    const code = body.error?.code || "REQUEST_FAILED";
+    if (
+      [
+        "CONTENT_CHANGED",
+        "GENERATION_CHANGED",
+        "CURSOR_CONTEXT_MISMATCH",
+        "INVALID_CURSOR",
+      ].includes(code) &&
+      typeof window !== "undefined"
+    )
+      window.dispatchEvent(
+        new CustomEvent("gallery-content-changed", {
+          detail: { code, epoch: body.generationId, revision: body.revision },
+        }),
+      );
     throw Object.assign(new Error(body.error?.code || "REQUEST_FAILED"), {
-      code: body.error?.code || "REQUEST_FAILED",
+      code,
       status: response.status,
     });
+  }
   if (body.protocolVersion !== 1 || !Object.hasOwn(body, "data"))
     throw Object.assign(new Error("PROTOCOL_MISMATCH"), {
       code: "PROTOCOL_MISMATCH",
@@ -56,11 +72,26 @@ export async function request(resource, parameters = {}, options = {}) {
     throw Object.assign(new Error("PROTOCOL_MISMATCH"), {
       code: "PROTOCOL_MISMATCH",
     });
+  const previousGeneration = generationId;
   generationId = body.generationId;
+  if (
+    previousGeneration &&
+    previousGeneration !== generationId &&
+    typeof window !== "undefined"
+  )
+    window.dispatchEvent(
+      new CustomEvent("gallery-generation-changed", {
+        detail: { previous: previousGeneration, generation: generationId },
+      }),
+    );
   if (!validateData(resource, body.data))
     throw Object.assign(new Error("INVALID_RESPONSE"), {
       code: "INVALID_RESPONSE",
     });
+  if(["works","authors","tags"].includes(resource)) {
+    body.data.epoch=body.generationId;
+    if(Number.isSafeInteger(body.revision))body.data.revision=body.revision;
+  }
   return body.data;
 }
 export async function list(resource, parameters, options) {

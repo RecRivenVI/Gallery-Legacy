@@ -4,7 +4,7 @@ const { addFieldSource, beginAdapt, finalize, richText, selectField, setIdentiti
 const { asId, asInteger, asObject, asText, fallback, httpUrl, normalizeTags, oneOrMany, parseTimestamp } = require("./helpers.js");
 
 const PLATFORM_ID = "Fantia";
-const VERSION = 2;
+const VERSION = 3;
 
 function classifyStructuredText(sourceText) {
   try {

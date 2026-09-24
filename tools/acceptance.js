@@ -41,7 +41,7 @@ async function accept(config) {
       Number.isSafeInteger(status.managerPid) && status.managerPid > 0;
     assert.equal(result.checks.runtime, true);
     assert.equal(result.checks.manager, true);
-    assert.equal((await api("platforms")).data.items.length, 8);
+    assert.equal((await api("platforms")).data.items.length, 9);
     result.stage = "short-search";
     for (const q of ["R", "R-"]) {
       const data = (await api("works", { q, pageSize: "20" })).data;

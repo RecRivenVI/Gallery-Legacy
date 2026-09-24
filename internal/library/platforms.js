@@ -11,40 +11,41 @@ const PLATFORM_REGISTRY = Object.freeze(
       id: "pixiv",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 2,
+      adapterVersion: 3,
     },
     {
       id: "pixivFANBOX",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 2,
+      adapterVersion: 3,
     },
     {
       id: "Gank",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 2,
+      adapterVersion: 4,
     },
     {
       id: "Fantia",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 2,
+      adapterVersion: 3,
     },
     {
       id: "Patreon",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 2,
+      adapterVersion: 3,
     },
     {
       id: "Pawchive",
       family: "art_distribution",
       enabled: true,
-      adapterVersion: 3,
+      adapterVersion: 4,
     },
-    { id: "X", family: "social_feed", enabled: true, adapterVersion: 2 },
-    { id: "微博", family: "social_feed", enabled: true, adapterVersion: 2 },
+    { id: "X", family: "social_feed", enabled: true, adapterVersion: 3 },
+    { id: "微博", family: "social_feed", enabled: true, adapterVersion: 3 },
+    { id: "Venera", family: "download_library", enabled: true, adapterVersion: 1 },
   ].map((entry) => Object.freeze(entry)),
 );
 
@@ -82,7 +83,7 @@ function bindSources(sources) {
     Array.isArray(sources) ||
     Object.keys(sources).length !== PLATFORM_REGISTRY.length
   )
-    throw new Error("Exactly eight source bindings are required");
+    throw new Error("Exactly nine source bindings are required");
   const seen = new Set();
   return PLATFORM_REGISTRY.map((platform) => {
     const root = sources[platform.id];

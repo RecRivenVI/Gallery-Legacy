@@ -1,0 +1,26 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),{execFileSync}=require("node:child_process");
+const {chromium}=require("playwright");const {fixture}=require("../support/runtime.js");
+const {normalizeRuntimeConfig}=require("../../internal/instance/config.js");const {createRuntimeBootstrap}=require("../../internal/runtime/bootstrap.js");
+test("Web source link, file search, subtitles, stable share and return anchor work with public synthetic data",async t=>{
+  const f=await fixture(t,{empty:true});
+  const directory=f.work("sample # one",{title:"Synthetic source work",url:"https://example.invalid/source",user:{name:"Synthetic"}},{"1.png":f.PNG,"clip.zh-CN.vtt":"WEBVTT\n\n00:00.000 --> 00:01.000\nSynthetic subtitle\n"});
+  execFileSync("ffmpeg",["-hide_banner","-loglevel","error","-f","lavfi","-i","testsrc2=size=32x32:rate=10","-t","1","-c:v","libvpx-vp9","-an","-y",path.join(directory,"clip.webm")],{windowsHide:true,stdio:"ignore"});
+  const files=path.dirname(f.bindings.pixiv);fs.mkdirSync(path.join(files,"ordinary"));for(const name of ["needle1.png","needle2.png"])fs.writeFileSync(path.join(files,"ordinary",name),f.PNG);
+  const config=normalizeRuntimeConfig({...f.config,fileBrowserRoots:[{id:"files",name:"Synthetic files",path:files}]});
+  await f.build();f.publish();let runtime=createRuntimeBootstrap({config});f.cleanup.push(()=>runtime.close());await runtime.start();
+  const browser=await chromium.launch({headless:true});f.cleanup.push(()=>browser.close());const page=await browser.newPage();page.setDefaultTimeout(15000);const errors=[];page.on("pageerror",e=>errors.push(e.message));
+  await page.goto(config.url+"/#/@all/pixiv");await page.waitForSelector("#content .card");
+  assert.equal(await page.locator("#content .card").first().getAttribute("data-d-source"),"https://example.invalid/source");
+  const current=await (await fetch(config.url+"/api/v1/works")).json();const work=current.data.items[0];
+  const share=await page.evaluate(async id=>{Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async text=>{window.testShare=text;}}});await (await import("/frontend/gallery/model.js")).copyMediaLink("/work/"+id,"clip.webm",1);return window.testShare;},work.id);assert.ok(share.includes("/s/"));
+  await page.goto(share);await page.waitForSelector(".lb-slide video");
+  const track=await page.locator('.lb-slide video track[srclang="zh-CN"]').first().getAttribute("src");assert.ok(track.includes("/api/v1/subtitles/"));
+  const subtitle=await fetch(config.url+track);assert.equal(subtitle.status,200);assert.match(await subtitle.text(),/^WEBVTT/);
+  await page.keyboard.press("Escape");await page.goto(config.url+"/#/f/files/ordinary");await page.waitForFunction(()=>document.querySelectorAll("#content .card").length===2);
+  const search=page.locator(".search-input:visible").first();await search.fill("needle");await search.press("Enter");await page.waitForFunction(()=>document.querySelectorAll('[data-search-parent]').length===2);assert.ok(page.url().includes("q=needle"));
+  await page.locator('[data-search-parent]').first().click();await page.waitForSelector(".lb-slide img");await page.keyboard.press("Escape");
+  await page.goto("about:blank");await runtime.close();f.work("000-added",undefined);await f.build("second");f.publish("second");runtime=createRuntimeBootstrap({config});await runtime.start();
+  await page.goto(share);await page.waitForSelector(".lb-slide video");assert.equal(await page.locator("body").textContent().then(x=>x.includes("链接属于其他数据版本")),false);
+  assert.deepEqual(errors,[]);
+});

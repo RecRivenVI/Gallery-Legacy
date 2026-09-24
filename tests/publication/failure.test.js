@@ -33,10 +33,10 @@ test("committed WAL is checkpointed to the immutable final file before hashing",
 });
 test("failure during finalization or non-ready manifest cannot disturb the old pointer", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const before = fs.readFileSync(f.config.activeGenerationPath);
-  assert.throws(
+  await assert.rejects(
     () =>
       buildGeneration({
         instanceRoot: f.config.instanceRoot,
@@ -67,12 +67,12 @@ test("failure during finalization or non-ready manifest cannot disturb the old p
     "first",
   );
 });
-test("Catalog/Search cross-generation mismatch is rejected and running generations are not hot swapped", async (t) => {
+test("Catalog/Search mismatch is rejected and only fully validated readers are adopted", async (t) => {
   const f = await fixture(t),
-    a = f.build();
+    a = await f.build();
   f.publish();
   f.work("new-physical-work", {});
-  const b = f.build("second");
+  const b = await f.build("second");
   const copy = path.join(f.config.generationsRoot, "mismatched");
   fs.cpSync(b.generationRoot, copy, { recursive: true });
   const manifest = JSON.parse(
@@ -103,6 +103,9 @@ test("Catalog/Search cross-generation mismatch is rejected and running generatio
     (await (await fetch(f.config.url + "/api/v1/works")).json()).data.total,
     6,
   );
+  await r.applyPublished();
+  assert.equal(r.status().loadedGenerationId, "second");
+  assert.equal(r.status().restartRequired, false);
   await r.close();
   const next = createRuntimeBootstrap({ config: f.config });
   f.cleanup.push(() => next.close());

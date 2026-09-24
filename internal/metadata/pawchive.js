@@ -4,7 +4,7 @@ const { addFieldSource, beginAdapt, fileReference, finalize, richText, selectFie
 const { asBoolean, asId, asInteger, asObject, asText, fallback, httpUrl, invalid, normalizeTags, oneOrMany, parseTimestamp, warning, workIdFromDirectory } = require("./helpers.js");
 
 const PLATFORM_ID = "Pawchive";
-const VERSION = 3;
+const VERSION = 4;
 
 function directoryIdentity(authorDirectoryName) {
   // Targeted real fanbox/patreon samples consistently matched this prefix to
@@ -65,10 +65,13 @@ function adapt(context) {
   result.work.title = selectField(result, "work.title", [{ path: "title", value: metadata.title }], asText);
   result.work.publishedAtMs = selectField(result, "work.publishedAtMs", [{ path: "published", value: metadata.published }, { path: "date", value: metadata.date }, { path: "added", value: metadata.added }], parseTimestamp);
   result.work.updatedAtMs = selectField(result, "work.updatedAtMs", [{ path: "edited", value: metadata.edited }], parseTimestamp);
-  result.authorProfile.displayName = selectField(result, "authorProfile.displayName", [{ path: "user_profile.name", value: profile.name }, { path: "username", value: metadata.username }], asText);
+  result.authorProfile.displayName = selectField(result, "authorProfile.displayName", [{ path: "user_profile.name", value: profile.name }, { path: "username", value: metadata.username }, { path: "user_name", value: metadata.user_name }, { path: "creator", value: metadata.creator }, { path: "artist", value: metadata.artist }], asText);
   result.authorProfile.handle = selectField(result, "authorProfile.handle", [{ path: "user_profile.public_id", value: profile.public_id }, { path: "username", value: metadata.username }], asText);
   result.work.flags.hasFull = asBoolean(metadata.has_full, d, "has_full");
-  const content = asText(metadata.content, d, "content"); if (content !== null) setPrimaryRichText(result, richText("content", "html", content));
+  for (const [index, key] of ["content", "description", "text"].entries()) {
+    const content = asText(metadata[key], d, key);
+    if (content !== null) { setPrimaryRichText(result, richText(key, key === "text" ? "plain" : "html", content), index + 1); break; }
+  }
   result.tags = normalizeTags(oneOrMany(metadata.tags, d, "tags").map((value, index) => asText(value, d, `tags[${index}]`)));
   const media = [];
   const single = asObject(metadata.file, d, "file");

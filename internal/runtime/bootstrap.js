@@ -10,18 +10,29 @@ const { readJson, writeJson } = require("../instance/files.js");
 const {
   acquireOwnership,
   processIdentity,
+  processIdentityAsync,
   sameIdentity,
 } = require("../instance/ownership.js");
 const { resolveActiveGeneration } = require("../publication/generations.js");
 const { createRuntimeServer } = require("../server/http.js");
-function createRuntimeBootstrap({ config: input }) {
+const { withMaintenance } = require("../publication/retention.js");
+function createRuntimeBootstrap({ config: input, onShutdownRequest = null, sourceWriteAttempts = () => 0, lookupIdentity = processIdentityAsync }) {
   const config = normalizeRuntimeConfig(input);
   let owner = null,
     server = null,
     scanChild = null,
     closed = false,
-    closePromise = null;
+    closePromise = null,
+    managerIdentity = null,
+    managerCheckedAt = 0,
+    managerChecking = false,
+    scanChecking = false,
+    checkedScanIdentity = null;
+  let applyTimer = null, applying = null, nextApplyAt = 0;
   const state = {
+    instanceId: config.instanceId,
+    deployment: config.deployment,
+    liveUpdates: config.liveUpdates,
     state: "STOPPED",
     pid: process.pid,
     managerPid: null,
@@ -34,6 +45,16 @@ function createRuntimeBootstrap({ config: input }) {
     writeJson(config.statusPath, { ...state, updatedAtMs: Date.now() });
   }
   function status() {
+    if (!closed && managerIdentity && !managerChecking && Date.now() - managerCheckedAt > 5000) {
+      managerCheckedAt = Date.now();
+      managerChecking = true;
+      const expected=managerIdentity;
+      Promise.resolve().then(()=>lookupIdentity(expected.pid)).then(actual=>{
+        if (!closed && managerIdentity === expected && !sameIdentity(actual, expected)) {
+          managerIdentity = null; state.managerPid = null; persist();
+        }
+      }).catch(()=>{}).finally(()=>{managerChecking=false;});
+    }
     let pointer = null,
       scan = null;
     try {
@@ -41,13 +62,14 @@ function createRuntimeBootstrap({ config: input }) {
       scan = readJson(config.scanStatusPath);
     } catch {}
     if (scan?.running) {
-      if (Date.now() - checkedAt > 5000) {
+      if (!sameIdentity(checkedScanIdentity,scan.identity)) {scanVerified=null;checkedAt=0;}
+      if (!closed && !scanChecking && Date.now() - checkedAt > 5000) {
         checkedAt = Date.now();
-        try {
-          scanVerified = sameIdentity(processIdentity(scan.pid), scan.identity);
-        } catch {
-          scanVerified = null;
-        }
+        const expected=scan.identity;
+        checkedScanIdentity=expected;scanChecking=true;
+        Promise.resolve().then(()=>lookupIdentity(scan.pid)).then(actual=>{
+          if(!closed && checkedScanIdentity === expected)scanVerified=sameIdentity(actual,expected);
+        }).catch(()=>{scanVerified=null;}).finally(()=>{scanChecking=false;});
       }
       if (scanVerified === false)
         scan = {
@@ -68,6 +90,7 @@ function createRuntimeBootstrap({ config: input }) {
             "finishedAtMs",
             "elapsedMs",
             "currentPlatform",
+            "activePlatforms",
             "observedWorks",
             "indexedWorks",
             "actualMedia",
@@ -78,9 +101,26 @@ function createRuntimeBootstrap({ config: input }) {
             "peakMemory",
             "platforms",
             "failure",
+            "mode",
+            "effectiveMode",
+            "changes",
+            "phase",
+            "stage",
+            "stageStartedAtMs",
+            "stageDurationsMs",
+            "search",
+            "restartRequired",
+            "invalidatedPlatformIds",
           ].map((k) => [k, scan[k]]),
         )
       : { state: "IDLE", running: false };
+    if (scan?.scope) sanitized.scope = {
+      platformId: scan.scope.platformId || scan.scope.requestedPlatformId || null,
+      platformIds: scan.scope.platformIds || scan.scope.requestedPlatformIds || null,
+      authorScoped: !!(scan.scope.authorDirectoryName || scan.scope.requestedAuthorDirectoryName),
+      invalidatedPlatformIds: scan.scope.invalidatedPlatformIds || [],
+      effectivePlatformIds: scan.scope.effectivePlatformIds || [],
+    };
     const generations = [];
     if (fs.existsSync(config.generationsRoot))
       for (const id of fs.readdirSync(config.generationsRoot)) {
@@ -97,54 +137,69 @@ function createRuntimeBootstrap({ config: input }) {
             });
         } catch {}
       }
+    const live = server?.liveState?.();
+    const loaded = live?.baseGenerationId || state.loadedGenerationId;
     return {
       ...state,
+      loadedGenerationId: loaded,
+      libraryReady: loaded !== null,
+      ...(live ? {live:{...live,enabled:true}} : {}),
+      memory: { rss: process.memoryUsage().rss, heapUsed: process.memoryUsage().heapUsed },
+      sourceWriteAttempts: sourceWriteAttempts(),
       activeGenerationId: pointer?.generationId || null,
       restartRequired:
-        !!pointer && pointer.generationId !== state.loadedGenerationId,
+        !!pointer && pointer.generationId !== loaded,
       scan: sanitized,
       generations,
     };
   }
   async function scan() {
-    const current = status().scan;
-    if (scanChild || current.running)
-      throw Object.assign(new Error("Scan already running"), {
-        code: "SCAN_IN_USE",
-        status: 409,
-      });
-    const configPath = path.join(config.instanceRoot, "config.json");
-    if (!fs.existsSync(configPath))
-      throw Object.assign(
-        new Error("Persist instance configuration before scanning"),
-        { code: "CONFIG_REQUIRED", status: 409 },
-      );
-    scanChild = cp.spawn(
-      process.execPath,
-      [
-        path.resolve(__dirname, "../../cmd/gallery/main.js"),
-        "scan",
-        "--config",
-        configPath,
-        "--confirm-read-only",
-      ],
-      {
-        stdio: ["ignore", "ignore", "ignore"],
-        windowsHide: true,
-        env: { ...process.env, TEMP: config.tempRoot, TMP: config.tempRoot },
-      },
-    );
-    scanChild.once("error", () => {
-      scanChild = null;
-    });
-    scanChild.once("exit", () => {
-      scanChild = null;
-      checkedAt = 0;
-    });
+    return require("./management.js").startFullScan(config, path.join(config.instanceRoot, "config.json"));
+  }
+  function applyPublished() {
+    if (closed || !server || applying || Date.now() < nextApplyAt) return applying;
+    let pointer, scan;
+    try { pointer = readJson(config.activeGenerationPath); scan = readJson(config.scanStatusPath); } catch { return; }
+    const loaded = server.liveState()?.baseGenerationId || state.loadedGenerationId;
+    if (!pointer?.generationId || pointer.generationId === loaded || scan?.running) return;
+    applying = withMaintenance(config, async () => {
+      state.applyingGeneration = true;
+      const generation = await require("./generation-check.js").checkGeneration(config);
+      if (closed) return;
+      if (readJson(config.activeGenerationPath)?.generationId !== generation.generationId) throw Object.assign(new Error("Published generation changed during validation"), { code: "GENERATION_APPLY_STALE" });
+      if (config.liveUpdates) {
+        if (server.liveState()) throw Object.assign(new Error("Live checkpoint recovery required"), { code: "LIVE_RESTART_REQUIRED" });
+        // The first completed scan prepares live before releasing its owner.
+        // Never replace an already-open live database here.
+      }
+      server.applyGeneration(generation);
+      state.loadedGenerationId = generation.generationId;
+      state.applyError = null;
+      persist();
+    }).catch(error => {
+      state.applyError = { code: /^[A-Z0-9_]+$/.test(error.code || "") ? error.code : "GENERATION_APPLY_FAILED" };
+      nextApplyAt = Date.now() + 30000;
+    }).finally(() => { state.applyingGeneration = false; applying = null; });
+    return applying;
   }
   async function start() {
     ensureLayout(config);
-    owner = await acquireOwnership(config, "runtime");
+    owner = await acquireOwnership(config, "runtime", async (request) => {
+      if (request.operation === "status") return { ...(server ? server.snapshotState() : status()), localControl: true };
+      if (request.operation === "access.read") return server.access.snapshot();
+      if (request.operation === "access.clear") return server.access.clear();
+      if (request.operation === "access.block") return server.access.block(request.id, request.blocked);
+      if (request.operation === "manager") { manager(request.pid || null); return { accepted: true }; }
+      if (request.operation === "scan") {
+        if (request.confirmReadOnly !== true) throw Object.assign(new Error("Confirmation required"), { code: "READ_ONLY_CONFIRMATION_REQUIRED" });
+        await scan(); return { accepted: true };
+      }
+      if (request.operation === "stop") {
+        setTimeout(() => void (onShutdownRequest ? onShutdownRequest() : close()), 50);
+        return { accepted: true };
+      }
+      throw Object.assign(new Error("Unsupported control"), { code: "CONTROL_OPERATION_INVALID" });
+    });
     let previous = null;
     try {
       previous = readJson(config.statusPath);
@@ -154,11 +209,21 @@ function createRuntimeBootstrap({ config: input }) {
     state.startedAtMs = Date.now();
     persist();
     try {
-      const generation = resolveActiveGeneration(config.instanceRoot, {
-        generationsRoot: config.generationsRoot,
-        activePointerPath: config.activeGenerationPath,
+      const generation = await withMaintenance(config, () => {
+        if (!fs.existsSync(config.activeGenerationPath)) {
+          const ready = fs.readdirSync(config.generationsRoot).some(id => readJson(path.join(config.generationsRoot, id, "manifest.json"))?.state === "READY");
+          if (ready) throw Object.assign(new Error("Published pointer is missing"), { code: "GENERATION_ACTIVE_POINTER_MISSING" });
+          return null;
+        }
+        const resolved = resolveActiveGeneration(config.instanceRoot, {
+          generationsRoot: config.generationsRoot,
+          activePointerPath: config.activeGenerationPath,
+        });
+        state.loadedGenerationId = resolved.generationId;
+        persist();
+        return resolved;
       });
-      state.loadedGenerationId = generation.generationId;
+      if(config.liveUpdates && generation)await require("../catalog/live.js").ensureLive(config,generation);
       server = createRuntimeServer({
         config,
         generation,
@@ -168,7 +233,9 @@ function createRuntimeBootstrap({ config: input }) {
       await server.start();
       state.state = "READY";
       persist();
-      return { url: config.url, generationId: generation.generationId };
+      applyTimer = setInterval(() => void applyPublished(), 1500);
+      applyTimer.unref();
+      return { url: config.url, generationId: generation?.generationId || null };
     } catch (error) {
       state.state = "FAILED";
       state.error = { code: error.code || "START_FAILED" };
@@ -183,6 +250,9 @@ function createRuntimeBootstrap({ config: input }) {
     if (closePromise) return closePromise;
     closePromise = (async () => {
       if (closed) return;
+      closed = true;
+      clearInterval(applyTimer);
+      await applying;
       state.state = "STOPPING";
       persist();
       if (server) await server.close();
@@ -196,9 +266,11 @@ function createRuntimeBootstrap({ config: input }) {
     return closePromise;
   }
   function manager(pid) {
-    state.managerPid = pid;
+    managerIdentity = pid ? processIdentity(pid) : null;
+    state.managerPid = managerIdentity?.pid || null;
+    managerCheckedAt = Date.now();
     persist();
   }
-  return { config, start, close, status, scan, manager };
+  return { config, start, close, status, scan, manager, applyPublished };
 }
 module.exports = { createRuntimeBootstrap };

@@ -30,11 +30,13 @@
   ],
   "scanStates": [
     "IDLE",
+    "PREPARING",
     "SCANNING",
     "BUILDING_SEARCH",
     "VALIDATING",
     "PUBLISHING",
     "READY",
+    "CANCELLED",
     "FAILED"
   ]
 }

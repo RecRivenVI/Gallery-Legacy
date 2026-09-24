@@ -25,6 +25,7 @@ const {
 } = require("../media/reconciliation/index.js");
 const { normalizeRelativePath } = require("../library/paths.js");
 const { PLATFORM_REGISTRY } = require("../library/platforms.js");
+const { filesystemPresentationSources } = require("../media/presentation.js");
 const {
   SNAPSHOT_PREPARATION_CONTRACT_VERSION,
   compareAuthorOutcomes,
@@ -214,6 +215,14 @@ function mapEntry(entry, author, selections) {
 
   const metadataDeclarations = entry.normalized?.mediaDeclarations || [];
   const filesystemFiles = entry.work.filesystemFiles || [];
+  const presentationSources = [
+    ...filesystemPresentationSources(filesystemFiles),
+    ...(adapterForPlatform(entry.work.platformId).presentationSources?.(entry.metadata, filesystemFiles) || []),
+  ];
+  mapped.rows.fieldSources.push(...presentationSources.map((item) => ({
+    work_id: null, field: item.field, source_kind: item.sourceKind,
+    source_path: item.sourcePath, priority: item.priority,
+  })));
   const reconciliation = reconcileMedia({
     metadataDeclarations,
     filesystemFiles,
@@ -325,77 +334,136 @@ function metadataDiagnostic(entry) {
   };
 }
 
-function createStreamingAuthorPreparation(authorObservation) {
+function mapPreparedEntry(entry, author, selections) {
+  mapEntry(entry, author, selections);
+  return entry;
+}
+
+function createStreamingAuthorPreparation(authorObservation, options = {}) {
   if (!authorObservation || typeof authorObservation !== "object")
     throw new TypeError("AuthorObservation is required");
+  const pool = options && options.pool;
   let latest = null;
   let workCount = 0;
+  let asyncUsed = false;
+  let syncUsed = false;
   const provisional = authorSelections(authorObservation, null);
+  function resolveLatest() {
+    let authority;
+    if (!latest)
+      authority = {
+        state: "none",
+        workDirectoryName: null,
+        sourceWorkId: null,
+        reason: null,
+      };
+    else if (latest.authorityCandidate.valid === true) {
+      latest.authoritative = true;
+      authority = {
+        state: "authoritative",
+        workDirectoryName: latest.work.workDirectoryName,
+        sourceWorkId: latest.authorityCandidate.work.sourceWorkId,
+        reason: null,
+      };
+    } else
+      authority = {
+        state: "latest_invalid",
+        workDirectoryName: latest.work.workDirectoryName,
+        sourceWorkId: latest.authorityCandidate.work?.sourceWorkId || null,
+        reason: "latest_metadata_invalid",
+      };
+    return { authority, selections: authorSelections(authorObservation, latest) };
+  }
+  function complete(authorCompletion, authority, selections, mappedLatest) {
+    const candidates = mappedLatest ? [mappedLatest.preparedCandidate] : [];
+    return {
+      authoritativeCandidate: mappedLatest
+        ? deepFreeze({
+            ...mappedLatest.preparedCandidate,
+            authorAuthorityFinal: true,
+          })
+        : null,
+      preparedAuthor: authorRow(authorObservation, selections, candidates),
+      authorOutcome: {
+        platformId: authorObservation.platformId,
+        authorDirectoryName: authorObservation.authorDirectoryName,
+        authorRelativePathKey: authorObservation.authorRelativePathKey,
+        preparationState:
+          authorCompletion.worksState === "complete" &&
+          authorObservation.state === "present"
+            ? "complete"
+            : "incomplete",
+        reason:
+          authorCompletion.worksState === "complete" &&
+          authorObservation.state === "present"
+            ? null
+            : "author_snapshot_incomplete",
+        authority,
+        preparedWorkCount: workCount,
+        failedWorkCount: 0,
+      },
+    };
+  }
+  function acceptEntry(entry, mapped, asynchronous) {
+    if (asynchronous) {
+      if (syncUsed) throw new Error("Cannot mix synchronous and asynchronous preparation");
+      asyncUsed = true;
+    } else {
+      if (asyncUsed) throw new Error("Cannot mix synchronous and asynchronous preparation");
+      syncUsed = true;
+    }
+    if (streamingEntryIsLater(latest, entry)) latest = entry;
+    const prepared = mapped ? entry : mapPreparedEntry(entry, authorObservation, provisional);
+    workCount++;
+    return {
+      candidate: prepared.preparedCandidate,
+      metadataDiagnostic: metadataDiagnostic(prepared),
+    };
+  }
   return {
     prepareWork(workObservation) {
       const entry = prepareMetadataEntry(workObservation);
-      if (streamingEntryIsLater(latest, entry)) latest = entry;
-      mapEntry(entry, authorObservation, provisional);
-      workCount++;
-      return {
-        candidate: entry.preparedCandidate,
-        metadataDiagnostic: metadataDiagnostic(entry),
-      };
+      return acceptEntry(entry, false, false);
+    },
+    acceptPreparedEntry(entry, { mapped = false } = {}) {
+      if (!entry || typeof entry !== "object")
+        throw new TypeError("Prepared metadata entry is required");
+      return acceptEntry(entry, mapped, true);
+    },
+    provisionalSelections() {
+      return provisional;
+    },
+    async prepareWorkAsync(workObservation) {
+      const mapped = pool?.prepareMapped
+        ? await pool.prepareMapped(workObservation, authorObservation, provisional)
+        : pool?.prepare
+          ? await pool.map(
+              await pool.prepare(workObservation),
+              authorObservation,
+              provisional,
+            )
+          : mapPreparedEntry(
+              prepareMetadataEntry(workObservation),
+              authorObservation,
+              provisional,
+            );
+      return acceptEntry(mapped, true, true);
     },
     finish(authorCompletion = {}) {
-      let authority;
-      if (!latest)
-        authority = {
-          state: "none",
-          workDirectoryName: null,
-          sourceWorkId: null,
-          reason: null,
-        };
-      else if (latest.authorityCandidate.valid === true) {
-        latest.authoritative = true;
-        authority = {
-          state: "authoritative",
-          workDirectoryName: latest.work.workDirectoryName,
-          sourceWorkId: latest.authorityCandidate.work.sourceWorkId,
-          reason: null,
-        };
-      } else
-        authority = {
-          state: "latest_invalid",
-          workDirectoryName: latest.work.workDirectoryName,
-          sourceWorkId: latest.authorityCandidate.work?.sourceWorkId || null,
-          reason: "latest_metadata_invalid",
-        };
-      const selections = authorSelections(authorObservation, latest);
+      if (asyncUsed) throw new Error("Use finishAsync for asynchronous preparation");
+      const { authority, selections } = resolveLatest();
       if (latest) mapEntry(latest, authorObservation, selections);
-      const candidates = latest ? [latest.preparedCandidate] : [];
-      return {
-        authoritativeCandidate: latest
-          ? deepFreeze({
-              ...latest.preparedCandidate,
-              authorAuthorityFinal: true,
-            })
-          : null,
-        preparedAuthor: authorRow(authorObservation, selections, candidates),
-        authorOutcome: {
-          platformId: authorObservation.platformId,
-          authorDirectoryName: authorObservation.authorDirectoryName,
-          authorRelativePathKey: authorObservation.authorRelativePathKey,
-          preparationState:
-            authorCompletion.worksState === "complete" &&
-            authorObservation.state === "present"
-              ? "complete"
-              : "incomplete",
-          reason:
-            authorCompletion.worksState === "complete" &&
-            authorObservation.state === "present"
-              ? null
-              : "author_snapshot_incomplete",
-          authority,
-          preparedWorkCount: workCount,
-          failedWorkCount: 0,
-        },
-      };
+      return complete(authorCompletion, authority, selections, latest);
+    },
+    async finishAsync(authorCompletion = {}) {
+      if (syncUsed) throw new Error("Use finish for synchronous preparation");
+      const { authority, selections } = resolveLatest();
+      const mappedLatest = latest
+        ? pool?.map
+          ? await pool.map(latest, authorObservation, selections)
+          : mapPreparedEntry(latest, authorObservation, selections)
+        : null;
+      return complete(authorCompletion, authority, selections, mappedLatest);
     },
   };
 }
@@ -517,6 +585,8 @@ function preparePlatformSnapshot(platformObservation) {
 }
 
 module.exports = {
+  mapPreparedEntry,
+  prepareMetadataEntry,
   createStreamingAuthorPreparation,
   prepareAuthorObservation,
   preparePlatformSnapshot,

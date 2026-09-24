@@ -1,8 +1,8 @@
 {
   "name": "gallery",
-  "version": "10.3.0",
+  "version": "10.9.0",
   "private": true,
-  "description": "Filesystem-authoritative Gallery for eight fixed platforms",
+  "description": "Filesystem-authoritative Gallery for nine fixed platforms and read-only file browsing",
   "main": "desktop/main.js",
   "engines": {
     "node": ">=22.23.2 <23"
@@ -20,7 +20,9 @@
     "check:electron": "node tools/check.js --desktop",
     "audit:tree": "node tools/audit-tree.js",
     "accept": "node tools/acceptance.js",
-    "build": "node tools/build.js"
+    "build": "node tools/build.js",
+    "package:windows": "node tools/package.js",
+    "retain": "node cmd/gallery/main.js retain"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",

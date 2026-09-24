@@ -22,9 +22,9 @@ function runtime(f) {
 test("normal lifecycle, independent instances and duplicate ownership", async (t) => {
   const a = await fixture(t),
     b = await fixture(t);
-  const ga = a.build();
+  const ga = await a.build();
   a.publish();
-  b.build();
+  await b.build();
   b.publish();
   const r = runtime(a),
     s = runtime(b);
@@ -49,7 +49,7 @@ test("normal lifecycle, independent instances and duplicate ownership", async (t
 });
 test("stale READY and reused PID identity recover; live identity never stolen", async (t) => {
   const f = await fixture(t);
-  f.build();
+  await f.build();
   f.publish();
   const p = processIdentity(process.pid);
   fs.writeFileSync(
@@ -79,9 +79,9 @@ test("stale READY and reused PID identity recover; live identity never stolen", 
 test("port conflict fails without stale READY and process kill releases ownership", async (t) => {
   const a = await fixture(t),
     b = await fixture(t);
-  a.build();
+  await a.build();
   a.publish();
-  b.build();
+  await b.build();
   b.publish();
   const r = runtime(a);
   await r.start();

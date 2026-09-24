@@ -2,7 +2,10 @@ import {
   apiUrl,
   authorPageView,
   workDetailView,
+  resolvePublicRoute,
   workPageView,
+  fileDirectoryView,
+  fileSearchView,
 } from "./view-data.js";
 import {
   RouteAnchor,
@@ -41,8 +44,8 @@ import { Sidebar } from "./components/sidebar.js";
 import { checkScanMode } from "./status.js";
 import { syncSearchInputs, syncSearchMeta } from "./components/search.js";
 
-function apiList(path) {
-  return workDetailView(path);
+function apiList(path, page, order, offset, selectedMedia) {
+  return path.startsWith("/f/") ? fileDirectoryView(path, page, order, offset, selectedMedia) : workDetailView(path, selectedMedia);
 }
 
 // 工具栏筛选改变后重载当前数据库视图，回到第 1 页。优先改 hash（与翻页一致地经
@@ -72,6 +75,7 @@ function dispatchDbLoaderPage1() {
 }
 
 function reloadCurrentDbView() {
+  state.queryRevision=null;state.queryEpoch=null;state.cursor=null;
   const hash = makeQueryHash(state.path, {
     q: state.searchQuery,
     tag: state.searchTag,
@@ -103,6 +107,15 @@ function finishRouteLoad(token) {
   }
 }
 
+function isRouteConsistencyError(error) {
+  return [
+    "CONTENT_CHANGED",
+    "GENERATION_CHANGED",
+    "CURSOR_CONTEXT_MISMATCH",
+    "INVALID_CURSOR",
+  ].includes(error && error.code);
+}
+
 function resetLightboxForRouteLoad(keepReturnAnchor) {
   state.dbLightbox = null;
   if (LB.isOpen()) {
@@ -118,6 +131,7 @@ function resetLightboxForRouteLoad(keepReturnAnchor) {
 
 function dbFolderPathFromItem(item) {
   if (!item || !item.name) return "";
+  if (item.routePath) return item.routePath;
   var parentPath = item.parentPath || "";
   return parentPath ? parentPath + "/" + item.name : "/" + item.name;
 }
@@ -474,7 +488,7 @@ async function loadDirectory(path, page, order, offset, media) {
     if (typeof checkScanMode === "function") checkScanMode();
     return data;
   } catch (err) {
-    if (isCurrentRouteLoad(routeToken)) showError(err.message);
+    if (isCurrentRouteLoad(routeToken) && !isRouteConsistencyError(err)) showError(err.message);
   } finally {
     finishRouteLoad(routeToken);
   }
@@ -528,6 +542,49 @@ async function syncFsLightboxPage(mediaName) {
   }
 }
 
+// Resolve a physical public route before choosing the UI view.  A physical
+// author route is canonicalized to the filterable author view; a physical
+// work route stays a detail/browse route.  No generation-local integer is
+// inferred here.
+async function loadStableRoute(path, page, order, offset, media, query, tag) {
+  const resolved = await resolvePublicRoute(path);
+  if (!resolved || !resolved.kind || !resolved.item)
+    throw Object.assign(new Error("PUBLIC_ROUTE_NOT_FOUND"), {
+      code: "PUBLIC_ROUTE_NOT_FOUND",
+    });
+  if (resolved.kind === "work")
+    return loadDirectory(path, page, order, offset, media);
+  if (resolved.kind !== "author")
+    throw Object.assign(new Error("PUBLIC_ROUTE_NOT_FOUND"), {
+      code: "PUBLIC_ROUTE_NOT_FOUND",
+    });
+
+  const platformId = resolved.item.platformId;
+  const root = getPlatformRoot(platformId);
+  if (!root)
+    throw Object.assign(new Error("PLATFORM_NOT_FOUND"), {
+      code: "PLATFORM_NOT_FOUND",
+    });
+  const routePath = authorRoutePath(platformId, resolved.item.stableId);
+  const hash =
+    "#" +
+    makeQueryHash(routePath, {
+      q: query || "",
+      tag: tag || "",
+      page: page || 1,
+    });
+  if (typeof location !== "undefined" && location.hash !== hash)
+    history.replaceState(history.state, "", hash);
+  return loadAuthorWorks(
+    root,
+    platformId,
+    resolved.item.stableId,
+    page,
+    query || "",
+    tag || "",
+  );
+}
+
 async function performSearch(path, query, page, source, tag) {
   var routeToken = beginRouteLoad();
   resetLightboxForRouteLoad(false);
@@ -539,7 +596,7 @@ async function performSearch(path, query, page, source, tag) {
   state.searchMeta = searchSource === "db";
   try {
     var [data] = await Promise.all([
-      workPageView(path, page, query, tag),
+      searchSource === "fs" ? fileSearchView(path, page, query) : workPageView(path, page, query, tag),
       fadeOutEmptyOrErrorContent(),
     ]);
     if (!isCurrentRouteLoad(routeToken)) return null;
@@ -556,7 +613,7 @@ async function performSearch(path, query, page, source, tag) {
     restoreGridRouteScroll(false);
     return data;
   } catch (err) {
-    if (isCurrentRouteLoad(routeToken)) showError(err.message);
+    if (isCurrentRouteLoad(routeToken) && !isRouteConsistencyError(err)) showError(err.message);
   } finally {
     finishRouteLoad(routeToken);
   }
@@ -646,7 +703,7 @@ async function loadAllWorks(platformPath, page, query, tag) {
     if (typeof checkScanMode === "function") checkScanMode();
     return data;
   } catch (err) {
-    if (isCurrentRouteLoad(routeToken)) showError(err.message);
+    if (isCurrentRouteLoad(routeToken) && !isRouteConsistencyError(err)) showError(err.message);
   } finally {
     finishRouteLoad(routeToken);
   }
@@ -695,7 +752,7 @@ async function loadAuthors(platformPath, platformId, page, query) {
     if (typeof checkScanMode === "function") checkScanMode();
     return data;
   } catch (err) {
-    if (isCurrentRouteLoad(routeToken)) showError(err.message);
+    if (isCurrentRouteLoad(routeToken) && !isRouteConsistencyError(err)) showError(err.message);
   } finally {
     finishRouteLoad(routeToken);
   }
@@ -709,7 +766,14 @@ async function apiAuthorWorks(
   query,
   tag,
 ) {
-  const data = await workPageView(platformPath, page, query, tag, authorId);
+  var queryAuthorId = authorId;
+  if (!/^\d+$/.test(String(queryAuthorId || ""))) {
+    const resolved = await resolvePublicRoute(queryAuthorId);
+    if (!resolved || resolved.kind !== "author" || !resolved.item?.id)
+      throw Object.assign(new Error("AUTHOR_NOT_FOUND"), { code: "AUTHOR_NOT_FOUND" });
+    queryAuthorId = resolved.item.id;
+  }
+  const data = await workPageView(platformPath, page, query, tag, queryAuthorId);
   return { ...data, authorId, authorName: data.items[0]?.subtitle || "作者" };
 }
 
@@ -762,7 +826,7 @@ async function loadAuthorWorks(
     if (typeof checkScanMode === "function") checkScanMode();
     return data;
   } catch (err) {
-    if (isCurrentRouteLoad(routeToken)) showError(err.message);
+    if (isCurrentRouteLoad(routeToken) && !isRouteConsistencyError(err)) showError(err.message);
   } finally {
     finishRouteLoad(routeToken);
   }
@@ -774,6 +838,7 @@ export {
   switchDbFolderLightbox,
   openDbFolderLightboxFromHash,
   loadDirectory,
+  loadStableRoute,
   syncFsLightboxPage,
   performSearch,
   loadSearchRoute,

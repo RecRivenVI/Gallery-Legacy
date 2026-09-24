@@ -564,6 +564,7 @@ function syncSettingsPanel() {
     viewMode: state.viewMode || "grid",
     contentWidth: state.contentWidth || "standard",
     pageSize: String(state.pageSize || 48),
+    hideEmpty: state.hideEmpty ? "on" : "off",
   };
   var mobile = !!state.mobileLayout;
   for (var key in map) {
@@ -666,6 +667,13 @@ export function init() {
         else if (setting === "viewMode") setViewMode(v);
         else if (setting === "contentWidth") setContentWidthMode(v);
         else if (setting === "pageSize") applyPageSize(v);
+        else if (setting === "hideEmpty") {
+          state.hideEmpty = v === "on";
+          localStorage.setItem("gallery_hide_empty", state.hideEmpty ? "1" : "0");
+          state.cursor = null;
+          syncSettingsPanel();
+          reloadCurrentDbView();
+        }
       });
     }
 

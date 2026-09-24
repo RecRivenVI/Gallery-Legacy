@@ -10,8 +10,9 @@ function nonEmptyText(value) {
 function selectWorkDisplayTitle(normalized, context) {
   const metadata = nonEmptyText(normalized?.work?.title);
   if (metadata !== null) return { value: metadata, source: "metadata", sourcePath: "$.work.title" };
-  const parsed = parsePlatformDirectoryIdentity(context.platformId, context.authorDirectoryName, context.workDirectoryName).work.displayTitle;
-  if (parsed !== null) return { value: parsed, source: "directory_parsed", sourcePath: "workDirectoryName.timestampedSuffix" };
+  const directory = parsePlatformDirectoryIdentity(context.platformId, context.authorDirectoryName, context.workDirectoryName).work;
+  const parsed = directory.displayTitle;
+  if (parsed !== null) return { value: parsed, source: "directory_parsed", sourcePath: directory.displayTitleSourcePath || "workDirectoryName.timestampedSuffix" };
   const raw = nonEmptyText(context.workDirectoryName) || nonEmptyText(context.workRelativePath?.split(/[\\/]/).pop());
   if (raw === null) throw new Error("Physical work has no displayable directory identity");
   return { value: raw, source: "directory_raw", sourcePath: "workDirectoryName" };

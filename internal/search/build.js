@@ -58,8 +58,10 @@ function shortGrams(values) {
 }
 
 function buildSearchIndex({
+  checkCancelled = () => {},
   catalogPath,
   searchIndexPath,
+  baselineSearchPath = null,
   reportPath = null,
   log = () => {},
   nowMs = () => Date.now(),
@@ -90,6 +92,7 @@ function buildSearchIndex({
   let catalog = null;
   let search = null;
   const started = performance.now();
+  let fallbackReason = null;
   try {
     fs.mkdirSync(path.dirname(searchIndexPath), { recursive: true });
     catalog = new Database(catalogPath, {
@@ -97,11 +100,23 @@ function buildSearchIndex({
       fileMustExist: true,
     });
     catalog.defaultSafeIntegers(true);
+    if (baselineSearchPath) {
+      noLinks(baselineSearchPath);
+      const previous = new Database(baselineSearchPath, { readonly: true, fileMustExist: true });
+      try {
+        if (previous.prepare("SELECT version FROM index_state WHERE singleton=1").get()?.version !== RUNTIME_SEARCH_INDEX_VERSION)
+          throw Object.assign(new Error("Search baseline version mismatch"), { code: "SEARCH_BASELINE_INVALID" });
+        if (!/contentless_delete\s*=\s*1/i.test(previous.prepare("SELECT sql FROM sqlite_master WHERE name='short_fts'").get()?.sql || "")) {
+          baselineSearchPath = null; fallbackReason = "baseline_requires_incremental_search_format";
+        }
+      } finally { previous.close(); }
+      if (baselineSearchPath) fs.copyFileSync(baselineSearchPath, searchIndexPath, fs.constants.COPYFILE_EXCL);
+    }
     search = new Database(searchIndexPath);
     search.defaultSafeIntegers(true);
     search.pragma("journal_mode = DELETE");
     search.pragma("synchronous = NORMAL");
-    search.exec(`
+    if (!baselineSearchPath) search.exec(`
       CREATE TABLE index_state (
         singleton INTEGER PRIMARY KEY CHECK(singleton=1),
         version INTEGER NOT NULL,
@@ -138,7 +153,7 @@ function buildSearchIndex({
         title, author, tags, body,
         content='search_docs', content_rowid='work_id', tokenize='trigram'
       );
-      CREATE VIRTUAL TABLE short_fts USING fts5(terms,content='',detail='none',columnsize=0);
+      CREATE VIRTUAL TABLE short_fts USING fts5(terms,content='',contentless_delete=1,detail='none');
       CREATE TABLE authors (
         author_id INTEGER PRIMARY KEY,
         platform_id TEXT NOT NULL,
@@ -156,6 +171,18 @@ function buildSearchIndex({
         work_count INTEGER NOT NULL
       );
     `);
+    search.exec("CREATE TEMP TABLE observed_search_works(work_id INTEGER PRIMARY KEY)");
+    const observe = search.prepare("INSERT INTO observed_search_works VALUES (?)");
+    const oldDoc = search.prepare("SELECT platform_id,title,author,tags,body FROM search_docs WHERE work_id=?");
+    const oldSort = search.prepare("SELECT platform_id,author_id,published_sort,title_key,name_key,has_image,has_video FROM work_sort WHERE work_id=?");
+    const oldTags = search.prepare("SELECT tag_id FROM work_tags WHERE work_id=? ORDER BY tag_id");
+    const deleteDoc = id => {
+      const old = oldDoc.get(id);
+      if (!old) return;
+      search.prepare("INSERT INTO work_fts(work_fts,rowid,title,author,tags,body) VALUES('delete',?,?,?,?,?)").run(id,old.title,old.author,old.tags,old.body);
+      search.prepare("DELETE FROM short_fts WHERE rowid=?").run(id);
+      for (const table of ["search_docs","work_sort","work_tags"]) search.prepare(`DELETE FROM ${table} WHERE work_id=?`).run(id);
+    };
 
     const insertSort = search.prepare(`INSERT INTO work_sort
       (work_id,platform_id,author_id,published_sort,title_key,name_key,has_image,has_video)
@@ -179,9 +206,10 @@ function buildSearchIndex({
       COALESCE((SELECT group_concat(tag_id,',') FROM (SELECT wt.tag_id FROM work_tags wt
         WHERE wt.work_id=w.work_id ORDER BY wt.ordinal,wt.tag_id)),'') AS tag_ids
       FROM works w JOIN authors a USING(author_id) LEFT JOIN work_text x USING(work_id) ORDER BY w.work_id`);
-    let workCount = 0;
+    let workCount = 0, reusedWorks = 0, updatedWorks = 0, removedWorks = 0;
     search.exec("BEGIN");
     for (const row of source.iterate()) {
+      if (workCount % 1000 === 0) checkCancelled();
       const title = String(row.title || "");
       const author = [row.display_name, row.handle, row.source_author_id]
         .filter(Boolean)
@@ -191,6 +219,20 @@ function buildSearchIndex({
         .filter(Boolean);
       const body = normalizeSearchText(row.body);
       const name = path.win32.basename(String(row.relative_path || ""));
+      observe.run(row.work_id);
+      const sortValues = [row.platform_id,row.author_id,row.sort_at_ms,normalizeSearchText(title),normalizeSearchText(name),row.has_filesystem_image > 0n ? 1 : 0,row.has_filesystem_video > 0n ? 1 : 0];
+      const docValues = [row.platform_id,normalizeSearchText(`${title} ${row.source_work_id || ""}`),normalizeSearchText(author),normalizeSearchText(tags.join(" ")),body];
+      const tagIds = String(row.tag_ids || "").split(",").filter(Boolean).map(BigInt).sort((a,b)=>a<b?-1:a>b?1:0);
+      if (baselineSearchPath) {
+        const doc = oldDoc.get(row.work_id), sort = oldSort.get(row.work_id);
+        const equal = (a,b) => typeof a === "bigint" && Number.isSafeInteger(b) ? a === BigInt(b) : a === b;
+        const priorTags = oldTags.all(row.work_id);
+        if (doc && sort && Object.values(doc).every((v,i)=>equal(v,docValues[i])) && Object.values(sort).every((v,i)=>equal(v,sortValues[i])) && priorTags.length===tagIds.length && priorTags.every((v,i)=>v.tag_id===tagIds[i])) {
+          reusedWorks++; workCount++; continue;
+        }
+        deleteDoc(row.work_id);
+      }
+      updatedWorks++;
       insertSort.run(
         row.work_id,
         row.platform_id,
@@ -209,6 +251,7 @@ function buildSearchIndex({
         normalizeSearchText(tags.join(" ")),
         body,
       );
+      if (baselineSearchPath) search.prepare("INSERT INTO work_fts(rowid,title,author,tags,body) VALUES (?,?,?,?,?)").run(row.work_id,...docValues.slice(1));
       for (const rawTagId of String(row.tag_ids || "")
         .split(",")
         .filter(Boolean)) {
@@ -227,6 +270,16 @@ function buildSearchIndex({
       }
     }
     search.exec("COMMIT");
+    if (baselineSearchPath) search.transaction(() => {
+      // Bound deletion buffers; observed IDs live in a temporary SQLite table.
+      let after=0n;
+      while (true) {
+        const rows=search.prepare("SELECT work_id FROM search_docs WHERE work_id>? AND work_id NOT IN (SELECT work_id FROM observed_search_works) ORDER BY work_id LIMIT 500").all(after);
+        if (!rows.length) break;
+        checkCancelled(); for (const row of rows) { deleteDoc(row.work_id); removedWorks++; } after=rows.at(-1).work_id;
+      }
+      search.exec("DELETE FROM authors; DELETE FROM tags; DELETE FROM index_state");
+    })();
     log(`SEARCH_INDEX_WORKS_DONE ${workCount}`);
 
     const insertAuthor = search.prepare(
@@ -272,7 +325,7 @@ function buildSearchIndex({
       }
     })();
 
-    search.exec(`
+    if (!baselineSearchPath) search.exec(`
       CREATE INDEX idx_search_sort_platform_date ON work_sort(platform_id,published_sort DESC,work_id DESC);
       CREATE INDEX idx_search_sort_platform_title ON work_sort(platform_id,title_key,work_id);
       CREATE INDEX idx_search_sort_platform_name ON work_sort(platform_id,name_key,work_id);
@@ -308,6 +361,9 @@ function buildSearchIndex({
       version: RUNTIME_SEARCH_INDEX_VERSION,
       measurement: "MEASURED",
       workCount,
+      reusedWorks, updatedWorks, removedWorks,
+      buildMode: baselineSearchPath ? "incremental" : "full",
+      fallbackReason,
       authorCount: Number(
         search.prepare("SELECT count(*) AS count FROM authors").get().count,
       ),

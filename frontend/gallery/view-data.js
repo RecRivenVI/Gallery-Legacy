@@ -18,6 +18,28 @@ function remember(route, media) {
   if (mediaRoutes.size > 4000)
     mediaRoutes.delete(mediaRoutes.keys().next().value);
 }
+
+function stableAuthorRoutePath(platformId, stableId) {
+  return (
+    "/@author/" +
+    encodeURIComponent(String(platformId || "")) +
+    "/" +
+    encodeURIComponent(String(stableId || ""))
+  );
+}
+
+function stableAuthorPathFromWork(stableId) {
+  var value = String(stableId || "");
+  if (!value.startsWith("/p/")) return null;
+  var slash = value.lastIndexOf("/");
+  return slash > 3 ? value.slice(0, slash) : null;
+}
+
+function stableWorkRoute(work) {
+  return typeof work?.stableId === "string" && work.stableId.startsWith("/p/")
+    ? work.stableId
+    : "/work/" + String(work?.id || "");
+}
 export function apiUrl(kind, route) {
   const media = mediaRoutes.get(route);
   if (media) return kind === "thumbnail" ? media.thumbnailUrl : media.url;
@@ -32,7 +54,7 @@ export async function fetchPlatformsView() {
   if (!protocol.authorSorts.includes(state.authorSort))
     state.authorSort = "name_asc";
   if (!protocol.mediaFilters.includes(state.mediaType)) state.mediaType = "all";
-  return items.map((p, i) => ({
+  const platforms = items.map((p, i) => ({
     ...p,
     name: p.id,
     routePath: "/p/" + p.id,
@@ -53,6 +75,10 @@ export async function fetchPlatformsView() {
       color: "var(--text-primary)",
     },
   }));
+  const files = await request("file-roots");
+  return [...platforms, ...files.items.map((r, i) => ({ id: r.id, name: r.name, routePath: "/f/" + r.id,
+    fileRoot: true, order: platforms.length + i, capabilities: { works: false, authors: false },
+    icon: { kind: "builtin", glyph: "文" } }))];
 }
 function scope(route) {
   const parts = String(route || "").split("/");
@@ -64,10 +90,16 @@ function scope(route) {
   };
 }
 function card(work) {
-  if (work.cover) remember(`/work/${work.id}/${work.cover.id}`, work.cover);
+  const routePath = stableWorkRoute(work);
+  const authorStablePath = stableAuthorPathFromWork(work.stableId);
+  if (work.cover) remember(routePath + "/" + work.cover.id, work.cover);
   return {
     name: work.id,
     parentPath: "/work",
+    routePath,
+    authorRoute: authorStablePath
+      ? stableAuthorRoutePath(work.platformId, authorStablePath)
+      : null,
     displayName: work.title,
     subtitle: work.authorName,
     authorId: work.authorId,
@@ -82,6 +114,8 @@ function card(work) {
     coverType: work.cover?.type || null,
     indexedMediaRows: work.counts.media,
     metadataState: work.metadataState,
+    sourceUrl: work.sourceUrl || null,
+    stableId: work.stableId,
     badges: [
       work.flags?.adult ? "adult" : null,
       work.flags?.aiGenerated ? "ai" : null,
@@ -109,10 +143,15 @@ export async function workPageView(
       pageSize: state.pageSize,
       sort: state.worksSort,
       mediaType: state.mediaType,
+      hideEmpty: state.hideEmpty ? "1" : "0",
+      rev: state.queryRevision,
+      g: state.queryEpoch,
       cursor,
     },
     { signal: pageSignal() },
   );
+  state.queryRevision=data.revision ?? null;state.queryEpoch=data.epoch || currentGeneration();
+  if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("gallery-query-loaded",{detail:{epoch:state.queryEpoch,revision:state.queryRevision}}));
   return {
     ...data,
     path: route,
@@ -131,6 +170,16 @@ export async function workPageView(
     sort: state.worksSort,
   };
 }
+export async function fileSearchView(route, page, query) {
+  const [, , root, ...parts] = route.split("/");
+  const data = await request("file-search", { root, path: parts.join("/"), q: query, page, pageSize: state.pageSize, mediaType: state.mediaType, order: state.order }, { signal: pageSignal() });
+  return { ...data, path: route, query, db: false, source: "fs", totalItems: data.total, order: state.order,
+    items: data.items.map(m => {
+      const split = m.relativePath.lastIndexOf("/"), parentPath = "/f/" + root + (split < 0 ? "" : "/" + m.relativePath.slice(0,split));
+      if (m.type !== "directory") remember(parentPath + "/" + m.name, m);
+      return { name: m.name, parentPath, displayName: m.name, kind: m.type === "directory" ? "dir" : m.type === "video" ? "vid" : "img", size: m.size };
+    }) };
+}
 export async function authorPageView(platform, page = 1, query = "") {
   const cursor = state.cursor;
   state.cursor = null;
@@ -142,18 +191,22 @@ export async function authorPageView(platform, page = 1, query = "") {
       page,
       pageSize: state.pageSize,
       sort: state.authorSort,
+      rev: state.queryRevision,
+      g: state.queryEpoch,
       cursor,
     },
     { signal: pageSignal() },
   );
   const items = data.items.map((a) => {
-    if (a.cover) remember(`/p/${platform}/${a.id}/${a.cover.id}`, a.cover);
+    const stableId = a.stableId || `/p/${platform}/${a.id}`;
+    if (a.cover) remember(stableId + "/" + a.cover.id, a.cover);
     return {
       name: a.id,
       kind: "dir",
       authorId: a.id,
-      authorPath: `/@author/${platform}/${a.id}`,
-      routePath: `/@author/${platform}/${a.id}`,
+      authorPath: stableId,
+      routePath: stableAuthorRoutePath(platform, stableId),
+      stableId,
       displayName: a.name,
       subtitle: a.sourceAuthorId,
       badge: `${a.workCount}件作品`,
@@ -164,6 +217,8 @@ export async function authorPageView(platform, page = 1, query = "") {
       coverType: a.cover?.type || null,
     };
   });
+  state.queryRevision=data.revision ?? null;state.queryEpoch=data.epoch || currentGeneration();
+  if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("gallery-query-loaded",{detail:{epoch:state.queryEpoch,revision:state.queryRevision}}));
   return {
     ...data,
     items,
@@ -172,12 +227,22 @@ export async function authorPageView(platform, page = 1, query = "") {
     platformPath: "/p/" + platform,
   };
 }
-export async function workDetailView(route) {
+export async function resolvePublicRoute(route) {
+  return request("resolve", { path: route });
+}
+export async function workDetailView(route, selectedMedia = null) {
   const id = String(route).split("/").at(-1);
-  const work = await request("works/" + encodeURIComponent(id), {
-    g: currentGeneration(),
-  });
-  const items = work.media.map((m) => {
+  const resolved = route.startsWith("/p/")
+    ? await resolvePublicRoute(route)
+    : { kind: "work", item: await request("works/" + encodeURIComponent(id), {
+      g: state.queryEpoch || currentGeneration(),
+    }) };
+  if (!resolved || resolved.kind !== "work" || !resolved.item)
+    throw Object.assign(new Error("AUTHOR_ROUTE_REQUIRES_AUTHOR_VIEW"), {
+      code: "AUTHOR_ROUTE_REQUIRES_AUTHOR_VIEW",
+    });
+  const work = resolved.item;
+  const items = work.media.filter((m) => m.relativePath === selectedMedia || (m.defaultVisible !== false && (state.mediaType === "all" || m.type === state.mediaType))).map((m) => {
     remember(route + "/" + m.relativePath, m);
     return {
       name: m.relativePath,
@@ -190,6 +255,7 @@ export async function workDetailView(route) {
   return {
     path: route,
     page: 1,
+    targetMedia: selectedMedia,
     totalPages: 1,
     order: "asc",
     items,
@@ -207,4 +273,22 @@ export async function workDetailView(route) {
       { name: work.title, path: route },
     ],
   };
+}
+export async function fileDirectoryView(route, page = 1, order = "asc", _offset, selectedMedia) {
+  const parts = route.split("/"), root = parts[2], relative = parts.slice(3).join("/");
+  let data = await request("files", { root, path: relative, page, order, pageSize: state.pageSize, mediaType: state.mediaType }, { signal: pageSignal() });
+  if (selectedMedia) {
+    const index = data.media.findIndex((m) => m.name === selectedMedia);
+    const wanted = Math.floor((data.totalDirectories + Math.max(0, index)) / data.pageSize) + 1;
+    if (index >= 0 && wanted !== data.page) data = await request("files", { root, path: relative, page: wanted, order, pageSize: state.pageSize, mediaType: state.mediaType });
+  }
+  const item = (m) => {
+    if (m.type === "directory") return { name: m.name, displayName: m.name, kind: "dir" };
+    remember(route + "/" + m.name, m);
+    return { name: m.name, displayName: m.name, kind: m.type === "video" ? "vid" : "img", type: m.type === "video" ? "vid" : "img", size: m.size };
+  };
+  const crumbs = [{ name: "首页", path: "/" }, { name: "文件浏览", path: "/f/" + root }];
+  for (let i = 3; i < parts.length; i++) crumbs.push({ name: parts[i], path: parts.slice(0, i + 1).join("/") });
+  return { ...data, path: route, order, targetMedia: selectedMedia, items: data.items.map(item), allMedia: data.media.map(item), totalItems: data.total,
+    totalMedia: data.media.length, totalDirs: data.totalDirectories, mediaOffset: Math.max(0, (data.page - 1) * data.pageSize - data.totalDirectories), leaf: !data.totalDirectories, breadcrumbs: crumbs };
 }

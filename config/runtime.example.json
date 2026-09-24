@@ -1,4 +1,5 @@
 {
+  "liveUpdates": false,
   "instanceRoot": null,
   "mode": "local",
   "host": "127.0.0.1",
@@ -11,6 +12,10 @@
     "Patreon": null,
     "Pawchive": null,
     "X": null,
-    "微博": null
-  }
+    "微博": null,
+    "Venera": null
+  },
+  "fileBrowserRoots": [],
+  "shortLinks": {},
+  "retention": { "enabled": true, "staleAfterMs": 86400000 }
 }

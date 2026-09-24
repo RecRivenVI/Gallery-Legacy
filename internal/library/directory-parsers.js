@@ -41,12 +41,20 @@ const AUTHOR_PARSERS = Object.freeze({
   Pawchive: pawchiveAuthor,
   X: numericAuthor,
   "微博": numericAuthor,
+  Venera: (name) => ({ sourceAuthorId: null, displayName: typeof name === "string" ? name : null }),
 });
 
 function parsePlatformDirectoryIdentity(platformId, authorDirectoryName, workDirectoryName) {
   if (!PLATFORM_REGISTRY.some(platform => platform.id === platformId)) throw new Error(`Unknown platformId: ${platformId || "(missing)"}`);
   const author = AUTHOR_PARSERS[platformId](authorDirectoryName);
-  const work = timestampedWork(workDirectoryName);
+  const work = platformId === "Venera"
+    ? { sourceWorkId: null, timestampMs: null, displayTitle: authorDirectoryName || workDirectoryName || null, displayTitleSourcePath: "authorDirectoryName" }
+    : timestampedWork(workDirectoryName);
+  if (["X", "微博"].includes(platformId) && work.timestampMs !== null) {
+    // Preserve the observed timestamp text; directory timestamps do not prove a timezone.
+    work.displayTitle = workDirectoryName.slice(0, 19).replace("_", " ").replace(/ (\d{2})-(\d{2})-(\d{2})$/, " $1:$2:$3");
+    work.displayTitleSourcePath = "workDirectoryName.timestamp";
+  }
   return Object.freeze({ platformId, author: Object.freeze(author), work: Object.freeze(work) });
 }
 

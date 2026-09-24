@@ -6,7 +6,7 @@ const { QueryIndex } = require("../../internal/search/query.js");
 const { buildSearchIndex } = require("../../internal/search/build.js");
 test("short body queries are complete, tag is independent, combined filters intersect", async (t) => {
   const f = await fixture(t);
-  const g = f.build();
+  const g = await f.build();
   const q = new QueryIndex(g.searchIndexPath, {
     workCount: g.catalogFacts.workCount,
     catalogSize: g.catalogFacts.sizeBytes,

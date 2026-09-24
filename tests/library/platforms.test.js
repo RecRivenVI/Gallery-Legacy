@@ -22,6 +22,7 @@ test("fixed platform identity is independent of the transitional rules bridge", 
       "Pawchive",
       "X",
       "微博",
+      "Venera",
     ],
   );
   assert.ok(

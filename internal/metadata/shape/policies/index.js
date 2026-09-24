@@ -8,6 +8,7 @@ const PatreonShapePolicy = require("./patreon.js");
 const PawchiveShapePolicy = require("./pawchive.js");
 const XShapePolicy = require("./x.js");
 const WeiboShapePolicy = require("./weibo.js");
+const VeneraShapePolicy = require("./venera.js");
 
 const SHAPE_POLICIES = Object.freeze([
   PixivShapePolicy,
@@ -18,6 +19,7 @@ const SHAPE_POLICIES = Object.freeze([
   PawchiveShapePolicy,
   XShapePolicy,
   WeiboShapePolicy,
+  VeneraShapePolicy,
 ]);
 
 const SHAPE_POLICY_BY_PLATFORM = Object.freeze(Object.fromEntries(SHAPE_POLICIES.map(policy => [policy.PLATFORM_ID, policy])));

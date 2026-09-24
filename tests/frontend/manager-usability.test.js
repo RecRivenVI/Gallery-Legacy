@@ -1,0 +1,68 @@
+"use strict";
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const {chromium}=require("playwright");
+const {PLATFORM_REGISTRY}=require("../../internal/library/platforms.js");
+test("Manager retains editing, shows live scan feedback, and keeps explicit local log controls",async t=>{
+  const browser=await chromium.launch({headless:true});t.after(()=>browser.close());
+  const page=await browser.newPage({viewport:{width:1280,height:900}});const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on("dialog",d=>d.accept());
+  const root=path.resolve(__dirname,"../..");
+  await page.route("http://manager.test/**",route=>{
+    const relative=decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\//,"");const file=path.resolve(root,relative);
+    if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())return route.fulfill({status:404,body:""});
+    return route.fulfill({body:fs.readFileSync(file),contentType:({".js":"text/javascript",".css":"text/css",".html":"text/html"})[path.extname(file)]||"application/octet-stream"});
+  });
+  await page.addInitScript(ids=>{
+    window.testStatus={state:"READY",deployment:"staging",counts:{works:5,media:8},loadedGenerationId:"synthetic",activeGenerationId:"synthetic",scan:{running:false,state:"IDLE"}};
+    window.testCalls=[];window.galleryHost={status:async()=>structuredClone(window.testStatus),openGallery:async()=>{},admin:async(op,input={})=>{
+      window.testCalls.push({op,input});
+      if(op==="config.read")return {revision:"synthetic",platforms:ids,value:{instanceRoot:"C:/synthetic/instance",port:19000,sources:Object.fromEntries(ids.map(id=>[id,"C:/synthetic/"+id])),fileBrowserRoots:[]}};
+      if(op==="scan.status")return structuredClone(window.testStatus.scan);
+      if(op==="reports.list")return {items:[]};
+      if(op==="scan.start"){window.testStatus.scan={running:true,state:"SCANNING",currentPlatform:"pixiv",observedWorks:1234,indexedWorks:1200,actualMedia:2000};return {started:true};}
+      if(op==="logs.list")return {items:[{name:"synthetic.log"}]};
+      if(op==="logs.read")return {text:'{"level":"info","code":"SYNTHETIC"}'};
+      return {};
+    }};
+  },PLATFORM_REGISTRY.map(p=>p.id));
+  await page.goto("http://manager.test/frontend/manager/index.html");await page.waitForSelector("#stop");
+  assert.equal(await page.locator(".manager-nav [data-tab]").count(),9);
+  const sidebar=await page.locator(".manager-sidebar").boundingBox();
+  const content=await page.locator("#root").boundingBox();
+  assert.ok(sidebar.x+sidebar.width<=content.x,"sidebar does not overlap the content");
+  await page.locator("#manager-collapse").click();assert.equal(await page.locator("#manager-collapse").getAttribute("aria-expanded"),"false");
+  await page.locator("#manager-collapse").click();
+  await page.locator('[data-tab="config"]').click();await page.locator('[data-field="port"]').fill("19001");
+  await page.waitForTimeout(1800);assert.equal(await page.locator('[data-field="port"]').inputValue(),"19001");
+  await page.locator('[data-tab="scan"]').click();await page.waitForSelector("#scan-platform-picker");
+  const firstPlatform=await page.locator("input[data-platform-id]").first().getAttribute("data-platform-id");
+  assert.equal(await page.locator("input[data-platform-id]:checked").count(),PLATFORM_REGISTRY.length);
+  await page.locator("#scan-platform-clear").click();assert.equal(await page.locator("#scan-start").isDisabled(),true);
+  await page.locator(`input[data-platform-id="${firstPlatform}"]`).check();assert.equal(await page.locator("#scan-start").isEnabled(),true);
+  await page.locator("#scan-start").click();await page.waitForFunction(()=>testCalls.some(c=>c.op==="scan.start"));
+  const normalCall=await page.evaluate(()=>testCalls.find(c=>c.op==="scan.start"));
+  assert.deepEqual(normalCall.input,{platformIds:[firstPlatform],mode:"incremental",confirmReadOnly:true});
+  assert.equal(await page.locator("#scan-confirmation").count(),0);
+  await page.evaluate(()=>{testStatus.scan={running:false,state:"IDLE"};});
+  await page.waitForFunction(()=>document.querySelector("#scan-start")&&!document.querySelector("#scan-start").disabled);
+  await page.locator("#scope-author").fill("synthetic-draft");
+  await page.evaluate(()=>{testStatus.scan={running:true,state:"SCANNING",observedWorks:4567,currentPlatform:"pixiv"};});
+  await page.waitForFunction(()=>document.querySelector('.scan-status-card')?.textContent.includes("4,567"));
+  assert.equal(await page.locator("#scope-author").inputValue(),"synthetic-draft");
+  assert.equal(await page.locator(".scan-status-card pre:visible").count(),0);
+  await page.locator(".scan-status-card summary").click();await page.waitForTimeout(1800);
+  assert.equal(await page.locator(".scan-status-card details").getAttribute("open"),"");
+  await page.evaluate(()=>{testStatus.scan={running:false,state:"IDLE"};});
+  await page.waitForFunction(()=>document.querySelector("#scan-advanced-start")&&!document.querySelector("#scan-advanced-start").disabled);
+  await page.locator("#scan-advanced").click();await page.locator("#scan-mode").selectOption("full");await page.locator("#scan-scope").selectOption("platform");await page.locator("#scan-advanced-platform").selectOption(firstPlatform);
+  await page.locator("#scan-advanced-start").click();await page.waitForSelector("#scan-confirmation");
+  assert.equal(await page.evaluate(()=>testCalls.filter(c=>c.op==="scan.start").length),1);
+  assert.equal(await page.locator("#scan-confirm-start").isDisabled(),true);
+  await page.locator("#scan-confirm-readonly").check();await page.locator("#scan-confirm-start").click();
+  await page.waitForFunction(()=>testCalls.filter(c=>c.op==="scan.start").length===2);
+  const advancedCall=await page.evaluate(()=>testCalls.filter(c=>c.op==="scan.start").at(-1));
+  assert.equal(advancedCall.input.mode,"full");assert.deepEqual(advancedCall.input.platformIds,[firstPlatform]);
+  await page.locator('[data-tab="logs"]').click();await page.waitForSelector("#log-raw");
+  assert.equal(await page.locator("#log-raw").isChecked(),false);await page.locator("#log-raw").check();
+  await page.waitForFunction(()=>testCalls.some(c=>c.op==="logs.read"&&c.input.raw===true));
+  assert.deepEqual(errors,[]);
+});

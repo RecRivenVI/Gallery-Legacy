@@ -8,6 +8,7 @@ import { renderAllWorksToolbar } from "./works.js";
 import { initLabelScroll } from "./components/scroll.js";
 import {
   cardCoverHtml,
+  escAttr,
   formatCardDate,
   gridViewClass,
   mediaCoverHtml,
@@ -17,7 +18,6 @@ import {
   replaceContentWithMotion,
 } from "./components/cards.js";
 import { authorRoutePath } from "./routes.js";
-import { escHtml } from "./model.js";
 
 function authorCardKey(item, platformId) {
   return (
@@ -78,9 +78,9 @@ function renderAuthorCard(item, platformId) {
   );
   return (
     '<div class="card dir card--media" data-path="' +
-    escHtml(routePath) +
+    escAttr(routePath) +
     '" data-author-path="' +
-    escHtml(authorPath) +
+    escAttr(authorPath) +
     '"' +
     motionIdentityAttrs(authorCardKey(item, platformId)) +
     ">" +

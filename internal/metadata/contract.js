@@ -29,6 +29,7 @@ function createResult(platformId, adapterVersion, context = {}) {
     },
     work: {
       sourceWorkId: null,
+      sourceUrl: null,
       title: null,
       publishedAtMs: null,
       updatedAtMs: null,
@@ -155,6 +156,12 @@ function beginAdapt(adapter, context) {
     result.diagnostics.invalidFields.push({ path: "metadata", expected: "object", actual: Array.isArray(metadata) ? "array" : metadata === null ? "null" : typeof metadata });
     warning(result.diagnostics, "metadata_not_object", "metadata");
     return { result, metadata: null };
+  }
+  const link = require("./source-link.js").sourceLink(adapter.PLATFORM_ID, metadata);
+  if (link) {
+    result.work.sourceUrl = link.sourceText;
+    result.richText.supplementary.push(link);
+    addFieldSource(result, "work.sourceUrl", "metadata", link.sourcePath);
   }
   return { result, metadata };
 }
