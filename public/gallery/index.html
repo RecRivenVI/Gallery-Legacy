@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>画廊</title>
+    <script src="/frontend/gallery/theme-init.js"></script>
+    <link rel="stylesheet" href="/frontend/gallery/style.css" />
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <main id="semantics" aria-label="画廊">
+      <h1 class="sr-only">画廊</h1>
+      <nav id="navigation" aria-label="画廊导航"></nav>
+      <div id="search-bridge">
+        <label class="sr-only" for="search">搜索作品、作者和标签</label
+        ><input
+          id="search"
+          type="search"
+          placeholder="搜索"
+          autocomplete="off"
+        />
+      </div>
+      <div id="size-bridge">
+        <label class="sr-only" for="size">作品大小</label
+        ><input id="size" type="range" min="0" max="5" step="1" value="3" />
+      </div>
+      <section id="works" aria-label="作品"></section>
+    </main>
+    <section id="popup" aria-label="设置" hidden></section>
+    <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+    <div id="boot" aria-hidden="true"><i></i><i></i><i></i></div>
+    <script src="/frontend/assets/canvas/vendor/canvaskit.js"></script>
+    <script type="module" src="/frontend/gallery/app.js"></script>
+  </body>
+</html>

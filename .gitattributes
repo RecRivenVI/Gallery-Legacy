@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.ico binary
+*.zip binary
+*.wasm binary
+/AGENTS.md -text
+/documents/design/overview-ui_baseline.md -text
+/documents/design/adr-1-user_design_decisions.md -text

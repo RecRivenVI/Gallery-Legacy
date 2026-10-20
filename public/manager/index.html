@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>画廊管理</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <aside>
+      <div class="brand">
+        <span id="brand-icon" aria-hidden="true"></span><span>画廊管理</span>
+      </div>
+      <nav aria-label="管理页面"></nav>
+      <div id="side-status" role="status">服务已停止</div>
+    </aside>
+    <div class="workspace">
+      <header>
+        <h1 id="title">更新图库</h1>
+        <button id="open-gallery">打开画廊</button>
+      </header>
+      <main id="page" aria-busy="true"></main>
+    </div>
+    <div id="save-bar" hidden></div>
+    <dialog id="confirmation">
+      <p id="confirm-text"></p>
+      <div id="confirm-actions"></div>
+    </dialog>
+  </body>
+</html>

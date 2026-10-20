@@ -1,0 +1,9 @@
+Gallery
+
+第三方依赖按 package-lock.json 和 go.sum 中的来源及各自许可使用。
+Fluent System Icons：Copyright (c) 2020 Microsoft Corporation，MIT。
+许可原文：public/platform/fluent-icons.LICENSE。
+CanvasKit：Google / Skia，BSD-style license，见依赖包的许可文件。
+MiSans、Noto Color Emoji 等字体由外部资源目录提供，不随本仓库分发。
+打包时保留外部资源所附 licenses 目录；重新分发前核对相应许可。
+本文件不为项目原创代码授予未经所有者确认的许可证。

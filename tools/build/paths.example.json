@@ -1,0 +1,9 @@
+{
+  "go": "<official-portable-go>/bin/go.exe",
+  "goCache": "<outside-repository>/GoCache",
+  "moduleCache": "<outside-repository>/GoModules",
+  "output": "<outside-repository>/Build",
+  "resources": "<licensed-ui-resources>",
+  "testSeed": "<synthetic-test-root>/instance/live/catalog.sqlite",
+  "golden": "<synthetic-test-root>/golden.json"
+}

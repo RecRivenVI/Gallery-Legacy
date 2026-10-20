@@ -1,19 +1,330 @@
-# Gallery working conventions
+# 仓库规范
 
-- Report in Chinese, results first. Distinguish automated tests, actual acceptance, and unverified claims.
-- Preserve unrelated work. No commit, push or history rewrite without explicit authorization.
-- Product scope is nine fixed platforms (including the Venera download library), an independent read-only file browser, and the existing public-read/localhost deployment. Administrative operations remain local and instance-authenticated. No dynamic registration, plugin framework, metadata DSL or multi-tenant infrastructure.
-- Formal backend: `internal/`; UI: `frontend/`; native host: `desktop/`; thin entry: `cmd/`; cross-implementation contract: `protocol/`. Follow `docs/architecture.md`.
-- Filesystem existence is authoritative. Metadata is enrichment only. Missing/invalid metadata and missing/duplicate source IDs must not discard physical entities.
-- Only eligible observed files become actual media. Declarations/enrichment never authorize or erase actual media.
-- Preserve Catalog Schema v4 semantics and snapshot. Public protocol, Search, Adapter and shape versions have independent meanings.
-- Required filesystem incompleteness must propagate and prevent READY/publication. Keep streaming memory bounded.
-- READY generations remain immutable checkpoints. Explicit liveUpdates mode seeds an instance-owned live database only from a verified checkpoint; complete work batches update Catalog, Search and revision in one transaction. Never read a BUILDING candidate or mutate READY in place. Partial scan failure keeps confirmed live commits; deletion requires complete scope.
-- Real sources are strictly read-only. No screenshots, recordings, private metadata/media/body/identity output. Acceptance reports contain aggregates only.
-- Default tests use temporary synthetic trees and public fixtures only; no real source scans or historical test-library manifest. `tests/disposition.json` is an audit record, not an exclusion list.
-- Public examples contain no private paths or credentials. Instance data/config/cache/log/session stays outside the repository. Never copy private corpus into fixtures.
-- Root package/lockfile is the sole dependency authority. Run `npm run check`, `npm run check:electron`, and `npm test`; do not blindly upgrade dependencies or run audit fix.
-- Current stack is Node/Electron/JavaScript. Go/ComposeMP/Tauri are future plans, not implemented product code.
-- Update current docs when paths, contracts or commands change. Do not recreate historical phase/preview/next directories or archive dead projects inside this source tree.
-- Incremental/scoped updates still publish a complete new generation; distinguish reused Catalog records from metadata rereads and Search rebuilds. Keep scoped deletion completeness and baseline race checks.
-- `tools/manager-test.js` is an explicit staging-only authenticated loopback test host; it must not be imported by the production Runtime or control a production/8081 instance. Browser automation uses synthetic data or aggregate Manager state only; no Computer Use or media capture.
+规范版本：1.0.0
+
+本文件是 RecRivenVI 个人项目共用的仓库规范，写给编程 Agent，也约束人类开发者。它由本文的通用部分和文末本仓库所用技术栈的附则组成，两部分在项目内都不修改（G-08）。规范的正式来源是 `D:\Workspaces\Artifacts\ClaudeExternalReview\Specs\`。项目信息与补充规则写在项目规范 [documents/AGENTS.md](documents/AGENTS.md) 中，它只能补充本规范，不能放宽或改写。开始工作前，先读完这两份文件和 `documents/project/status-*.md`。
+
+工作区根目录 `AGENTS.md` 的规定同样适用，本规范不重复，包括目录用途、删除一律进回收站、产物放在仓库之外等。
+
+本规范不设机械检查，也不设持续集成。所有规则由执行者自觉遵守，任务结束前按第 11 节自查。规则编号用于引用：发现违反时，在汇报中写明编号。
+
+## 1. 目标
+
+规范服务于以下五个目标。遇到规则没有覆盖的情况，按这些目标判断：
+
+1. **一次读懂**：新来的执行者读完规范、首页和进度页，就知道项目是什么、怎么构建、做到了哪里、下一步做什么。
+2. **一处事实**：每项事实只在一处定义，改一处即全部生效。
+3. **只有现在**：仓库只放当前有效的内容，历史交给 Git 和少数记录型文档。
+4. **先能用，再扩展**：核心路径先端到端可用，界面为人设计。
+5. **跟随惯例**：结构与写法跟随技术栈的默认约定，不自创体系。
+
+## 2. 总则
+
+- **G-01** 只改动任务所需的范围，不改动无关的模块、文档或配置。
+- **G-02** 仓库只描述当前状态。不保留旧实现、兼容分支、注释掉的代码，也不写"原先如何"的说明。需要追溯的内容由 Git 历史、决策记录和更新日志承担。
+- **G-03** 每项事实只在一处定义，其他位置从该处取值或链接过去（第 5 节）。
+- **G-04** 生成的内容不手工编辑：它由自己的来源和生成命令产生，生成文件标明来源。
+- **G-05** 以下内容不进仓库：实验、探针、临时脚本、运行实例、测试世界或数据集、运行结果与证据。前四类放在工作区 `Scratches`，后两类放在工作区 `Artifacts`。可重复执行的验证定义按 T-05 放在 `validations/`。
+- **G-06** 不跟踪构建产物、安装包、依赖目录和二进制文件；例外由附则列出，例如 Gradle Wrapper 的 JAR。不用 `git add -f` 绕过忽略规则。
+- **G-07** 不提交密钥、签名文件、本机路径和个人配置。它们写在被忽略的本地文件里，文件名由附则规定。
+- **G-08** 根目录 `AGENTS.md` 在项目内不修改。需要修改规范时向用户提出，由规范来源统一修订，再同步到各仓库。
+- **G-09** 分支项目（fork）沿用上游的结构、命名与写法。本规范只约束本项目新增的代码、文档与流程；与上游冲突时以上游为准，并在项目规范中写明。
+
+## 3. 范围
+
+- **R-01** 先打通核心路径。项目规范写明用户最主要的那件事。它端到端可用、经用户验收之前，不做外围功能，例如账户、权限、分享、审计、备份、远程访问、插件机制和发布门禁，除非用户明确要求。
+- **R-02** 只做用户要求的功能。想到的扩展写进 `documents/project/backlog-*.md`，不顺手实现。
+- **R-03** "可用"以用户实际操作完成任务为准。入口、接口和测试齐全，不等于可用。
+- **R-04** 宁可少而完整。做不完的功能不留半成品入口，未完成的功能不出现在界面上。
+- **R-05** 范围的新增、删减和推迟由用户决定，并同步到 `documents/project/overview-*.md` 或 `scope-*.md`。
+
+## 4. 目录
+
+- **L-01** 目录结构采用技术栈的默认约定，见附则。在此之上，根目录只可再有以下条目：
+  - 文件：`AGENTS.md`、`README.md`、`README-<区域代号>.md`、`LICENSE`、`NOTICE`、`.gitignore`、`.gitattributes`、`.editorconfig`、`.gitmodules`；
+  - 目录：`documents/`、`validations/`、`tools/`、`third_party/`。
+
+  其余根目录条目只能是附则列出的技术栈文件。
+- **L-02** 模块、包、项目和目录按职责命名，名称说明它做什么。不使用 `common`、`misc`、`shared`、`util`、`utils`、`helper`、`helpers` 这类不表达职责的名字。
+- **L-03** 同一类内容只有一个去处：
+
+| 内容 | 位置 |
+| --- | --- |
+| 产品代码、资源与单元测试 | 技术栈默认位置（附则） |
+| 可重复执行的场景验证定义 | `validations/<type>-<topic>/`（T-05） |
+| 构建、发布与验证用的脚本和工具 | `tools/<name>/` |
+| 第三方源码与 Git 子模块，保持原样 | `third_party/<name>/` |
+| 文档 | `documents/<分类>/`（第 9 节） |
+| 项目信息与补充规则 | `documents/AGENTS.md` |
+| 实验、探针、临时脚本 | 仓库之外：工作区 `Scratches` |
+| 运行实例、结果、证据、发行包 | 仓库之外：工作区 `Artifacts` |
+
+- **L-04** 没有引用的文件和目录直接删除，不保留"以后可能用"的空壳。
+
+## 5. 事实与配置
+
+| 事实 | 唯一来源 |
+| --- | --- |
+| 产品名称、标识、版本号 | 附则规定的一处 |
+| 依赖与工具的版本 | 技术栈的依赖声明与锁定文件（附则） |
+| SDK 与运行时版本 | 附则规定的一处 |
+| 常用命令 | 技术栈的命令入口，如 Gradle 任务、`package.json` 的 `scripts`；说明写在 `documents/development/workflow-*.md` |
+| 本机路径、私密配置与个人偏好 | 被忽略的本地文件（G-07） |
+| 项目定位与范围 | `documents/project/overview-*.md` |
+| 当前进度 | `documents/project/status-*.md` |
+
+- **F-01** 版本号与标识不在多处书写，构建脚本、代码和文档从上表的来源取值或链接。
+- **F-02** 配置项有默认值和说明，完整定义只写在 `documents/reference/configuration-*.md` 一处。
+
+## 6. 代码
+
+- **C-01** 遵循技术栈的官方风格与惯例（附则）。格式交给该技术栈默认的格式化工具，提交前在本地执行。
+- **C-02** 不做防御性编程：
+  - 只为实际会出现的输入和状态写代码；
+  - 每个检查、保护或回退，都要能说出它防止的具体失败，即复现步骤、证据或可达路径；说不出就不加。
+- **C-03** 修根因，不叠补丁，不在下游加判断掩盖症状。
+- **C-04** 不预先抽象。同样的代码出现第二次再提取；只有一个实现时不建接口、工厂或分层，除非技术栈惯例或测试确实需要。
+- **C-05** 不保留死代码：没有引用的代码、未使用的参数、配置与开关、兼容旧实现的分支，一律删除。
+- **C-06** 诊断代码不进生产路径。临时诊断用完即删；确需长期保留的，集中放在一个调试开关后面。
+- **C-07** 一个文件、一个函数只做一件事。文件超过约 600 行或函数超过约 60 行时，先检查是否职责过多，能按职责拆就拆。生成文件除外。
+- **C-08** 同一能力只有一份实现。发现重复实现，合并为一份，删除多余的。
+- **C-09** 错误按技术栈惯例处理：不吞错误，不把失败改写成成功；用户可见的错误说明原因和下一步。
+- **C-10** 注释只写代码表达不了的约束、原因或用法。为防止重复犯错，可以写必要的历史原因。
+- **C-11** 第三方代码保持原样。对上游的修改集中、可列举，并写在 `documents/reference/upstream-*.md` 中。
+- **C-12** 文本文件：
+  - 用 UTF-8 编码，不带字节顺序标记；
+  - 用 LF 换行，技术栈要求 CRLF 的文件除外，如 `.bat`、`.cmd`；
+  - 以一个换行结束，不含行尾空白；
+  - 这些设置写在 `.editorconfig` 和 `.gitattributes` 中。
+
+## 7. 界面
+
+- **U-01** 遵循附则与项目规范指定的设计语言和组件库，使用其标准控件、主题、字体与间距。不另造一套控件，不硬编码颜色和尺寸。
+- **U-02** 按用户要完成的任务组织界面：
+  - 首屏回答"我现在能做什么"；
+  - 最常用的操作一步可达；
+  - 导航层级浅，位置稳定。
+- **U-03** 使用用户的语言。内部 ID、数据结构、状态机名称、调试信息和开发术语不直接出现在界面上；确有需要，放进可展开的"详细信息"。
+- **U-04** 每个状态都有设计：加载、空、错误、无权限、离线。错误提示说明原因和用户能做的下一步。
+- **U-05** 不可逆的操作先确认，并说明后果。能做成可撤销的，优先做成可撤销。
+- **U-06** 设置按用户的心智分组，参照平台系统设置的结构。高级与危险选项单独放置。
+- **U-07** 支持深色模式、系统字体缩放和常见的窗口或屏幕尺寸；桌面端支持键盘操作。
+- **U-08** 界面改动必须实际运行，截图自查后再交付；界面的结论以亲眼看过的画面为准。
+
+## 8. 测试与验证
+
+- **T-01** 测试放在技术栈默认位置，命名跟随技术栈惯例（附则）。
+- **T-02** 每个测试对应一个具体的可能缺陷或已修复的问题。不为覆盖率或数量写测试，不测试框架和语言本身。
+- **T-03** 有标准答案就对照。标准答案包括上游实现、被替换的原有实现、协议或格式规范、参考数据。自写测试只能证明代码符合自己的理解。
+- **T-04** 分级验证：
+  - 每次改动只跑直接相关的构建与测试；
+  - 阶段检查点跑受影响的集成测试；
+  - 交付前在冻结的候选上完整跑一次。
+
+  失败最多原样重跑一次，仍失败就查原因。一次有界调查（约一小时）定位不了的问题记为开放项，交用户决定。
+- **T-05** 需要真实环境、真实数据或人工判断的场景验证，定义写在 `validations/<type>-<topic>/validation.md`，固定包含"目标、运行、通过标准"三节。运行数据与结果放在仓库之外，结论写进相应文档。
+- **T-06** 不设持续集成，不另建检查器或门禁脚本。技术栈自带的构建、测试与 lint 工具在本地按需运行。
+- **T-07** 结论写成"一致""有差异""无法比较"之一，并按可见影响排序。"N 项通过"不作为正确性的证据。
+
+## 9. 文档
+
+`documents/` 按用途分为七类。默认写法由分类决定，文件名不写读者。
+
+| 位置 | 用途 | 默认写法 | 建议类型词 |
+| --- | --- | --- | --- |
+| `usage` | 安装、配置、使用与问题处理 | 用户 | `installation`、`configuration`、`guide`、`feature`、`command`、`compatibility`、`troubleshooting`、`faq`、`limitation` |
+| `release` | 发布、变更、升级与迁移 | 用户 | `changelog`、`release`、`upgrade`、`migration`、`support`、`deprecation` |
+| `development` | 环境、构建、工作流、测试与规程 | 开发者；`procedure` 为 Agent | `setup`、`build`、`workflow`、`testing`、`debugging`、`porting`、`contribution`、`procedure` |
+| `design` | 概念、原则、架构、机制与决策 | 开发者 | `overview`、`concept`、`principle`、`architecture`、`mechanism`、`flow`、`lifecycle`、`security` |
+| `project` | 定位、范围、计划、进度、待办与交接 | 开发者；`plan`、`handoff` 为 Agent | `overview`、`scope`、`proposal`、`roadmap`、`milestone`、`plan`、`status`、`backlog`、`debt`、`handoff` |
+| `reference` | 接口、协议、配置、格式与依赖的精确定义 | 开发者 | `api`、`protocol`、`schema`、`command`、`configuration`、`event`、`format`、`version`、`dependency`、`upstream`、`glossary`、`example` |
+| `research` | 某一时刻的调研、调查、审计、评审与实验 | 开发者 | `survey`、`investigation`、`audit`、`review`、`experiment`、`incident` |
+
+- **D-01** `documents/` 下只有上表的七个分类目录和 `AGENTS.md`。文档直接放在分类目录中，图片放在分类目录的 `images/` 中。
+- **D-02** 命名规则：
+  - 普通文档：`<type>-<topic>.md`；
+  - 决策记录：`design/adr-<number>-<topic>.md`；
+  - 阶段记录：`project/phase-<number>-<topic>.md`；
+  - 译文：在名称末尾加区域代号，如 `guide-setup-en_US.md`；
+  - `<topic>` 由小写英文单词或数字组成，用 `_` 连接；`<number>` 为不带前导零的正整数，从 1 起连续编号。
+- **D-03** `<type>` 取自上表的建议词。确需新词时，在项目规范的补充规则中登记。
+- **D-04** 固定小节：
+  - 名称必须完全一致，可以另加其他小节：
+
+| 文档 | 固定小节 |
+| --- | --- |
+| `procedure` | 适用范围、步骤、验收；可选：前置条件、禁止 |
+| `plan`、`phase` | 目标、范围、步骤、结果；步骤标注"待办、进行中、完成、放弃"之一 |
+| `adr` | 状态、背景、决策、后果；状态只用"提议中、已接受、已弃用、已被 adr-<number> 取代" |
+| `research` 分类 | 问题、方法、发现、结论；一级标题后的第一段写调查日期 `YYYY-MM-DD` |
+| `validation.md` | 目标、运行、通过标准 |
+
+- **D-05** 按分类的默认写法撰写：
+  - **用户写法**：称读者为"你"；先说能做什么，再说怎么做；使用界面上显示的名称；不出现仓库路径和构建命令。
+  - **开发者写法**：先写结论；命令从仓库根目录执行，放在代码块中；引用文件用仓库相对路径链接；不复述源码。
+  - **Agent 写法**：一步一行，按顺序编号；占位符 `<name>` 首次出现时说明；验收条件能由命令结果或文件状态判定。
+- **D-06** 文档只描述当前状态，过时内容直接修改或删除。只有决策记录、阶段记录、研究记录和更新日志记录历史：
+  - 研究记录事后不改写；结论被采纳时，写进决策记录或相应文档；
+  - 被取代的决策记录保留原文，在"状态"中写明取代者。
+- **D-07** 不写流水账：
+  - 不建开发日志、问题日志、验证日志、交付记录这类按时间累积的文档；
+  - 进度写进 `project/status-*.md`，约 10 KB 以内，只写当前状态、剩余工作、下三步和开放项；
+  - 决策写进决策记录；问题写进 `backlog`、`debt` 或 `research/investigation-*`；
+  - 过程交给 Git 历史。
+- **D-08** `README.md` 是首页，只放简介、支持的平台、快速开始、文档入口和许可说明，用项目规范规定的首页语言。
+- **D-09** 更新日志写在 `release/changelog-*.md`：
+  - 按 Keep a Changelog 编写，版本号用语义化版本；
+  - 改动类型只用"新增、变更、弃用、移除、修复、安全"。
+- **D-10** 文档先写结论；同一事实只写一处，其他地方链接过去；篇幅以读者一次能读完为准。Markdown 的标题层级不跳级，代码块标明语言，相对链接指向存在的文件。
+- **D-11** 文档使用项目规范规定的主语言；代码标识、命令、路径和界面上的英文名称保持原文。
+
+## 10. 协作流程
+
+- **W-01** 代码改动与下表的同步项在同一次变更中完成。
+
+| 变更 | 需要同步 |
+| --- | --- |
+| 新增或升级依赖 | 依赖声明与锁定文件、`reference/dependency-*.md` |
+| 用户可见的行为 | `usage/` 中相应文档、更新日志 |
+| 架构或技术方向的决策 | 新的决策记录，并更新相关的 `design/` 文档 |
+| 新增或移除模块、项目 | 构建登记、`design/architecture-*.md` |
+| 构建或运行命令 | `development/workflow-*.md`、`README.md` 的快速开始 |
+| 范围 | `project/overview-*.md` 或 `scope-*.md` |
+| 进度 | `project/status-*.md` |
+
+- **W-02** Git 操作：
+  - 未经用户同意，不提交、不推送、不改写历史、不强推，也不建 tag 或拉取请求；
+  - 提交标题一律写作 `Update`，不写正文；
+  - 一次提交只含本次相关的改动。
+- **W-03** 多步任务先在 `project/plan-*.md` 写计划；工作中断时写 `project/handoff-*.md`，接手完成后删除；任务完成后更新进度页。
+- **W-04** 汇报：
+  - 先说完成了什么、还差什么，再附证据；
+  - 如实写明哪些已验证、哪些未验证，以及原因；
+  - 需要用户决定的事，用一句话写清选项和建议，然后继续做不受影响的工作；
+  - 交给用户的人工验收步骤写成一次能做完的短清单。
+- **W-05** 需求不清楚时先问。用户的指示与本规范冲突时，按用户的指示执行，并在汇报中写明冲突。
+- **W-06** 根目录 `AGENTS.md` 与项目规范合计不超过 32 KiB。
+- **W-07** 不使用子代理（subagent）分派或并行开发，由当前执行者直接完成。
+
+## 11. 完成前自查
+
+任务结束前逐项自查。有不符合的项，要么改正，要么在汇报中按编号写明：
+
+1. 改动只在任务范围内，没有顺手扩功能（G-01、R-02）。
+2. 没有新增防御代码、预先抽象、死代码、诊断代码或重复实现（C-02 至 C-08）。
+3. 新文件放对了位置；实验、结果、生成物和二进制没有进仓库（L-01 至 L-03、G-05、G-06）。
+4. 同一事实只在一处（G-03、F-01）。
+5. 第 10 节表格中的同步项已经完成（W-01）。
+6. 每个新测试都对应具体缺陷；验证按分级和影响范围进行（T-02、T-04）。
+7. 界面改动已实际运行，并看过截图（U-08）。
+8. 文档只写当前状态，进度页已更新（D-06、D-07）。
+9. 格式化工具已运行（C-01）。
+10. 汇报写明了已验证与未验证的内容（W-04）。
+
+## 附则：Go
+
+本附则适用于 Go 编写的服务、命令行程序与扫描器，以 Go 官方的模块布局指南为基础。规则编号以 `GO-` 开头。
+
+### 结构
+
+- **GO-01** 以 Go 为主的仓库，根目录可以有以下技术栈文件与目录：
+  - `go.mod`、`go.sum`；
+  - `cmd/`：每个可执行程序一个子目录，`cmd/<name>/main.go`；
+  - `internal/`：本项目私有的包；
+  - `api/`：接口契约及由它生成的代码。
+
+  仓库以其他技术栈为主时，Go 模块放在一个按职责命名的子目录中（如 `scanner/`），该目录内按本附则组织。不使用 `pkg/`，除非确实对外提供可导入的库。
+- **GO-02** 包的组织与命名：
+  - `internal/` 下的包按领域或职责划分；
+  - 包名短小、小写、单数、不含下划线，不用 `util`、`common`、`base`、`models` 这类名字（L-02）；
+  - 包内名称不重复包名，如用 `catalog.Store`，不用 `catalog.CatalogStore`。
+- **GO-03** 测试与夹具：
+  - 测试文件 `<name>_test.go` 与被测代码放在同一目录；
+  - 测试数据放在该目录的 `testdata/` 中；
+  - 大体积的真实数据集不进仓库（G-05）。
+- **GO-04** `cmd/` 只负责组装与启动，业务逻辑在 `internal/` 中。
+- **GO-05** 数据库迁移按所用迁移工具的约定集中存放在一个目录中。已发布的迁移不改写，结构变化写成新的迁移。
+
+### 事实与生成
+
+| 事实 | 唯一来源 |
+| --- | --- |
+| Go 版本与依赖 | `go.mod`（`go` 与 `toolchain` 行）、`go.sum` |
+| 接口契约 | `api/` 中的契约文件；服务端代码与客户端类型由它生成 |
+| 产品版本 | Git 标签，构建时通过 `-ldflags` 注入，不在源码中书写 |
+
+- **GO-06** 生成代码用 `//go:generate` 指令声明生成方式，与来源放在一起；生成文件带标准头 `// Code generated ... DO NOT EDIT.`，不手工修改（G-04）。
+- **GO-07** Go 可执行文件不进仓库（G-06）。用 `go:embed` 嵌入前端时，前端构建产物同样不入库，构建步骤先构建前端再构建后端，顺序写在 `documents/development/build-*.md`。
+
+### 代码
+
+- **GO-08** 格式与错误处理：
+  - 用 `gofmt` 格式化，提交前执行 `go vet`；
+  - 错误作为返回值处理，用 `fmt.Errorf("...: %w", err)` 补充上下文，用 `errors.Is` 和 `errors.As` 判断；
+  - 预期内的失败不用 `panic`。
+- **GO-09** 请求范围内的调用以 `context.Context` 作为第一个参数，并向下传递取消信号；日志使用标准库的 `log/slog`。
+- **GO-10** 只在确有多个实现，或测试确实需要替换时，才定义接口；接口由使用方在自己的包里定义，保持最小。
+
+### 运行与验证
+
+```powershell
+go build ./...
+go test ./...
+go vet ./...
+```
+
+- **GO-11** 涉及并发的改动，在支持的平台上用 `go test -race` 运行受影响的包。
+- **GO-12** 需要真实大目录、长时间运行或性能测量的验证，按 T-05 定义；数据与结果放在仓库之外。
+
+## 附则：Node.js
+
+本附则适用于以 Node.js 编写的本地服务与命令行程序，以及由它提供的浏览器界面。结构以 npm 包的默认约定为基础，规则编号以 `NJ-` 开头。
+
+### 结构
+
+- **NJ-01** 根目录可以有以下技术栈文件与目录：`package.json`、`package-lock.json`、`src/`、`bin/`、`test/`、`public/`。`node_modules/` 被 Git 忽略。
+- **NJ-02** 目录划分：
+  - `src/` 下按职责划分目录，如服务、扫描、存储、浏览器界面，不建 `utils/`、`common/`、`internal/`（L-02）；
+  - 命令行入口放在 `bin/`，只负责解析参数、调用 `src/`；
+  - 浏览器端的静态资源在 `public/`。
+- **NJ-03** 测试与夹具：
+  - 测试放在 `test/` 中，用 Node 内置的测试运行器（`node:test`），目录结构与 `src/` 对应；
+  - 小型夹具放在 `test/fixtures/`；
+  - 大体积的真实数据不进仓库（G-05）。
+
+### 事实
+
+| 事实 | 唯一来源 |
+| --- | --- |
+| 产品名称与版本 | `package.json` 的 `name`、`version` |
+| Node 版本 | `package.json` 的 `engines.node` |
+| 依赖版本 | `package.json`、`package-lock.json` |
+| 常用命令 | `package.json` 的 `scripts` |
+| 配置文件格式 | 一份 JSON Schema，代码与文档都从它取值 |
+| 外部程序（如 FFmpeg、ImageMagick） | `documents/reference/dependency-*.md`，写明版本要求与用途 |
+
+### 代码
+
+- **NJ-04** 编码约定：
+  - 使用 ES 模块（`"type": "module"`）和 `async`/`await`，不混用回调风格；
+  - 格式用 Prettier 的默认配置；
+  - 类型检查的方式（TypeScript，或 JSDoc 加 `// @ts-check`）写在项目规范里，全项目统一。
+- **NJ-05** 错误处理：
+  - 以 `Error` 及其子类抛出，带上原因（`cause`）；
+  - 进程级的未处理异常只在入口处统一记录后退出，不吞掉。
+- **NJ-06** 依赖从少：标准库能完成的不引入第三方包。新增依赖说明用途，并记入依赖文档（W-01）。
+
+### 界面
+
+- **NJ-07** 浏览器界面选定一套设计体系或组件库，写在项目规范里，全站统一（U-01）。
+  - 管理功能和日常浏览分开组织（U-02）。
+
+### 运行与验证
+
+```powershell
+npm ci
+npm test
+```
+
+- **NJ-08** 常用操作都写成 `package.json` 的 `scripts`，文档中引用脚本名，不复制命令行。
+- **NJ-09** 涉及真实媒体库、长时间扫描或性能的验证，按 T-05 定义，运行实例、数据与结果放在仓库之外。

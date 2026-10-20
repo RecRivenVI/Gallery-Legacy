@@ -1,0 +1,32 @@
+/* Native input / first-frame projection of tokens.js. sync-tokens.cjs verifies
+   these values; there is no independent native design palette. */
+:root {
+  --bg: #111213;
+  --fg: #ededed;
+  --field: #1c1c1e;
+  --font-control: 13px;
+  --control: 34px;
+  --group: 28px;
+  --focus: 2px;
+  --gap: 8px;
+  --pad: 24px;
+  --start: 104px;
+  --start-expanded: 248px;
+  --card: 220px;
+  --phone-card: 180px;
+  --card-radius: 6px;
+  --track: 4px;
+  --thumb: 14px;
+  --thumb-offset: -5px;
+  --search-padding: 34px;
+  --dim-width: 100px;
+  --breath-time: 1.6s;
+  --breath-opacity: 0.45;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f2f2f0;
+  --fg: #161616;
+  --field: #ffffff;
+  color-scheme: light;
+}
