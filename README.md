@@ -40,4 +40,4 @@ npm run manager -- --config <实例配置文件>
 
 ## 许可
 
-使用 [GNU AGPL v3](LICENSE)。第三方材料说明见 [NOTICE](NOTICE)。
+使用 [AGPL-3.0-or-later](LICENSE)。第三方材料说明见 [NOTICE](NOTICE)。

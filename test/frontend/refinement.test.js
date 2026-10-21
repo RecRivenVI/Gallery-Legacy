@@ -9,9 +9,25 @@ test("common card ratios preserve explicit choices, and touch sizes differ", asy
     ["1:1", "4:3", "3:4", "16:9", "9:16"],
   );
   assert.equal(cardColumns(370, 1, true, true), 3);
-  assert.equal(cardColumns(370, 3, true, true), 1);
+  assert.equal(cardColumns(370, 3, true, true), 2);
+  assert.equal(cardColumns(304, 3, true, true), 2);
+  assert.equal(cardColumns(752, 3, true, true), 4);
   assert.ok(cardColumns(1600, 1, true, true) <= 4);
   assert.equal(cardColumns(1000, 0), 1);
+});
+test("loading and real cards share size, ratio and row spacing", async () => {
+  const { cardGeometry } = await load();
+  assert.deepEqual(cardGeometry(377, 3, true, true), {
+    columns: 2,
+    w: 184.5,
+    h: 184.5,
+    pitchX: 192.5,
+    pitchY: 242.5,
+  });
+  const tall = cardGeometry(377, 3, true, true, 3 / 4);
+  assert.equal(tall.h, 246);
+  assert.equal(tall.pitchY, 304);
+  assert.equal(cardGeometry(377, 0, true, true).h, 64);
 });
 test("zoom retains the image point under the pointer and limits pan", async () => {
   const { anchoredPan, boundedPan } = await load(),
@@ -125,6 +141,17 @@ test("Manager counts individual edits and restart-sensitive settings", async () 
     50,
   );
   assert.equal(m.scanProgress({ observedWorks: 50 }).percent, null);
+});
+test("Manager short durations and cache units do not add zero-minute noise", async () => {
+  const { duration, cacheLabel } = await import(
+    "../../public/manager/model.js"
+  );
+  assert.equal(duration(300), "不到 1 秒");
+  assert.equal(duration(8000), "8 秒");
+  assert.equal(duration(72000), "1 分 12 秒");
+  assert.equal(cacheLabel(0), "没有缓存");
+  assert.equal(cacheLabel(1), "缩略图缓存不到 1 MB");
+  assert.equal(cacheLabel(1288490189), "缩略图缓存 1.2 GB");
 });
 
 test("rapid work navigation is ordered and closing invalidates a pending response", async () => {

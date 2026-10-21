@@ -1,3 +1,4 @@
+import { t } from "./tokens.js";
 // Product presentation rules. No source identity or filesystem order changes.
 export const aspectRatios = {
   square: ["1:1", 1],
@@ -8,16 +9,28 @@ export const aspectRatios = {
 };
 export function cardColumns(width, size, touch = false, portrait = false) {
   if (!size) return 1;
-  const target = touch
-    ? [0, 110, 145, 185, 250, 360][size]
-    : [0, 140, 180, 220, 280, 360][size];
+  const preferred = (touch ? t.touchSizes : t.sizes)[size];
+  const target =
+    touch && portrait ? Math.min(preferred, (width - t.gap) / 2) : preferred;
   return Math.max(
     1,
     Math.min(
       touch && portrait ? 4 : Infinity,
-      Math.floor((width + 8) / (target + 8)),
+      Math.floor((width + t.gap) / (target + t.gap)),
     ),
   );
+}
+export function cardGeometry(width, size, touch, portrait, aspect = 1) {
+  const columns = cardColumns(width, size, touch, portrait);
+  const w = (width - (columns - 1) * t.gap) / columns;
+  const h = size ? w / aspect : t.thumb;
+  return {
+    columns,
+    w,
+    h,
+    pitchX: w + t.gap,
+    pitchY: h + t.rowGap + (size ? t.platformPitch : 0),
+  };
 }
 export function boundedPan(iw, ih, area, zoom, pan) {
   const fit = Math.min(area.w / iw, area.h / ih) * zoom;

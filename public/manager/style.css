@@ -196,10 +196,20 @@ section {
   align-items: center;
   gap: var(--space-8);
   cursor: pointer;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .platforms label > span {
-  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.platforms label > span.overflow {
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--space-16)),
+    transparent
+  );
 }
 .platforms label:has(:checked) {
   background: var(--on);
@@ -208,6 +218,8 @@ section {
   margin-inline-start: auto;
   color: var(--faint);
   font-weight: 400;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .actions {
   display: flex;

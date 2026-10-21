@@ -63,12 +63,16 @@ export function running(s) {
 export function duration(ms) {
   if (ms < 1000) return "不到 1 秒";
   const m = Math.floor(ms / 60000);
-  return m >= 60
-    ? `${Math.floor(m / 60)} 小时 ${m % 60} 分钟`
-    : `${m} 分 ${Math.floor(ms / 1000) % 60} 秒`;
+  return !m
+    ? `${Math.floor(ms / 1000)} 秒`
+    : m >= 60
+      ? `${Math.floor(m / 60)} 小时 ${m % 60} 分钟`
+      : `${m} 分 ${Math.floor(ms / 1000) % 60} 秒`;
 }
 export function cacheLabel(bytes) {
   if (!bytes) return "没有缓存";
+  if (bytes >= 1073741824)
+    return `缩略图缓存 ${(bytes / 1073741824).toFixed(1)} GB`;
   return bytes < 1048576
     ? "缩略图缓存不到 1 MB"
     : `缩略图缓存 ${(bytes / 1048576).toFixed(1)} MB`;

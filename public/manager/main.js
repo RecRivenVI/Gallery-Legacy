@@ -97,6 +97,8 @@ function alignPaths() {
     el.classList.toggle("overflow", overflow);
     el.scrollLeft = overflow ? el.scrollWidth - el.clientWidth : 0;
   }
+  for (const el of document.querySelectorAll(".platforms label > span"))
+    el.classList.toggle("overflow", el.scrollWidth > el.clientWidth);
 }
 function overlappingPlatform() {
   const own = state.editedSource,

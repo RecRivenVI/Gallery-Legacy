@@ -158,6 +158,10 @@ test("Canvas shell uses offscreen snapshots, keyboard-only focus and saved theme
   assert.ok(html.indexOf("theme-init.js") < html.indexOf("style.css"));
   assert.doesNotMatch(html, /正在打开/);
   assert.doesNotMatch(app, /control\(\s*["']menu-close["']/);
+  assert.ok(
+    app.indexOf('window.addEventListener("resize", resize)') >
+      app.indexOf("p = new Paint"),
+  );
 });
 test("Canvas shared text retains unchanged glyphs and fades only replaced glyphs", async () => {
   const { SharedText } = await load("motion.js"),

@@ -15,7 +15,7 @@ import { authorCollage } from "./content-layout.js";
 import { loadCanvasMiSans } from "../platform/fonts.js";
 import {
   aspectRatios,
-  cardColumns,
+  cardGeometry,
   viewportAnchor,
   restoredScroll,
   dragScroll,
@@ -540,9 +540,13 @@ function layout() {
     width = state.gridWidth.x - start - t.gap,
     size = t.sizes[state.prefs.size];
   const touch = matchMedia("(pointer:coarse)").matches || p.w < 700;
-  const columns = cardColumns(width, state.prefs.size, touch, p.h > p.w);
-  const w = (width - (columns - 1) * t.gap) / columns,
-    h = w / aspectRatios[state.prefs.aspect][1];
+  const { columns, w, h } = cardGeometry(
+    width,
+    state.prefs.size,
+    touch,
+    p.h > p.w,
+    aspectRatios[state.prefs.aspect][1],
+  );
   for (const [i, work] of state.result.items.entries()) {
     const rect = size
       ? b(
@@ -2734,14 +2738,24 @@ function render(time) {
     for (const tile of tiles.values()) drawTile(tile, "art");
   else if (state.status === "loading") {
     const side = narrow() ? 0 : state.sidebar.x,
-      cols = Math.max(1, Math.floor((p.w - side) / t.defaultCardWidth));
-    for (let i = 0; i < cols * 2; i++)
+      start = side + t.gap,
+      width = state.gridWidth.x - start - t.gap,
+      touch =
+        matchMedia("(pointer:coarse)").matches || p.w < t.narrowBreakpoint,
+      { columns, w, h, pitchX, pitchY } = cardGeometry(
+        width,
+        state.prefs.size,
+        touch,
+        p.h > p.w,
+        aspectRatios[state.prefs.aspect][1],
+      );
+    for (let i = 0; i < columns * Math.ceil(p.h / pitchY); i++)
       p.rr(
         b(
-          side + t.gap + (i % cols) * t.skeletonPitch,
-          t.backgroundPickerExtent + Math.floor(i / cols) * t.skeletonRowPitch,
-          t.defaultCardWidth,
-          t.defaultCardWidth,
+          start + (i % columns) * pitchX,
+          contentTop() + t.smallPad + Math.floor(i / columns) * pitchY,
+          state.prefs.size ? w : t.thumb,
+          h,
         ),
         t.card,
         p.colors.field,
@@ -3218,7 +3232,7 @@ const routeChanged = async () => {
 };
 window.addEventListener("popstate", routeChanged);
 window.addEventListener("hashchange", routeChanged);
-window.addEventListener("resize", () => {
+function resize() {
   const anchor = viewportAnchor(tiles, state.scroll.target, contentTop());
   p.resize();
   if (p.w < 1280 || matchMedia("(pointer:coarse)").matches) {
@@ -3233,7 +3247,7 @@ window.addEventListener("resize", () => {
   layout();
   state.scroll.to(restoredScroll(anchor, tiles));
   request();
-});
+}
 systemTheme.addEventListener("change", () => {
   if (state.themeMode === "system") setTheme("system");
 });
@@ -3261,6 +3275,7 @@ async function boot() {
   });
   fonts = loadedFonts.faces;
   p = new Paint(CK, cv, fonts, provider);
+  window.addEventListener("resize", resize);
   p.ensureFonts = loadedFonts.ensure;
   let emojiRequest = null;
   p.ensureEmoji = (text) => {
