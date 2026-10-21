@@ -34,6 +34,7 @@ async function main() {
     "package-lock.json",
     "README.md",
     "NOTICE",
+    "LICENSE",
   ])
     fs.cpSync(path.join(root, name), path.join(out, name), {
       recursive: true,

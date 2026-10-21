@@ -40,6 +40,7 @@ export function theme(mode) {
     "log-height": t.panelWidth + t.icon,
     "dialog-width": t.sidebar * 2,
     "tool-width": t.largeCardWidth,
+    "content-max": t.sidebar * 5,
     "switch-width": t.switchWidth,
     "switch-height": t.switchHeight,
     "switch-knob": t.switchDiameter,

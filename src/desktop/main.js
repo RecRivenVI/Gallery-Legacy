@@ -14,6 +14,7 @@ const fs = require("node:fs"),
   path = require("node:path"),
   os = require("node:os");
 const { pathToFileURL } = require("node:url");
+const { trustedPage } = require("./trusted-page.js");
 const { promisify } = require("node:util");
 const execute = promisify(require("node:child_process").execFile);
 const productRoot = app.isPackaged
@@ -173,14 +174,18 @@ async function status() {
     } catch {}
     try {
       const pending = await invoke(["status"]);
-      if (pending.state === "STARTING")
-        return { ...pending, hostBusy: true, localControl: true };
-    } catch {}
+      return {
+        ...pending,
+        hostBusy: action || pending.state === "STARTING",
+        hostFailure: failure,
+        localControl: true,
+      };
+    } catch (error) {
+      if (error.code !== "RUNTIME_OFFLINE") throw error;
+    }
   }
   let scan = { state: "IDLE", running: false };
-  try {
-    if (connection) scan = await admin("scan.status");
-  } catch {}
+  if (connection) scan = await admin("scan.status");
   return {
     state: action ? "STARTING" : "STOPPED",
     localControl: !!connection,
@@ -224,7 +229,8 @@ function handle(channel, handler) {
   ipcMain.handle(channel, async (event, ...args) => {
     if (
       event.sender !== window?.webContents ||
-      event.senderFrame?.url !== managerUrl
+      event.senderFrame !== window.webContents.mainFrame ||
+      !trustedPage(event.senderFrame?.url, managerUrl)
     )
       return { ok: false, code: "HOST_CALL_FORBIDDEN" };
     try {
@@ -277,8 +283,10 @@ async function main() {
     process.env.GALLERY_ICON_PATH ||
     path.join(productRoot, "resources/app-icon.png");
   window = new BrowserWindow({
-    width: 1180,
-    height: 830,
+    width: 1280,
+    height: 800,
+    minWidth: 960,
+    minHeight: 640,
     show: false,
     icon,
     webPreferences: {
@@ -296,7 +304,7 @@ async function main() {
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => {
-    if (url !== managerUrl) event.preventDefault();
+    if (!trustedPage(url, managerUrl)) event.preventDefault();
   });
   handle("host:status", status);
   handle("host:resource-base", () => connection?.url || null);

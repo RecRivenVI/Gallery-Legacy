@@ -7,6 +7,7 @@ import {
   updateLabel,
   running,
   duration,
+  cacheLabel,
   clock,
   humanError,
   scanProgress,
@@ -181,12 +182,20 @@ function update() {
   )
     return `<section><h2>先设置平台目录</h2><div class="actions">${button("go-settings", "去设置", true)}</div></section>`;
   const active = running(state.status),
+    serviceLabel =
+      state.status.state === "UNKNOWN"
+        ? "服务状态无法读取"
+        : state.status.state === "STARTING"
+          ? "正在启动服务"
+          : active
+            ? "服务运行中"
+            : "服务已停止",
     s = state.scan,
     p = scanProgress(s),
     uptime = duration(
       Math.max(0, Date.now() - (state.status.startedAtMs || Date.now())),
     );
-  return `<section><div class="row between"><div class="row"><span class="${active ? "ok" : "faint"}">●</span><strong>${active ? "服务运行中" : "服务已停止"}</strong>${active ? `<span class="mono">${esc(state.config?.value.listenAddress || "127.0.0.1")}:${state.config?.value.port || ""}</span>${button("copy-address", "复制")}<span class="muted">已运行 ${uptime}</span>` : ""}</div><div class="row">${active ? button("restart", "重启", false, state.busy) + button("stop", "停止", false, state.busy) : button("start", "启动", true, state.busy)}</div></div>${error("service")}</section>
+  return `<section><div class="row between"><div class="row"><span class="${state.status.state === "STARTING" ? "faint" : active ? "ok" : "faint"}">●</span><strong>${serviceLabel}</strong>${active && state.status.state !== "STARTING" ? `<span class="mono">${esc(state.config?.value.listenAddress || "127.0.0.1")}:${state.config?.value.port || ""}</span>${button("copy-address", "复制")}<span class="muted">已运行 ${uptime}</span>` : ""}</div><div class="row">${active ? button("restart", "重启", false, state.busy || state.status.hostBusy) + button("stop", "停止", false, state.busy || state.status.hostBusy) : button("start", "启动", true, state.busy || state.status.state === "UNKNOWN")}</div></div>${error("service")}</section>
 <section id="scan-section"><div class="row between"><h2>${s.running ? (state.cancelRequested ? "正在停止" : scanPhase(s)) : "更新图库"}</h2><span class="muted">${s.running ? "已用时 " + duration(Date.now() - s.startedAtMs) : s.finishedAtMs ? "上次更新 " + clock(s.finishedAtMs) + " · 用时 " + duration(s.elapsedMs || s.finishedAtMs - s.startedAtMs) : "还没有更新过"}</span></div>
 ${s.running ? `<div class="row between progress-summary"><span>${p.active.length > 1 ? "同时更新 " + p.active.length + " 个平台" : esc(p.current || "正在准备")} · 已完成 ${p.done.filter((v) => ["COMPLETE", "INCREMENTAL_COMPLETE"].includes(v.status)).length} / ${p.selected.length}</span><span>${p.percent === null ? "" : p.percent + "%"}</span></div><progress ${p.percent === null ? "" : `value="${p.percent}" max="100"`}></progress><div>已检查 ${n(p.checked)}${p.total ? " / " + n(p.total) : ""} · ${summary().split(" · ").slice(0, 3).join(" · ")}</div>` : `<div class="row select-actions">${button("select-all", "全选")}${button("select-none", "清空")}</div>`}
 <div class="platforms">${platformNames.map((id) => `<label><input type="checkbox" data-platform="${id}" ${state.selected.includes(id) ? "checked" : ""} ${s.running || !active ? "disabled" : ""}><span>${id}</span><small>${s.running ? (p.done.some?.((v) => (v.platformId || v.id) === id && ["COMPLETE", "INCREMENTAL_COMPLETE"].includes(v.status)) ? "✓ +" + n(p.done.find((v) => (v.platformId || v.id) === id)?.platformChanges?.worksAdded || 0) : (s.activePlatforms || []).includes(id) ? "进行中" : p.selected.includes(id) ? "等待" : "未选择") : n(state.counts[id] || 0)}</small></label>`).join("")}</div>
@@ -205,8 +214,8 @@ function segment(key, items, value) {
 }
 function access() {
   const a = state.access;
-  if (!a) return `<section aria-busy="true">${error("access")}</section>`;
-  return `<section><div class="row between"><label class="row">封禁功能<input id="blocking" class="switch" type="checkbox" role="switch" ${a.enabled !== false ? "checked" : ""} ${state.busy ? "disabled" : ""}></label>${segment(
+  const clients = a?.clients || [];
+  return `<section><div class="row between"><label class="row">封禁功能<input id="blocking" class="switch" type="checkbox" role="switch" ${a?.enabled !== false ? "checked" : ""} ${state.busy || !a ? "disabled" : ""}></label>${segment(
     "period",
     [
       [1, "今天"],
@@ -214,7 +223,7 @@ function access() {
       [30, "30 天"],
     ],
     state.period,
-  )}</div>${a.clients.length ? "<table><thead>" : '<p class="muted">这段时间没有访问记录</p>'}${a.clients.length ? `<tr>${["地址", "客户端", "请求数", "错误数", "最近访问", "操作"].map((v) => "<th>" + v + "</th>").join("")}</tr></thead><tbody>${a.clients.map((c) => `<tr><td class="mono">${esc(c.address)}</td><td>${c.local ? "本机" : c.agent === "Venera" ? "Venera" : "浏览器"}</td><td>${n(c.requests)}</td><td class="${c.errors ? "err" : ""}">${n(c.errors)}</td><td>${clock(c.lastSeenAtMs)}</td><td>${c.local ? "本机" : `${c.blocked ? "<span>已封禁</span> " : ""}<button data-block="${c.id}" data-blocked="${!c.blocked}">${c.blocked ? "解除" : "封禁"}</button>`}</td></tr>`).join("")}</tbody></table>` : ""}${error("access")}</section>`;
+  )}</div>${state.errors.access ? error("access") : !a ? '<div class="loading-placeholder" aria-busy="true"></div>' : clients.length ? `<table><thead><tr>${["地址", "客户端", "请求数", "错误数", "最近访问", "操作"].map((v) => "<th>" + v + "</th>").join("")}</tr></thead><tbody>${clients.map((c) => `<tr><td class="mono">${esc(c.address)}</td><td>${c.local ? "本机" : c.agent === "Venera" ? "Venera" : "浏览器"}</td><td>${n(c.requests)}</td><td class="${c.errors ? "err" : ""}">${n(c.errors)}</td><td>${clock(c.lastSeenAtMs)}</td><td>${c.local ? "本机" : `${c.blocked ? "<span>已封禁</span> " : ""}<button data-block="${c.id}" data-blocked="${!c.blocked}">${c.blocked ? "解除" : "封禁"}</button>`}</td></tr>`).join("")}</tbody></table>` : '<p class="muted">这段时间没有访问记录</p>'}</section>`;
 }
 function settings() {
   if (!state.draft)
@@ -252,24 +261,26 @@ function diagnose() {
       ["error", "错误"],
     ],
     state.logLevel || "",
-  )}<input id="log-query" aria-label="搜索日志" placeholder="搜索日志" value="${esc(state.logQuery || "")}"></div><div id="log-lines" tabindex="0"></div>${error("logs")}</section><div class="tools"><section><h2>检查图库</h2><p class="muted">${v.finishedAtMs ? "上次检查 " + clock(v.finishedAtMs) + " · 发现 " + n(v.total || 0) + " 个问题" : v.running ? "正在检查 · 已检查 " + n(v.works || 0) + " 个作品" : "还没有检查过"}</p><div class="row">${button("validation-start", "开始检查", true, state.busy || v.running)}${button("validation-view", "查看问题", false, !v.id)}</div>${findings()}${error("validation")}</section><section><div class="row between"><h2>运行环境</h2>${button("environment-check", "重新检查", false, state.busy || state.environmentLoading)}</div><div class="environment">${[
-    { tool: "magick" },
-    { tool: "ffmpeg" },
-    ...platformNames.map((platform) => ({ platform })),
-  ]
-    .map((x) => ({
-      ...x,
-      available: state.environment?.checks?.find(
-        (c) => c.platform === x.platform && c.tool === x.tool,
-      )?.available,
-    }))
-    .map(
-      (x) =>
-        `<div><span class="${x.available === undefined ? "faint" : x.available ? "ok" : "err"}">${x.available === undefined ? "…" : x.available ? "✓" : "×"}</span> ${esc(x.platform || { ffmpeg: "FFmpeg", magick: "ImageMagick" }[x.tool] || x.tool)}</div>`,
-    )
-    .join(
-      "",
-    )}</div>${error("environment")}</section><section><h2>缓存</h2><p class="muted">缩略图缓存 ${((state.storage?.cache.bytes || 0) / 1048576).toFixed(1)} MB，清理后会在浏览时重新生成</p>${button("cache-clear", "清理缓存…", false, state.busy)}${error("cache")}</section></div></div>`;
+  )}<input id="log-query" aria-label="搜索日志" placeholder="搜索日志" value="${esc(state.logQuery || "")}"></div><div id="log-lines" tabindex="0"></div></section><div class="tools"><section><h2>检查图库</h2><p class="muted">${v.finishedAtMs ? "上次检查 " + clock(v.finishedAtMs) + " · 发现 " + n(v.total || 0) + " 个问题" : v.running ? "正在检查 · 已检查 " + n(v.works || 0) + " 个作品" : "还没有检查过"}</p><div class="row">${button("validation-start", "开始检查", true, state.busy || v.running)}${button("validation-view", "查看问题", false, !v.id)}</div>${findings()}${error("validation")}</section><section><div class="row between"><h2>运行环境</h2>${button("environment-check", "重新检查", false, state.busy || state.environmentLoading)}</div><div class="environment">${
+    state.errors.environment
+      ? ""
+      : [
+          { tool: "magick" },
+          { tool: "ffmpeg" },
+          ...platformNames.map((platform) => ({ platform })),
+        ]
+          .map((x) => ({
+            ...x,
+            available: state.environment?.checks?.find(
+              (c) => c.platform === x.platform && c.tool === x.tool,
+            )?.available,
+          }))
+          .map(
+            (x) =>
+              `<div><span class="${x.available === undefined ? "loading-placeholder environment-placeholder" : x.available ? "ok" : "err"}" ${x.available === undefined ? 'aria-busy="true"' : ""}>${x.available === undefined ? "" : x.available ? "✓" : "×"}</span> ${esc(x.platform || { ffmpeg: "FFmpeg", magick: "ImageMagick" }[x.tool] || x.tool)}</div>`,
+          )
+          .join("")
+  }</div>${error("environment")}</section><section><h2>缓存</h2><p class="muted">${cacheLabel(state.storage?.cache.bytes || 0)}${state.storage?.cache.bytes ? "，清理后会在浏览时重新生成" : ""}</p>${button("cache-clear", "清理缓存…", false, state.busy)}${error("cache")}</section></div></div>`;
 }
 function saveBar() {
   const count =
@@ -368,9 +379,18 @@ async function save() {
   await refreshStatus();
 }
 async function refreshStatus() {
-  state.status = await call("status");
-  state.scan = await admin("scan.status");
-  state.errors.service = "";
+  try {
+    const status = await call("status");
+    state.scan = status.scan || (await admin("scan.status"));
+    state.status = status;
+    state.errors.service = status.hostFailure
+      ? "读取服务状态失败：" + humanError({ code: status.hostFailure })
+      : "";
+  } catch (e) {
+    state.status = { ...state.status, state: "UNKNOWN" };
+    state.errors.service = "读取服务状态失败：" + humanError(e);
+    throw e;
+  }
   if (!state.scan.running) state.cancelRequested = false;
   state.counts = Object.fromEntries(
     (
@@ -384,11 +404,20 @@ async function refreshStatus() {
     state.counts = Object.fromEntries(counts.map((p) => [p.id, p.works || 0]));
 }
 async function loadAccess() {
-  state.access = await admin("access.read", { days: state.period });
+  try {
+    state.access = await admin("access.read", { days: state.period });
+    state.errors.access = "";
+  } catch (e) {
+    state.errors.access = "读取访问记录失败：" + humanError(e);
+  }
 }
 function renderLogs() {
   const el = $("log-lines");
   if (!el) return;
+  if (state.errors.logs) {
+    patchHTML(el, error("logs"));
+    return;
+  }
   const rows = logRows(state.log, state.config?.value.sources);
   state.openLogs ||= new Set();
   patchHTML(
@@ -427,37 +456,46 @@ async function readLogs() {
       (await admin("logs.read", { name: item.name, raw: true, query, level }))
         .text,
     );
-  if (serial === logSerial) state.log = texts.join("\n");
+  if (serial === logSerial) {
+    state.log = texts.join("\n");
+    state.errors.logs = "";
+  }
+}
+async function readPanel(place, label, read) {
+  try {
+    await read();
+    state.errors[place] = "";
+  } catch (e) {
+    state.errors[place] = label + "失败：" + humanError(e);
+  }
 }
 async function refreshPage() {
-  try {
-    if (state.page === "access") await loadAccess();
-    if (state.page === "diagnose") {
+  if (state.page === "access") await loadAccess();
+  if (state.page === "diagnose") {
+    await readPanel("validation", "读取检查结果", async () => {
       state.validation = await admin("validation.status");
+    });
+    await readPanel("cache", "读取缓存", async () => {
       state.storage = await admin("storage.read");
-      await readLogs();
-      if (!state.environment && !state.environmentLoading) {
-        state.environmentLoading = true;
-        admin("diagnostics.run")
-          .then((value) => {
-            state.environment = value;
-            state.errors.environment = "";
-          })
-          .catch((e) => {
-            state.errors.environment = "检查运行环境失败：" + humanError(e);
-          })
-          .finally(() => {
-            state.environmentLoading = false;
-            if (state.page === "diagnose") render();
-          });
-      }
+    });
+    await readPanel("logs", "读取日志", readLogs);
+    if (!state.environment && !state.environmentLoading) {
+      state.environmentLoading = true;
+      admin("diagnostics.run")
+        .then((value) => {
+          state.environment = value;
+          state.errors.environment = "";
+        })
+        .catch((e) => {
+          state.errors.environment = "检查运行环境失败：" + humanError(e);
+        })
+        .finally(() => {
+          state.environmentLoading = false;
+          if (state.page === "diagnose") render();
+        });
     }
-    render();
-  } catch (e) {
-    state.errors[state.page === "diagnose" ? "logs" : state.page] =
-      humanError(e);
-    render();
   }
+  render();
 }
 async function viewFindings() {
   state.findings = await admin("validation.findings", {
@@ -494,7 +532,9 @@ function render() {
   $("title").textContent = pages.find((p) => p[0] === state.page)[1];
   $("side-status").textContent = running(state.status)
     ? "服务运行中 · 端口 " + (state.config?.value.port || "")
-    : "服务已停止";
+    : state.status.state === "UNKNOWN"
+      ? "服务状态无法读取"
+      : "服务已停止";
   patchHTML($("page"), { update, access, settings, diagnose }[state.page](), {
     preserveChildren: ["log-lines"],
   });
@@ -513,6 +553,10 @@ function render() {
   saveBar();
   alignPaths();
   renderLogs();
+  if ($("public-url")) {
+    $("public-url").placeholder = "Venera 使用的画廊地址";
+    $("public-url").disabled = (state.draft.mode || "local") === "local";
+  }
   bind("go-settings", () => void go("settings"));
   bind("issue-view", () => void go("diagnose"));
   document.querySelectorAll("[data-issue]").forEach(
@@ -680,7 +724,8 @@ function render() {
         if (key === "mode")
           state.draft.listenAddress =
             state.draft.mode === "local" ? "127.0.0.1" : "0.0.0.0";
-        saveBar();
+        if (id === "network-mode") render();
+        else saveBar();
       };
   for (const [id, key] of [
     ["hosts", "allowedHosts"],
@@ -763,7 +808,14 @@ function render() {
   );
   bind("environment-check", () =>
     action("environment", "检查运行环境", async () => {
-      state.environment = await admin("diagnostics.run");
+      state.environmentLoading = true;
+      state.environment = null;
+      render();
+      try {
+        state.environment = await admin("diagnostics.run");
+      } finally {
+        state.environmentLoading = false;
+      }
     }),
   );
   bind("cache-clear", () =>
@@ -812,8 +864,10 @@ const poll = serialPoll(async () => {
     await refreshStatus();
     if (state.page === "access") await loadAccess();
     if (state.page === "diagnose") {
-      state.validation = await admin("validation.status");
-      await readLogs();
+      await readPanel("validation", "读取检查结果", async () => {
+        state.validation = await admin("validation.status");
+      });
+      await readPanel("logs", "读取日志", readLogs);
     }
     render();
   } catch (e) {

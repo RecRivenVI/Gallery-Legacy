@@ -61,18 +61,31 @@ export function running(s) {
   );
 }
 export function duration(ms) {
+  if (ms < 1000) return "不到 1 秒";
   const m = Math.floor(ms / 60000);
   return m >= 60
     ? `${Math.floor(m / 60)} 小时 ${m % 60} 分钟`
     : `${m} 分 ${Math.floor(ms / 1000) % 60} 秒`;
 }
-export function clock(ms) {
-  return new Date(ms).toLocaleString("zh-CN", {
-    month: "numeric",
-    day: "numeric",
+export function cacheLabel(bytes) {
+  if (!bytes) return "没有缓存";
+  return bytes < 1048576
+    ? "缩略图缓存不到 1 MB"
+    : `缩略图缓存 ${(bytes / 1048576).toFixed(1)} MB`;
+}
+export function clock(ms, now = Date.now()) {
+  const date = new Date(ms),
+    today = new Date(now);
+  const time = date.toLocaleTimeString("zh-CN", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
+  const day =
+    date.toDateString() === today.toDateString()
+      ? "今天"
+      : `${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+  return `${day} ${time}`;
 }
 export function scanIssues(scan) {
   const rows = [],
@@ -143,7 +156,7 @@ export function humanError(e, platform = "其他平台") {
       LIVE_SOURCE_CHANGE_REQUIRES_CHECKPOINT: "更改目录前需要完成当前更新",
       OWNER_UNVERIFIABLE: "无法确认服务状态，请重新检查",
       CLIENT_CONTROL_FORBIDDEN: "本机地址不能封禁",
-    }[e.code] || "服务没有响应，请重试"
+    }[e.code] || "服务没有响应"
   );
 }
 export function scanProgress(s) {

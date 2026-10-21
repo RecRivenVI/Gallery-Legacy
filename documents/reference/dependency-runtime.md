@@ -18,3 +18,9 @@
 外部编码器的确切最低版本尚未验证，不虚构统一兼容范围。它们由运行环境提供，输出进入实例临时／缓存目录，不写源文件。
 
 MiSans／回退字体采用用户合法提供的原始外部资源；源码只含加载器，不附带字体二进制，也不隐式从 CDN 下载。Fluent System Icons 的选用素材及 MIT 声明保持来源，见根 NOTICE。字体实际语言覆盖与正式再分发是独立未决项，不按资源数量宣称全语言验收。
+
+## Windows race 编译器
+
+本轮实际验证使用 MinGW-Builds GCC 16.2.0、POSIX/SEH、UCRT、mingw-w64 v14、rev1。渠道来自 [MinGW-w64 官方下载目录](https://www.mingw-w64.org/downloads/)列出的 [MinGW-Builds](https://github.com/niXman/mingw-builds-binaries/releases/tag/16.2.0-rt_v14-rev1)。下载文件 x86_64-16.2.0-release-posix-seh-ucrt-rt_v14-rev1.7z 的 SHA256 为 26788998d615856a915e1eeacb0854fce87bc608fa9a0c16f96bcbfdcf3415c0，与发行元数据一致。
+
+免安装目录位于工作区 Scratches/Toolchains，不替换既有 gcc。设置本机路径文件的 raceCompiler，或仅当前命令的 CC；Go 包版本不因编译器配置改变。工具链归其原许可所有，不进入产品源码。

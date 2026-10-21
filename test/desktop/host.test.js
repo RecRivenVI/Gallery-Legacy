@@ -10,7 +10,13 @@ test("Electron tray, reconnect and quit leave the independent Runtime usable", a
   const f = await fixture(t);
   await f.build();
   f.publish();
-  const env = { ...process.env, GALLERY_NODE: process.execPath };
+  const icon = path.join(f.config.instanceRoot, "test-icon.png");
+  fs.writeFileSync(icon, require("../../tools/demo/image.cjs").image(1));
+  const env = {
+    ...process.env,
+    GALLERY_NODE: process.execPath,
+    GALLERY_ICON_PATH: icon,
+  };
   delete env.ELECTRON_RUN_AS_NODE;
   const host = await electron.launch({
     args: [
@@ -22,8 +28,8 @@ test("Electron tray, reconnect and quit leave the independent Runtime usable", a
     timeout: 60000,
   });
   let closed = false;
-  f.cleanup.push(() => stopRuntime(f.config));
   f.cleanup.push(async () => {
+    await stopRuntime(f.config);
     if (!closed) await host.close();
   });
   const page = await host.firstWindow();
@@ -48,9 +54,14 @@ test("Electron tray, reconnect and quit leave the independent Runtime usable", a
     "function",
   );
   assert.equal(await page.evaluate(() => typeof window.require), "undefined");
-  await page.waitForFunction(() => !document.querySelector("#stop").disabled, {
-    timeout: 60000,
-  });
+  await page.waitForFunction(
+    () =>
+      document.querySelector("#stop") &&
+      !document.querySelector("#stop").disabled &&
+      !window.__managerCandidate.state.status.hostBusy,
+    null,
+    { polling: 100, timeout: 60000 },
+  );
   for (
     let i = 0;
     i < 40 && !JSON.parse(fs.readFileSync(f.config.statusPath)).managerPid;
@@ -60,6 +71,18 @@ test("Electron tray, reconnect and quit leave the independent Runtime usable", a
   const state = JSON.parse(fs.readFileSync(f.config.statusPath));
   assert.equal(state.state, "READY");
   assert.equal(state.managerPid, await host.evaluate(() => process.pid));
+  for (const name of ["access", "settings", "diagnose", "update"]) {
+    await page.evaluate(async (name) => {
+      await window.__managerCandidate.go(name);
+      await window.__managerCandidate.poll();
+    }, name);
+    assert.deepEqual(
+      await page.evaluate(() =>
+        Object.values(window.__managerCandidate.state.errors).filter(Boolean),
+      ),
+      [],
+    );
+  }
   const hidden = await host.evaluate(({ BrowserWindow }) => {
     const window = BrowserWindow.getAllWindows()[0];
     window.close();
@@ -113,14 +136,20 @@ test("Electron tray, reconnect and quit leave the independent Runtime usable", a
   await nextPage.waitForFunction(
     () =>
       document.querySelector("#stop") &&
-      !document.querySelector("#stop").disabled,
+      !document.querySelector("#stop").disabled &&
+      !window.__managerCandidate.state.status.hostBusy,
+    null,
+    { polling: 100 },
   );
   assert.equal(JSON.parse(fs.readFileSync(f.config.statusPath)).pid, state.pid);
   await nextPage.locator("#restart").click();
   await nextPage.waitForFunction(
     () =>
       document.querySelector("#stop") &&
-      !document.querySelector("#stop").disabled,
+      !document.querySelector("#stop").disabled &&
+      !window.__managerCandidate.state.status.hostBusy,
+    null,
+    { polling: 100 },
   );
   assert.notEqual(
     JSON.parse(fs.readFileSync(f.config.statusPath)).pid,
@@ -149,7 +178,13 @@ test("Manager keeps an invalid active pointer failure visible with diagnostics a
       manifestPath: "generations/missing/manifest.json",
     }),
   );
-  const env = { ...process.env, GALLERY_NODE: process.execPath };
+  const icon = path.join(f.config.instanceRoot, "test-icon.png");
+  fs.writeFileSync(icon, require("../../tools/demo/image.cjs").image(1));
+  const env = {
+    ...process.env,
+    GALLERY_NODE: process.execPath,
+    GALLERY_ICON_PATH: icon,
+  };
   delete env.ELECTRON_RUN_AS_NODE;
   const host = await electron.launch({
     args: [
@@ -180,4 +215,113 @@ test("Manager keeps an invalid active pointer failure visible with diagnostics a
     ),
     true,
   );
+});
+
+test("native Manager scans, filters access, saves/restarts and reads diagnostics over authenticated IPC", async (t) => {
+  const { freePort } = require("../support/runtime.js");
+  const { readRuntimeConfig } = require("../../src/instance/config.js");
+  const f = await fixture(t),
+    file = path.join(f.config.instanceRoot, "config.json");
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ ...JSON.parse(fs.readFileSync(file)), liveUpdates: true }),
+  );
+  const icon = path.join(f.config.instanceRoot, "test-icon.png");
+  fs.writeFileSync(icon, require("../../tools/demo/image.cjs").image(2));
+  const env = {
+    ...process.env,
+    GALLERY_NODE: process.execPath,
+    GALLERY_ICON_PATH: icon,
+  };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const host = await electron.launch({
+    args: [
+      path.resolve("src/desktop/main.js"),
+      "--config",
+      file,
+      "--mute-audio",
+    ],
+    env,
+  });
+  f.cleanup.push(async () => {
+    await stopRuntime(readRuntimeConfig(file));
+    await host.close();
+  });
+  const page = await host.firstWindow();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const ready = () =>
+    page.waitForFunction(
+      () =>
+        window.__managerCandidate?.state.status.state === "READY" &&
+        !__managerCandidate.state.status.hostBusy &&
+        !__managerCandidate.state.busy,
+      null,
+      { polling: 100 },
+    );
+  await ready();
+  await page.locator("#update-start").click();
+  await page.waitForFunction(
+    () =>
+      __managerCandidate.state.scan.state === "READY" &&
+      !__managerCandidate.state.scan.running,
+    null,
+    { polling: 100, timeout: 60000 },
+  );
+  assert.equal(
+    await page.evaluate(() => __managerCandidate.state.status.counts.works),
+    6,
+  );
+  await page.locator("[data-page=access]").click();
+  await page.waitForFunction(() => !!__managerCandidate.state.access);
+  await page.locator("#blocking").click();
+  await page.waitForFunction(
+    () =>
+      __managerCandidate.state.access.enabled === false &&
+      !__managerCandidate.state.busy,
+  );
+  await page.locator('[data-period="7"]').click();
+  await page.waitForFunction(
+    () =>
+      __managerCandidate.state.period === 7 && !__managerCandidate.state.busy,
+  );
+  await page.locator("[data-page=settings]").click();
+  const nextPort = await freePort();
+  await page.locator("#network-port").fill(String(nextPort));
+  await page.locator("#network-port").dispatchEvent("change");
+  await page.locator("#save").click();
+  await ready();
+  assert.equal(JSON.parse(fs.readFileSync(file)).port, nextPort);
+  await page.locator("[data-page=diagnose]").click();
+  await page.waitForFunction(
+    () =>
+      !!__managerCandidate.state.environment &&
+      !__managerCandidate.state.environmentLoading,
+    null,
+    { polling: 100 },
+  );
+  assert.equal(await page.locator(".environment>div").count(), 11);
+  for (let cycle = 0; cycle < 2; cycle++)
+    for (const name of ["update", "access", "settings", "diagnose"]) {
+      await page.evaluate(async (name) => {
+        await __managerCandidate.go(name);
+        await __managerCandidate.poll();
+      }, name);
+      assert.deepEqual(
+        await page.evaluate(() =>
+          Object.values(__managerCandidate.state.errors).filter(Boolean),
+        ),
+        [],
+      );
+    }
+  await page.evaluate(() => __managerCandidate.go("update"));
+  await page.locator("#stop").click();
+  await page.waitForFunction(
+    () =>
+      __managerCandidate.state.status.state === "STOPPED" &&
+      !__managerCandidate.state.busy,
+    null,
+    { polling: 100 },
+  );
+  await page.locator("#start").click();
+  await ready();
 });

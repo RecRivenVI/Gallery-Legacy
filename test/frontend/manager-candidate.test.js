@@ -98,6 +98,9 @@ test("candidate Manager browser opens every page and scans, saves, cancels, filt
   );
   await page.locator("[data-page=access]").click();
   await page.waitForSelector("#blocking");
+  await page.waitForFunction(
+    () => !!__managerCandidate.state.access && !__managerCandidate.state.busy,
+  );
   // Focus pauses the polling render; exercise the switch's native keyboard interaction.
   await page.locator("#blocking").focus();
   await page.keyboard.press("Space");
@@ -110,8 +113,9 @@ test("candidate Manager browser opens every page and scans, saves, cancels, filt
   await page.locator('[data-period="7"]').click();
   await page.waitForFunction(() => __managerCandidate.state.period === 7);
   await page.locator("[data-page=settings]").click();
-  await page.locator("#public-url").fill("http://127.0.0.1:" + raw.port);
-  await page.locator("#public-url").dispatchEvent("change");
+  assert.equal(await page.locator("#public-url").isDisabled(), true);
+  await page.locator("#network-port").fill(String(await freePort()));
+  await page.locator("#network-port").dispatchEvent("change");
   assert.equal(await page.locator("#save-bar").isVisible(), true);
   await page.locator("[data-page=diagnose]").click();
   await page.waitForSelector("#confirmation[open]");
@@ -148,9 +152,9 @@ test("candidate Manager browser opens every page and scans, saves, cancels, filt
     () => !!__managerCandidate.state.fieldErrors?.["network-port"],
   );
   assert.match(await page.locator(".network").innerText(), /1–65535/);
-  await page.locator("#network-port").fill(String(raw.port));
-  await page.locator("#public-url").fill("http://127.0.0.1:" + raw.port);
-  await page.locator("#public-url").dispatchEvent("change");
+  const savedPort = await freePort();
+  await page.locator("#network-port").fill(String(savedPort));
+  await page.locator("#network-port").dispatchEvent("change");
   await page.locator("#save").click();
   await page.waitForFunction(() => !__managerCandidate.state.busy);
   assert.equal(
@@ -158,6 +162,6 @@ test("candidate Manager browser opens every page and scans, saves, cancels, filt
     "",
   );
   const stored = JSON.parse(fs.readFileSync(file));
-  assert.equal(stored.publicUrl, "http://127.0.0.1:" + raw.port);
+  assert.equal(stored.port, savedPort);
   assert.deepEqual(errors, []);
 });

@@ -147,6 +147,7 @@ h2 {
   font-weight: 600;
 }
 main {
+  max-width: var(--content-max);
   padding: var(--space-16);
   display: grid;
   gap: var(--space-16);
@@ -231,6 +232,29 @@ section {
 }
 .issue {
   margin-top: var(--space-8);
+  justify-content: flex-start;
+}
+.loading-placeholder {
+  background: var(--tag);
+  border-radius: var(--r-inner);
+  min-height: var(--control);
+  animation: breathe calc(var(--fade-duration) * 6) ease-in-out infinite
+    alternate;
+}
+.environment-placeholder {
+  display: inline-block;
+  min-height: var(--secondary);
+  width: var(--secondary);
+}
+@keyframes breathe {
+  to {
+    opacity: var(--busy-opacity);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-placeholder {
+    animation: none;
+  }
 }
 progress {
   width: 100%;

@@ -1,5 +1,6 @@
 {
   "go": "<official-portable-go>/bin/go.exe",
+  "raceCompiler": "<portable-mingw-w64>/bin/gcc.exe",
   "goCache": "<outside-repository>/GoCache",
   "moduleCache": "<outside-repository>/GoModules",
   "output": "<outside-repository>/Build",

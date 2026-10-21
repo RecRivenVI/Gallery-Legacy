@@ -8,6 +8,18 @@ const local = fs.existsSync(file)
   ? JSON.parse(fs.readFileSync(file, "utf8"))
   : {};
 const env = { ...process.env, GOTOOLCHAIN: "local" };
+if (process.argv.includes("-race")) {
+  env.CGO_ENABLED = "1";
+  if (!env.CC && local.raceCompiler) env.CC = local.raceCompiler;
+  if (env.CC && path.isAbsolute(env.CC)) {
+    const inherited = Object.keys(env).find(
+      (key) => key.toLowerCase() === "path",
+    );
+    const previous = env[inherited] || "";
+    if (inherited) delete env[inherited];
+    env.PATH = path.dirname(env.CC) + path.delimiter + previous;
+  }
+}
 for (const [key, field] of Object.entries({
   GOCACHE: "goCache",
   GOMODCACHE: "moduleCache",

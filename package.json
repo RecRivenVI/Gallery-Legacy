@@ -2,6 +2,7 @@
   "name": "gallery",
   "version": "10.9.0",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "description": "Filesystem-authoritative Gallery for nine fixed platforms and read-only file browsing",
   "main": "src/desktop/main.js",
   "engines": {
@@ -17,6 +18,7 @@
     "test": "node --test --test-concurrency=1 --test-reporter=spec \"test/**/*.test.js\"",
     "test:go": "node tools/go/run.cjs test -count=1 -timeout=18m ./internal/...",
     "vet:go": "node tools/go/run.cjs vet ./internal/... ./cmd/...",
+    "test:race": "node tools/go/run.cjs test -race -count=1 ./cmd/... ./internal/...",
     "check": "node --check bin/gallery.cjs",
     "check:electron": "node --check src/desktop/main.js && node --check src/desktop/preload.js",
     "prepare:test": "node tools/validation/prepare.cjs",

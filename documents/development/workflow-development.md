@@ -19,12 +19,15 @@ npm run build
 npm test
 npm run test:go
 npm run vet:go
+npm run test:race
 npm run format
 ```
 
 Go 数据库／Adapter 测试需要合成空库与黄金输入。先通过 `npm run prepare:test -- <新合成根>` 生成，再将其 `instance/live/catalog.sqlite` 和 `golden.json` 填入本机路径文件的 testSeed／golden；`<新合成根>` 必须在 GALLERY_TEST_ROOT 环境变量指定的根下，默认是系统临时目录的 Gallery-Legacy 子目录。
 
 `npm run test:integration` 另需 GALLERY_GO_ACCEPTANCE_EXE 指向本轮构建扫描器。合成测试不读取已有真实库或下载真实素材。完整工具／输出字段示例见 [paths.example.json](../../tools/build/paths.example.json)。
+
+Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，并只在子命令 PATH 前加入编译器目录。不要把旧系统 gcc 当作已验证的 race 环境，不修改系统 PATH。已验证渠道与校验值见[依赖说明](../reference/dependency-runtime.md)。
 
 先保存迁移前结果，再运行同组迁移后检查。既有超时／身份失败不放松断言；单条长验证约二十分钟仍未完成即记录未完成。失败最多原样重试一次，不能循环跑到绿。
 

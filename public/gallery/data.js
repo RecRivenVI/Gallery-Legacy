@@ -82,7 +82,8 @@ export async function sources() {
     files: f.items,
     updatedAt:
       status.scan?.state === "READY" &&
-      status.scan.generationId === status.loadedGenerationId
+      (status.liveUpdates ||
+        status.scan.generationId === status.loadedGenerationId)
         ? status.scan.finishedAtMs
         : (status.generations.find((g) => g.id === status.loadedGenerationId)
             ?.createdAtMs ?? null),

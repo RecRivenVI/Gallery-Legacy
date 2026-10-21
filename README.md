@@ -40,4 +40,4 @@ npm run manager -- --config <实例配置文件>
 
 ## 许可
 
-原创代码的公开分发许可尚待所有者确定；不推定 MIT。第三方来源见 [NOTICE](NOTICE)，字体二进制不进入源码仓库。
+使用 [GNU AGPL v3](LICENSE)。第三方材料说明见 [NOTICE](NOTICE)。

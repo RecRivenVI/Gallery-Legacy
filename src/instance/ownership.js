@@ -13,6 +13,11 @@ function alive(pid) {
     return e.code === "EPERM";
   }
 }
+function identityCommand(pid) {
+  // Process uses a native process handle, not the shared WMI/CIM provider.
+  // Keep the persisted creation identity at CIM's microsecond precision.
+  return `$ErrorActionPreference='Stop'; $p=[System.Diagnostics.Process]::GetProcessById(${pid}); try {$ticks=$p.StartTime.ToUniversalTime().Ticks; $exe=$p.MainModule.FileName; if(!$exe){throw 'Executable unavailable'}; [pscustomobject]@{pid=$p.Id;start=($ticks-($ticks%10)).ToString([System.Globalization.CultureInfo]::InvariantCulture);exe=$exe.ToLowerInvariant()}|ConvertTo-Json -Compress} finally {$p.Dispose()}`;
+}
 function processIdentity(pid) {
   if (!Number.isSafeInteger(pid) || pid <= 0)
     throw Object.assign(new Error("Invalid process ID"), {
@@ -23,7 +28,8 @@ function processIdentity(pid) {
     throw Object.assign(new Error("Windows runtime required"), {
       code: "PLATFORM_UNSUPPORTED",
     });
-  const script = `$p=Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}'; if($p -and $p.ExecutablePath){[pscustomobject]@{pid=$p.ProcessId;start=$p.CreationDate.ToUniversalTime().Ticks.ToString();exe=$p.ExecutablePath.ToLowerInvariant()}|ConvertTo-Json -Compress}`;
+  const script = identityCommand(pid);
+  let cause;
   try {
     const raw = cp
       .execFileSync(
@@ -39,11 +45,13 @@ function processIdentity(pid) {
       .trim();
     if (raw) return JSON.parse(raw);
     if (!alive(pid)) return null;
-  } catch {
+  } catch (error) {
+    cause = error;
     if (!alive(pid)) return null;
   }
   throw Object.assign(new Error("Process owner cannot be verified"), {
     code: "OWNER_UNVERIFIABLE",
+    cause,
   });
 }
 function sameIdentity(a, b) {
@@ -51,7 +59,7 @@ function sameIdentity(a, b) {
     !!a && !!b && a.pid === b.pid && a.start === b.start && a.exe === b.exe
   );
 }
-// Status liveness checks must not block the HTTP event loop on a CIM process.
+// Status liveness checks must not block the HTTP event loop on a subprocess.
 // Authority-changing operations still use the fresh synchronous identity above.
 async function processIdentityAsync(pid) {
   if (!Number.isSafeInteger(pid) || pid <= 0)
@@ -63,7 +71,8 @@ async function processIdentityAsync(pid) {
     throw Object.assign(new Error("Windows runtime required"), {
       code: "PLATFORM_UNSUPPORTED",
     });
-  const script = `$p=Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}'; if($p -and $p.ExecutablePath){[pscustomobject]@{pid=$p.ProcessId;start=$p.CreationDate.ToUniversalTime().Ticks.ToString();exe=$p.ExecutablePath.ToLowerInvariant()}|ConvertTo-Json -Compress}`;
+  const script = identityCommand(pid);
+  let cause;
   try {
     const raw = await new Promise((resolve, reject) =>
       cp.execFile(
@@ -74,12 +83,13 @@ async function processIdentityAsync(pid) {
       ),
     );
     if (raw) return JSON.parse(raw);
-  } catch {
-    /* A failed lookup is not proof of death. */
+  } catch (error) {
+    cause = error;
   }
   if (!alive(pid)) return null;
   throw Object.assign(new Error("Process owner cannot be verified"), {
     code: "OWNER_UNVERIFIABLE",
+    cause,
   });
 }
 function pipeName(config, kind = "runtime") {

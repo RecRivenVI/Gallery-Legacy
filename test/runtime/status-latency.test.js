@@ -70,3 +70,20 @@ test("asynchronous Windows identity retains executable and process creation iden
   );
   await assert.rejects(processIdentityAsync(-1), { code: "OWNER_INVALID" });
 });
+
+test("an identity query timeout stays unverifiable without retry or PID fallback", (t) => {
+  const cp = require("node:child_process");
+  const cause = Object.assign(new Error("synthetic identity timeout"), {
+    code: "ETIMEDOUT",
+  });
+  let queries = 0;
+  t.mock.method(cp, "execFileSync", () => {
+    queries++;
+    throw cause;
+  });
+  assert.throws(
+    () => processIdentity(process.pid),
+    (error) => error.code === "OWNER_UNVERIFIABLE" && error.cause === cause,
+  );
+  assert.equal(queries, 1);
+});

@@ -1361,15 +1361,17 @@ function drawSidebar(side, back, textAlpha) {
     t.platformTop +
     (state.sources?.platforms.length || 9) * t.platformPitch +
     t.gap;
-  p.rect(b(t.dividerInset, fy, side - t.group, 1), p.colors.div);
-  p.text(
-    "全部文件",
-    t.pad,
-    fy + t.fadeWidth,
-    t.caption,
-    p.colors.faint,
-    textAlpha,
-  );
+  if (state.sources?.files.length) {
+    p.rect(b(t.dividerInset, fy, side - t.group, 1), p.colors.div);
+    p.text(
+      "全部文件",
+      t.pad,
+      fy + t.fadeWidth,
+      t.caption,
+      p.colors.faint,
+      textAlpha,
+    );
+  }
   for (const [i, root] of (state.sources?.files || []).entries()) {
     const y = fy + t.doubleTextLine + i * t.platformPitch;
     control(
@@ -1424,7 +1426,7 @@ function drawSidebar(side, back, textAlpha) {
         : state.connection === "connecting"
           ? "正在重新连接（" + (state.retryIn || 3) + " 秒）"
           : state.updatedAt === null
-            ? "已连接"
+            ? "已连接 · 还没有更新过"
             : "已连接 · " + connectionTime(state.updatedAt),
       46,
       p.h - t.chipHeight,
