@@ -56,6 +56,14 @@ func TestNormalizeSpacesMatchesExistingSearchBytes(t *testing.T) {
 
 var normalizedBenchmarkSink string
 
+func TestQueryWhitespaceKeepsExistingNodeSearchMeaning(t *testing.T) {
+	for _, test := range []struct{ input, want string }{{"\u0085", "\u0085"}, {"a\u0085b", "a\u0085b"}, {" &#xFEFF; ", ""}, {"A\u00A0B", "a b"}} {
+		if got := NormalizeQuery(test.input); got != test.want {
+			t.Fatalf("query %q: %q != %q", test.input, got, test.want)
+		}
+	}
+}
+
 func TestCanonicalAndEmptySpaceNormalizationDoNotAllocate(t *testing.T) {
 	for _, s := range []string{"synthetic 中文 title", strings.Repeat(" \t\n\u0085", 1024), "\t" + strings.Repeat("synthetic 中文 title ", 128) + "\n"} {
 		if n := testing.AllocsPerRun(100, func() { normalizedBenchmarkSink = normalizeSpaces(s) }); n != 0 {

@@ -27,7 +27,7 @@ const {
   refreshLiveSearch,
 } = require("../search/live.js");
 
-const LIVE_SCHEMA_VERSION = 3;
+const LIVE_SCHEMA_VERSION = require("../../api/catalog.json").liveSchemaVersion;
 
 function liveCatalogPath(config) {
   return path.join(config.instanceRoot, "live", "catalog.sqlite");
@@ -115,9 +115,9 @@ function getLiveState(db) {
 }
 
 function createLiveStatsSchema(db) {
-  db.exec(`CREATE TABLE live_stats(singleton INTEGER PRIMARY KEY CHECK(singleton=1),works INTEGER NOT NULL CHECK(works>=0),media INTEGER NOT NULL CHECK(media>=0),authors INTEGER NOT NULL CHECK(authors>=0));
-    CREATE TABLE live_metadata_stats(metadata_state TEXT PRIMARY KEY,count INTEGER NOT NULL CHECK(count>=0));
-    CREATE TABLE live_platform_stats(platform_id TEXT PRIMARY KEY,count_works INTEGER NOT NULL CHECK(count_works>=0),count_media INTEGER NOT NULL CHECK(count_media>=0),last_revision INTEGER NOT NULL CHECK(last_revision>=0));`);
+  db.exec(
+    fs.readFileSync(path.join(__dirname, "../../api/live-stats.sql"), "utf8"),
+  );
 }
 
 function rebuildLiveStats(db) {
@@ -159,8 +159,9 @@ function migrateLiveSchema(db) {
 
 function createScanLedger(db) {
   // These signatures certify committed extraction, not just a fetched listing.
-  db.exec(`CREATE TABLE IF NOT EXISTS live_scan_works(platform_id TEXT NOT NULL,relative_path_key TEXT NOT NULL,fingerprint TEXT NOT NULL,adapter_version INTEGER NOT NULL,authority_at_ms INTEGER NOT NULL,authority_source_id TEXT NOT NULL,PRIMARY KEY(platform_id,relative_path_key));
-    CREATE TABLE IF NOT EXISTS live_scan_authors(platform_id TEXT NOT NULL,relative_path_key TEXT NOT NULL,fingerprint TEXT NOT NULL,PRIMARY KEY(platform_id,relative_path_key));`);
+  db.exec(
+    fs.readFileSync(path.join(__dirname, "../../api/live-ledger.sql"), "utf8"),
+  );
 }
 
 function initializeLiveFile(target, generation, config) {
@@ -183,8 +184,12 @@ function initializeLiveFile(target, generation, config) {
         platformRoots: config.sources,
       });
     db.transaction(() => {
-      db.exec(`CREATE TABLE live_meta(singleton INTEGER PRIMARY KEY CHECK(singleton=1),schema_version INTEGER NOT NULL,base_generation_id TEXT,epoch TEXT NOT NULL,revision INTEGER NOT NULL,initialized_at_ms INTEGER NOT NULL);
-        CREATE TABLE live_id_high_water(entity TEXT PRIMARY KEY,value INTEGER NOT NULL);`);
+      db.exec(
+        fs.readFileSync(
+          path.join(__dirname, "../../api/live-core.sql"),
+          "utf8",
+        ),
+      );
       db.prepare("INSERT INTO live_meta VALUES (1,?,?,?,?,?)").run(
         LIVE_SCHEMA_VERSION,
         generation?.generationId || null,

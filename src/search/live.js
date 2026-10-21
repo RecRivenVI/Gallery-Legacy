@@ -5,30 +5,12 @@ const { normalizeSearchText, shortGrams } = require("./build.js");
 const { presentation } = require("../media/presentation.js");
 
 function createLiveSearchSchema(db) {
-  db.exec(`
-    CREATE TABLE live_work_sort(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_id INTEGER NOT NULL,published_sort INTEGER NOT NULL,title_key TEXT NOT NULL,name_key TEXT NOT NULL,has_image INTEGER NOT NULL,has_video INTEGER NOT NULL,has_readable INTEGER NOT NULL);
-    CREATE TABLE live_search_docs(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,title TEXT NOT NULL,author TEXT NOT NULL,tags TEXT NOT NULL,body TEXT NOT NULL);
-    CREATE TABLE live_work_tags(work_id INTEGER NOT NULL,tag_id INTEGER NOT NULL,PRIMARY KEY(work_id,tag_id)) WITHOUT ROWID;
-    CREATE VIRTUAL TABLE live_work_fts USING fts5(title,author,tags,body,tokenize='trigram');
-    CREATE VIRTUAL TABLE live_short_fts USING fts5(terms,detail='none',columnsize=0);
-    CREATE TABLE live_authors(author_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_key TEXT NOT NULL,source_author_id TEXT,identity_key TEXT NOT NULL,name_key TEXT NOT NULL,latest_sort INTEGER NOT NULL,work_count INTEGER NOT NULL);
-    CREATE TABLE live_tags(tag_id INTEGER PRIMARY KEY,display_value TEXT NOT NULL,normalized_key TEXT NOT NULL,work_count INTEGER NOT NULL);
-    CREATE INDEX live_idx_sort_platform_date ON live_work_sort(platform_id,published_sort DESC,work_id DESC);
-    CREATE INDEX live_idx_sort_platform_title ON live_work_sort(platform_id,title_key,work_id);
-    CREATE INDEX live_idx_sort_platform_name ON live_work_sort(platform_id,name_key,work_id);
-    CREATE INDEX live_idx_sort_author_date ON live_work_sort(author_id,published_sort DESC,work_id DESC);
-    CREATE INDEX live_idx_sort_author_title ON live_work_sort(author_id,title_key,work_id);
-    CREATE INDEX live_idx_sort_author_name ON live_work_sort(author_id,name_key,work_id);
-    CREATE INDEX live_idx_sort_media_image ON live_work_sort(platform_id,has_image,published_sort DESC,work_id DESC);
-    CREATE INDEX live_idx_sort_media_video ON live_work_sort(platform_id,has_video,published_sort DESC,work_id DESC);
-    CREATE INDEX live_idx_authors_name ON live_authors(platform_id,name_key,author_id);
-    CREATE INDEX live_idx_authors_latest ON live_authors(platform_id,latest_sort DESC,author_id DESC);
-    CREATE INDEX live_idx_authors_works ON live_authors(platform_id,work_count DESC,author_id DESC);
-    CREATE INDEX live_idx_tags_normalized ON live_tags(normalized_key,tag_id);
-    CREATE INDEX live_idx_tags_count ON live_tags(work_count DESC,tag_id DESC);
-    CREATE INDEX live_idx_work_tags_tag ON live_work_tags(tag_id,work_id);
-    CREATE INDEX live_idx_relation_target_all ON social_relations(target_platform_id,target_source_work_id);
-  `);
+  db.exec(
+    require("node:fs").readFileSync(
+      path.join(__dirname, "../../api/live-search.sql"),
+      "utf8",
+    ),
+  );
 }
 
 function workSource(db, workId) {

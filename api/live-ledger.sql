@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS live_scan_works(platform_id TEXT NOT NULL,relative_path_key TEXT NOT NULL,fingerprint TEXT NOT NULL,adapter_version INTEGER NOT NULL,authority_at_ms INTEGER NOT NULL,authority_source_id TEXT NOT NULL,PRIMARY KEY(platform_id,relative_path_key));
+    CREATE TABLE IF NOT EXISTS live_scan_authors(platform_id TEXT NOT NULL,relative_path_key TEXT NOT NULL,fingerprint TEXT NOT NULL,PRIMARY KEY(platform_id,relative_path_key));

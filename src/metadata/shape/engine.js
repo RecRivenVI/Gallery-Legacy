@@ -2,7 +2,8 @@
 
 const crypto = require("node:crypto");
 
-const METADATA_SHAPE_SIGNATURE_VERSION = 1;
+const METADATA_SHAPE_SIGNATURE_VERSION =
+  require("../../../api/catalog.json").shapeSignatureVersion;
 
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;

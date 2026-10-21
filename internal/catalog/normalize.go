@@ -5,6 +5,12 @@ import (
 	"unicode"
 )
 
+// NormalizeQuery preserves the Node Reader's ECMAScript whitespace semantics.
+// Stored Go index bytes retain their existing normalization contract.
+func NormalizeQuery(s string) string {
+	return strings.Join(strings.FieldsFunc(normalizedText(s), func(r rune) bool { return unicode.IsSpace(r) && r != '\u0085' || r == '\ufeff' }), " ")
+}
+
 // Equivalent to Join(Fields(s), " "), without a slice of every word. The
 // common canonical case needs no allocation. Substrings preserve invalid UTF-8
 // bytes exactly as Fields does; this is not a new text-cleaning policy.

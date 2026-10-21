@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/RecRivenVI/Gallery-Legacy/api"
 )
 
 type Object = map[string]any
@@ -47,7 +49,17 @@ type Result struct {
 	InvalidFields                         int
 }
 
-var Versions = map[string]int{"pixiv": 3, "pixivFANBOX": 3, "Gank": 4, "Fantia": 3, "Patreon": 3, "Pawchive": 4, "X": 3, "微博": 3, "Venera": 1}
+var Versions = func() map[string]int {
+	contract, err := api.LoadCatalog()
+	if err != nil {
+		panic(fmt.Errorf("embedded catalog contract: %w", err))
+	}
+	versions := make(map[string]int, len(contract.Platforms))
+	for _, platform := range contract.Platforms {
+		versions[platform.ID] = platform.AdapterVersion
+	}
+	return versions
+}()
 
 func Get(m Object, path string) any {
 	var v any = m

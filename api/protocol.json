@@ -16,18 +16,8 @@
     "posts_desc",
     "posts_asc"
   ],
-  "mediaFilters": [
-    "all",
-    "image",
-    "video"
-  ],
-  "runtimeStates": [
-    "STARTING",
-    "READY",
-    "STOPPING",
-    "STOPPED",
-    "FAILED"
-  ],
+  "mediaFilters": ["all", "image", "video"],
+  "runtimeStates": ["STARTING", "READY", "STOPPING", "STOPPED", "FAILED"],
   "scanStates": [
     "IDLE",
     "PREPARING",

@@ -295,6 +295,14 @@ type transaction struct {
 	ids                       map[string]int64
 	workCount, authorEndCount int
 	visible                   bool
+	normalizer                func(string) string
+}
+
+func (t *transaction) normalize(value string) string {
+	if t.normalizer != nil {
+		return t.normalizer(value)
+	}
+	return Normalize(value)
 }
 
 func (t *transaction) exec(query string, args ...any) error {
@@ -991,6 +999,10 @@ var namedEntity = regexp.MustCompile(`(?i)&(?:amp|lt|gt|quot|apos|#39);`)
 var numericEntity = regexp.MustCompile(`(?i)&#(?:x([0-9a-f]+)|(\d+));`)
 
 func Normalize(s string) string {
+	return normalizeSpaces(normalizedText(s))
+}
+
+func normalizedText(s string) string {
 	s = norm.NFKC.String(s)
 	if strings.ContainsAny(s, "\u200b\u200c\u200d\u200e\u200f\u2060\ufeff") {
 		s = invisible.ReplaceAllString(s, "")
@@ -1004,8 +1016,7 @@ func Normalize(s string) string {
 	if strings.Contains(s, "&#") {
 		s = numericEntity.ReplaceAllStringFunc(s, decodeNumericEntity)
 	}
-	s = cases.Lower(language.Und).String(s)
-	return normalizeSpaces(s)
+	return cases.Lower(language.Und).String(s)
 }
 
 func decodeNamedEntity(e string) string {
@@ -1099,11 +1110,11 @@ func refreshWork(t *transaction, id int64, exists bool) error {
 	if videos > 0 {
 		video = 1
 	}
-	normalizedTitle, normalizedTags, normalizedBody, normalizedSource := Normalize(title), Normalize(tags), Normalize(body), Normalize(source.String)
-	if e = t.exec("INSERT INTO live_work_sort VALUES (?,?,?,?,?,?,?,?,?)", id, platform, authorID, sortAt, normalizedTitle, Normalize(basename(relative)), image, video, readable); e != nil {
+	normalizedTitle, normalizedTags, normalizedBody, normalizedSource := t.normalize(title), t.normalize(tags), t.normalize(body), t.normalize(source.String)
+	if e = t.exec("INSERT INTO live_work_sort VALUES (?,?,?,?,?,?,?,?,?)", id, platform, authorID, sortAt, normalizedTitle, t.normalize(basename(relative)), image, video, readable); e != nil {
 		return e
 	}
-	doc := []any{id, platform, Normalize(title + " " + source.String), Normalize(author), normalizedTags, normalizedBody}
+	doc := []any{id, platform, t.normalize(title + " " + source.String), t.normalize(author), normalizedTags, normalizedBody}
 	if e = t.exec("INSERT INTO live_search_docs VALUES (?,?,?,?,?,?)", doc...); e != nil {
 		return e
 	}
@@ -1151,7 +1162,7 @@ func refreshAuthor(t *transaction, id int64) error {
 	if e = t.exec("DELETE FROM live_authors WHERE author_id=?", id); e != nil {
 		return e
 	}
-	return t.exec("INSERT INTO live_authors VALUES (?,?,?,?,?,?,?,?)", id, platform, key, source, identity, Normalize(name), at, count)
+	return t.exec("INSERT INTO live_authors VALUES (?,?,?,?,?,?,?,?)", id, platform, key, source, identity, t.normalize(name), at, count)
 }
 func refreshTag(t *transaction, id int64) error {
 	var name string
@@ -1162,7 +1173,7 @@ func refreshTag(t *transaction, id int64) error {
 	if e := t.exec("DELETE FROM live_tags WHERE tag_id=?", id); e != nil {
 		return e
 	}
-	return t.exec("INSERT INTO live_tags VALUES (?,?,?,?)", id, name, Normalize(name), count)
+	return t.exec("INSERT INTO live_tags VALUES (?,?,?,?)", id, name, t.normalize(name), count)
 }
 func (w *Writer) Verify(ctx context.Context) error {
 	checks := []string{"SELECT count(*) FROM pragma_foreign_key_check", "SELECT count(*) FROM works w WHERE media_count<>(SELECT count(*) FROM media m WHERE m.work_id=w.work_id)", "SELECT count(*) FROM authors a WHERE work_count<>(SELECT count(*) FROM works w WHERE w.author_id=a.author_id)", "SELECT count(*) FROM tags t WHERE work_count<>(SELECT count(*) FROM work_tags wt WHERE wt.tag_id=t.tag_id)", "SELECT count(*) FROM metadata_shapes s WHERE work_count<>(SELECT count(*) FROM works w WHERE w.metadata_shape_id=s.metadata_shape_id)", "SELECT abs((SELECT works FROM live_stats)-(SELECT count(*) FROM works))", "SELECT abs((SELECT media FROM live_stats)-(SELECT count(*) FROM media))", "SELECT abs((SELECT authors FROM live_stats)-(SELECT count(*) FROM authors))", "SELECT abs((SELECT count(*) FROM works)-(SELECT count(*) FROM live_work_fts))"}

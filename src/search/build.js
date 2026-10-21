@@ -8,7 +8,8 @@ const Database = require("better-sqlite3");
 const { hashDatabaseFile } = require("../catalog/file-hash.js");
 const { noLinks } = require("../library/io-paths.js");
 
-const RUNTIME_SEARCH_INDEX_VERSION = 5;
+const RUNTIME_SEARCH_INDEX_VERSION =
+  require("../../api/catalog.json").searchVersion;
 
 function decodeEntities(value) {
   return value

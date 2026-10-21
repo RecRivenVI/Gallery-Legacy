@@ -6,52 +6,9 @@ const path = require("path");
 // Source configuration cannot add platforms or change adapter identity/version.
 // adapterVersion 是该平台 extraction behavior 的期望版本，与公共 contractVersion 独立演进。
 const PLATFORM_REGISTRY = Object.freeze(
-  [
-    {
-      id: "pixiv",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 3,
-    },
-    {
-      id: "pixivFANBOX",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 3,
-    },
-    {
-      id: "Gank",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 4,
-    },
-    {
-      id: "Fantia",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 3,
-    },
-    {
-      id: "Patreon",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 3,
-    },
-    {
-      id: "Pawchive",
-      family: "art_distribution",
-      enabled: true,
-      adapterVersion: 4,
-    },
-    { id: "X", family: "social_feed", enabled: true, adapterVersion: 3 },
-    { id: "微博", family: "social_feed", enabled: true, adapterVersion: 3 },
-    {
-      id: "Venera",
-      family: "download_library",
-      enabled: true,
-      adapterVersion: 1,
-    },
-  ].map((entry) => Object.freeze(entry)),
+  require("../../api/catalog.json").platforms.map(
+    ({ shapePolicyVersion, ...entry }) => Object.freeze(entry),
+  ),
 );
 
 function normalizePhysicalRootKey(value) {

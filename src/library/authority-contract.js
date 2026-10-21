@@ -1,6 +1,7 @@
 "use strict";
 
-const FILESYSTEM_AUTHORITY_CONTRACT_VERSION = 1;
+const FILESYSTEM_AUTHORITY_CONTRACT_VERSION =
+  require("../../api/catalog.json").authorityContractVersion;
 const DISPLAY_SOURCES = Object.freeze([
   "metadata",
   "directory_parsed",

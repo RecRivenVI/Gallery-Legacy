@@ -2,6 +2,8 @@
 
 公共读取、本机管理及 Go 子进程是三条不同边界。协议、Catalog、Search、Adapter 与 shape 各自版本不能互换。
 
+Node 替代的精确边界与差分范围见[后端行为合同](protocol-backend.md)。
+
 ## 公共 HTTP
 
 [api/protocol.json](../../api/protocol.json)定义排序、筛选及状态集合；实际路由在[src/server/http.js](../../src/server/http.js)。手工路由与 DTO 尚未由契约生成，列入[技术债](../project/debt-runtime.md)。

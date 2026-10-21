@@ -16,7 +16,8 @@ const {
 
 // Public normalized result structure/semantics. This is independent from each
 // platform Adapter.VERSION, which versions that platform's extraction behavior.
-const ADAPTER_CONTRACT_VERSION = 2;
+const ADAPTER_CONTRACT_VERSION =
+  require("../../api/catalog.json").adapterContractVersion;
 const TEXT_FORMATS = Object.freeze(["plain", "html", "markdown"]);
 const STRUCTURED_ENCODINGS = Object.freeze(["json_text", "opaque_text"]);
 

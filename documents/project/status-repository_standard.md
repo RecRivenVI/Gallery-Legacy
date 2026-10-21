@@ -4,13 +4,15 @@
 
 用户已认可 B 组四项并决定 AGPL-3.0-or-later；界面与许可收尾完成。手机默认“中”为两列，加载占位与卡片共用几何；管理端短耗时、缓存单位与窄窗口名称已细化。22 张深浅合成截图已查看，前端功能组一致（63 项）；初始化尺寸事件修正另跑相关 30 项一致。截图／性能原始数据在仓库外 UiGoMigration-20261022 第一阶段目录。
 
-Go 标准库扫描器在 internal，CanvasKit 网页和四页管理端在 public；正式 live 入口启动唯一 Go writer。Node HTTP／Reader／媒体／schema／静态恢复和 Electron 仍保留。已按[计划](plan-go_backend.md)开始剩余 Node 的 Go 替换，不能将尚未完成的部分称作 Go；没有部署、迁 Runtime 或浏览真实图库。
+Go 标准库扫描器在 internal，CanvasKit 网页和四页管理端在 public；正式 live 入口启动唯一 Go writer。Node HTTP／Reader／媒体／schema／静态恢复和 Electron 仍保留。Go 协议、事务 Reader、格式校验、初始化及 READY 恢复基础已完成差分；默认入口尚未切换，没有部署、迁 Runtime 或浏览真实图库。[计划](plan-go_backend.md)列出下一批。
+
+本批冻结 Node 对照结论一致：协议 183 例，live／静态 Reader 各 1,048 例，格式 13 例，READY／指针 32 例，事实核对 8 例，初始化恢复和 live v1／v2 升级 3 例。黄金差分实际启用 race；包含禁止 Reader 写库、取消请求、并行读取与单响应快照检查。API 的版本、DDL、事实检查 SQL 为同一来源。未把这些基础测试写成 Go HTTP 或生命周期验收。
 
 差分基线保持九平台物理事实；合成全量 71 件／284 媒体，未变化增量复用 71、零 metadata 读取与作品提交。当前没有改 Go 扫描流水线、事务或 WAL/FULL。
 
 四页页内路由继续接受严格 IPC 核验；Windows 身份使用本机进程对象，仍拒绝无法核验的活进程。生命周期与界面状态修复见[调查](../research/investigation-native_control.md)和[原生控制决定](../design/adr-3-native_control.md)。
 
-独立免安装 race 环境、最小程序及五个 Go 包实际运行成功，vet 与 11 个合成集成一致；最终完整 npm test 312 项通过，零失败／取消，约 16 分 39 秒。诊断轮的测试就绪／导入问题已修正，不将早期结果冒充最终通过。原生四页连续轮询、启停重启、隐藏再打开及管理器退出后服务存活已自动核对；78张深浅截图已实际查看，区分内容区和真实默认／最小外框。自动验证不等于用户日常验收。
+本批全部 Go 包及 scanner 入口的 race、build、vet 成功；受影响 Node Catalog／Search／恢复／metadata 回归一致（77 项）。原生四页已有连续轮询、启停重启、隐藏再打开及管理器退出后服务存活的合成证据，截图区分内容区与真实默认／最小外框；本批尚未重跑最终整套前端／宿主验收，必须在默认入口切换后完成。自动验证不等于用户日常验收。
 
 ## 剩余工作
 
@@ -18,8 +20,8 @@ Go 标准库扫描器在 internal，CanvasKit 网页和四页管理端在 public
 
 ## 下三步
 
-1. 固定现有 Node 协议并建立边界差分对照。
-2. 分批替换 schema／读取、HTTP／媒体、任务与生命周期，每批验证后提交推送。
+1. 将已对照的 Go 读取／恢复基础接入服务组装。
+2. 替换 HTTP／媒体、任务与生命周期，每批验证后提交推送。
 3. 移除 Node 后端并完整验证前端与 Electron，提供人工试用清单；生产 Runtime 不动。
 
 ## 开放项

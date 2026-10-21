@@ -33,10 +33,12 @@ Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，�
 
 场景操作见 [Gallery 验证定义](../../validations/scene-gallery/validation.md)，真实性能另见 [性能定义](../../validations/performance-scanning/validation.md)。自动实例默认 1920×1080、静音，不用 Computer-Use；真实内容不截图。
 
+后端差分用 `test:protocol`、`test:schema`、`test:reader`、`test:recovery`。GALLERY_NODE_REFERENCE_ROOT 指向独立冻结的 Node 构建，GALLERY_TEST_ROOT 指向本轮新的合成结果根；Reader 场景另以 GALLERY_SCANNER 指定已验证的扫描器。每次都生成新实例，不覆盖旧结果；附加 `-- --race` 可让黄金差分本身启用 race。范围和判断见[后端差分定义](../../validations/scene-backend_parity/validation.md)。
+
 ## 交付
 
 合成评审工具的根与资源分别配置在忽略的 `tools/demo/paths.local.json`（[示例](../../tools/demo/paths.example.json)）。受保护运行时只读该合成根内的资源；不要把真实源设为 root。既有完整／空实例原样保留，不在源码中重建阶段目录。
 
 构建先准备浏览资源、再构建 Go 扫描器和 Node 运行目录。生成物与发行包在仓库外；已有目标不覆盖。未实际运行的包不写作验收通过。
 
-本轮检查点允许一个无正文 `Update` 并正常推送 main；后续提交／推送仍需用户授权，不改历史、不强推、不加 CI／机械门禁。
+72 号任务已授权界面检查点及 Go 替代每批完成后，提交无正文 `Update` 并正常推送 origin/main；授权只限本任务，不改历史、不强推、不加 CI／机械门禁。

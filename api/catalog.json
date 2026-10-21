@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 4,
+  "liveSchemaVersion": 3,
+  "searchVersion": 5,
+  "adapterContractVersion": 2,
+  "shapeSignatureVersion": 1,
+  "authorityContractVersion": 1,
+  "tables": [
+    "author_aliases",
+    "author_profiles",
+    "authors",
+    "catalog_state",
+    "field_sources",
+    "media",
+    "media_declarations",
+    "metadata_shapes",
+    "platforms",
+    "social_relations",
+    "structured_sources",
+    "tags",
+    "work_access",
+    "work_metrics",
+    "work_tags",
+    "work_text",
+    "work_text_sources",
+    "works"
+  ],
+  "indexes": [
+    "idx_authors_source_identity",
+    "idx_media_declarations_match_state",
+    "idx_social_relations_unresolved_target",
+    "idx_work_tags_tag_sort",
+    "idx_works_author_sort",
+    "idx_works_metadata_shape",
+    "idx_works_platform_sort",
+    "idx_works_sort",
+    "idx_works_source_identity",
+    "uq_authors_internal_platform",
+    "uq_authors_relative_path",
+    "uq_field_sources_evidence",
+    "uq_media_declarations_ordinal",
+    "uq_media_declarations_single_match",
+    "uq_media_work_pair",
+    "uq_media_work_relative_path_key",
+    "uq_metadata_shapes_identity",
+    "uq_platforms_physical_root_key",
+    "uq_social_relations_ordinal",
+    "uq_social_relations_target",
+    "uq_structured_sources_ordinal",
+    "uq_tags_display_value",
+    "uq_tags_normalized_value",
+    "uq_work_tags_work_ordinal",
+    "uq_work_text_sources_ordinal",
+    "uq_works_relative_path"
+  ],
+  "platforms": [
+    {
+      "id": "pixiv",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "pixivFANBOX",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "Gank",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 4,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "Fantia",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "Patreon",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "Pawchive",
+      "family": "art_distribution",
+      "enabled": true,
+      "adapterVersion": 4,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "X",
+      "family": "social_feed",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "微博",
+      "family": "social_feed",
+      "enabled": true,
+      "adapterVersion": 3,
+      "shapePolicyVersion": 1
+    },
+    {
+      "id": "Venera",
+      "family": "download_library",
+      "enabled": true,
+      "adapterVersion": 1,
+      "shapePolicyVersion": 1
+    }
+  ]
+}
