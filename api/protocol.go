@@ -13,11 +13,13 @@ type Protocol struct {
 	MediaFilters []string `json:"mediaFilters"`
 }
 
+// ProtocolJSON is served without reserialization, as by the Node reference.
+//
 //go:embed protocol.json
-var definition []byte
+var ProtocolJSON []byte
 
 func Load() (Protocol, error) {
 	var contract Protocol
-	err := json.Unmarshal(definition, &contract)
+	err := json.Unmarshal(ProtocolJSON, &contract)
 	return contract, err
 }

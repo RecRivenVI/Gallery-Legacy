@@ -463,12 +463,12 @@ func TestPreparationConcurrencyUsesDiskClassAndRespectsSharedBudget(t *testing.T
 }
 func TestActualMediaEligibility(t *testing.T) {
 	for _, ext := range []string{".png", ".gif", ".webp", ".webm", ".mp4"} {
-		if mediaKind(ext) == "" {
+		if library.MediaKind(ext) == "" {
 			t.Fatal("eligible missing")
 		}
 	}
 	for _, ext := range []string{".json", ".zip", ".txt", ".html"} {
-		if mediaKind(ext) != "" {
+		if library.MediaKind(ext) != "" {
 			t.Fatal("declaration masqueraded as actual media")
 		}
 	}

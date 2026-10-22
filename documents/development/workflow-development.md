@@ -37,6 +37,16 @@ Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，�
 
 配置与数据集组装的独立批次使用 `test:config`、`test:dataset`，同样附加 `-- --race`；输入放 Scratches，留存摘要放 Artifacts，见[组装验证定义](../../validations/scene-dataset/validation.md)。不需要开启 HTTP 服务，也不自动读取默认实例。
 
+公共 HTTP 组使用 `test:http -- --race`；冻结 Node、同一合成文件与实例的状态／JSON／媒体字节／响应头逐项对照，见[接入验证](../../validations/scene-http_read/validation.md)。已通过且未受影响的基础组不重跑。
+
+独立读取候选仅用于新合成实例，不接到在用服务。先显式构建到仓库外，再配置该验证定义中的 `GALLERY_READ_EXE`、`GALLERY_HTTP_GOLDEN` 和 `GALLERY_HTTP_EVIDENCE`，运行 `test:http-browser`；默认 `npm start` 和 `manager` 不变：
+
+```powershell
+node tools/go/run.cjs build -o <外部候选目录>/gallery-read.exe ./cmd/gallery-read
+```
+
+独立命令的参数为 `-config <合成配置>`、`-frontend <public目录>`、`-assets <已准备资源目录>`。它只读已准备的数据库，不代替实例所有者，不负责初始化／扫描／动态恢复切换；用途与关闭边界见[架构](../design/architecture-http_read.md)。
+
 ## 交付
 
 合成评审工具的根与资源分别配置在忽略的 `tools/demo/paths.local.json`（[示例](../../tools/demo/paths.example.json)）。受保护运行时只读该合成根内的资源；不要把真实源设为 root。既有完整／空实例原样保留，不在源码中重建阶段目录。

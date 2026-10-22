@@ -4,12 +4,13 @@
 
 | 依赖                          | 用途与缺失影响                                                                         |
 | ----------------------------- | -------------------------------------------------------------------------------------- |
-| Go 工具链                     | 构建／测试扫描器；可在本机路径配置中指定官方 portable 工具，不改系统安装               |
+| Go 工具链                     | 构建／测试扫描器和公共读取入口；可指定官方 portable 工具，不改系统安装                 |
 | modernc SQLite、x/sys、x/text | 工作库、Windows 原生核验和文本归一化；受模块锁约束                                     |
 | x/net/idna                    | 配置的国际化 Host 归一化；不是 HTTP 宿主或 Everything 客户端；受 Go 模块锁约束         |
 | Node、better-sqlite3          | 残余读取、schema／恢复、本机控制；不能用 Electron ABI 的 native 模块代替普通 Node 模块 |
 | CanvasKit                     | 自绘浏览界面，构建时从锁定 npm 包取得 JS／WASM，产物不入源码                           |
 | ws                            | 公共只读状态事件与合成验证代理                                                         |
+| Gorilla WebSocket             | Go 公共状态事件；与 Node ws 对照，版本由 go.mod／go.sum 管理                           |
 | Electron                      | 窗口、托盘、目录选择；不是扫描器或数据库服务                                           |
 | Playwright                    | 合成浏览器／原生窗口验证及图标构建；不用于控制在用服务                                 |
 | Prettier                      | 开发时格式化，使用默认设置，不作为自建门禁                                             |
@@ -21,6 +22,8 @@
 MiSans／回退字体采用用户合法提供的原始外部资源；源码只含加载器，不附带字体二进制，也不隐式从 CDN 下载。Fluent System Icons 的选用素材及 MIT 声明保持来源，见根 NOTICE。字体实际语言覆盖与正式再分发是独立未决项，不按资源数量宣称全语言验收。
 
 IDNA 使用 [Go 官方 x/net/idna](https://pkg.go.dev/golang.org/x/net/idna)（BSD-3-Clause），从官方 Go 模块代理取得，下载位置由 GOMODCACHE／本机路径文件的 moduleCache 决定。不升级既有 x/text 归一化依赖来引入它；确切版本只在 go.mod／go.sum 定义。
+
+Gorilla WebSocket 使用[官方模块](https://pkg.go.dev/github.com/gorilla/websocket)（BSD-2-Clause），通过官方 Go 模块代理取得，缓存同上；[许可原文](https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE)。它代替自行实现 WebSocket 握手／帧，不承担管理认证或扫描控制；源码没有引入 Rust、Kotlin、Tauri 或 CMP 依赖。
 
 ## Windows race 编译器
 

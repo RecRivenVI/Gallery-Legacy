@@ -940,7 +940,7 @@ func (p *Pipeline) prepare(ctx context.Context, l *library.Listing, read *sql.DB
 			continue
 		}
 		ext := strings.ToLower(filepath.Ext(entry.Name))
-		kind := mediaKind(ext)
+		kind := library.MediaKind(ext)
 		if strings.EqualFold(relative, "metadata.json") {
 			reserved := int64(0)
 			if entry.Size <= p.Config.MetadataLimit {
@@ -1076,15 +1076,6 @@ func (p *Pipeline) prepare(ctx context.Context, l *library.Listing, read *sql.DB
 		return zero, errors.New("PREPARED_WORK_TOO_LARGE")
 	}
 	return prepared, nil
-}
-func mediaKind(ext string) string {
-	if strings.Contains("|avif|bmp|gif|ico|jpeg|jpg|png|svg|tif|tiff|webp|", "|"+strings.TrimPrefix(ext, ".")+"|") {
-		return "image"
-	}
-	if strings.Contains("|avi|m4v|mkv|mov|mp4|ogv|webm|", "|"+strings.TrimPrefix(ext, ".")+"|") {
-		return "video"
-	}
-	return ""
 }
 
 // Use the existing physical identity indexes as keyset cursors. ID-order

@@ -9,26 +9,27 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/protocol"
 )
 
-func lower(value string) string { return cases.Lower(language.Und).String(value) }
+func lower(value string) string { return protocol.Lower(value) }
 func component(value string) string {
-	var b strings.Builder
-	for _, c := range []byte(value) {
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || strings.ContainsRune("-_.!~*'()", rune(c)) {
-			b.WriteByte(c)
-		} else {
-			const h = "0123456789ABCDEF"
-			b.WriteByte('%')
-			b.WriteByte(h[c>>4])
-			b.WriteByte(h[c&15])
-		}
+	return protocol.Component(value)
+}
+
+func (v *View) MediaIdentity(id int64) (string, error) {
+	m, err := v.Media(id)
+	return mediaIdentity(m), err
+}
+
+func NaturalCompare(a, b string) int {
+	if c := slices.Compare(utf16.Encode([]rune(naturalKey(a))), utf16.Encode([]rune(naturalKey(b)))); c != 0 {
+		return c
 	}
-	return b.String()
+	return slices.Compare(utf16.Encode([]rune(a)), utf16.Encode([]rune(b)))
 }
 func publicPath(platform, relative string) string {
 	return "/p/" + component(platform) + "/" + strings.ReplaceAll(relative, "\\", "/")
@@ -92,10 +93,7 @@ func naturalKey(value string) string {
 func sortMedia(rows []Row) {
 	slices.SortFunc(rows, func(a, b Row) int {
 		x, y := text(a["relative_path"]), text(b["relative_path"])
-		if c := strings.Compare(naturalKey(x), naturalKey(y)); c != 0 {
-			return c
-		}
-		return strings.Compare(x, y)
+		return NaturalCompare(x, y)
 	})
 }
 func presentation(name string, previews bool) (string, bool) {
@@ -137,9 +135,6 @@ func sortCover(rows []Row, mediaType string, previews bool) {
 			return c
 		}
 		x, y := text(a["relative_path"]), text(b["relative_path"])
-		if c := strings.Compare(naturalKey(x), naturalKey(y)); c != 0 {
-			return c
-		}
-		return strings.Compare(x, y)
+		return NaturalCompare(x, y)
 	})
 }

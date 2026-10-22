@@ -1,6 +1,6 @@
 # Gallery
 
-只读整理固定九平台的本地作品，浏览、搜索并阅读图片、动图和视频。Go 扫描器、CanvasKit 网页、四页管理端与 Electron；读取、媒体和本机控制仍由 Node 提供。不是完整 Go 后端。
+只读整理固定九平台的本地作品，浏览、搜索并阅读图片、动图和视频。Go 扫描器、CanvasKit 网页、四页管理端与 Electron；默认读取、媒体和本机控制仍由 Node 提供，另有独立 Go 公共读取验收入口。不是完整 Go 后端。
 
 ## 支持的平台
 
@@ -34,6 +34,8 @@ npm run manager -- --config <实例配置文件>
 - [使用管理端](documents/usage/guide-manager.md)
 - [运行架构](documents/design/architecture-runtime.md)
 - [Go 读取组装与验收范围](documents/design/architecture-dataset.md)
+- [Go HTTP 接入与验收范围](documents/design/architecture-http_read.md)
+- [Tauri／WasmJS 技术评估](documents/research/survey-tauri_wasmjs.md)与[底层栈范围补充](documents/research/survey-wasmjs_stack_scope.md)
 - [实例配置](documents/reference/configuration-instance.md)
 - [当前状态](documents/project/status-repository_standard.md)
 - [技术债与未验证边界](documents/project/debt-runtime.md)
