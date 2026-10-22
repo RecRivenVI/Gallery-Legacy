@@ -43,6 +43,9 @@ var LiveSearchSQL string
 //go:embed live-ledger.sql
 var LiveLedgerSQL string
 
+//go:embed static-search.sql
+var StaticSearchSQL string
+
 type CatalogCheck struct {
 	SQL, Code, Message string
 }

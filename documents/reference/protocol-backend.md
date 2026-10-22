@@ -51,11 +51,25 @@ Catalog v4、live v3、Search、Adapter、shape 分别维持现有版本。完�
 ## 本机控制与生命周期
 
 - 命名管道路径仍为 instanceRoot 规范化小写加 /scope 的 SHA256 前 32 位。锁记录包含 kind、instanceId、identity、token；identity 必须同时核对 PID、创建时刻、exe。活进程无法核实仍拒绝，PID 重用不获授权。
+- Go 任务与宿主共享 PID，任务租约另绑定已有任务 ID（taskId），防止任务结束而宿主仍活着时误报运行中；不替代完整进程身份，也不把令牌暴露给公开状态。
 - 单请求换行 JSON，4096 字节上限、10 秒服务端空闲期限；请求含 instanceId／token／operation。成功含 ok=true、instanceId、identity、data；失败 ok=false、稳定 code。客户端继续验证回复身份，控制超时 15 秒，不放宽。
-- status、manager 注册、scan、stop、访问封禁走认证管道；配置、日志、报告、缓存、检查点、scope、验证与诊断操作仍由固定白名单调用。不能公开成 HTTP 管理接口。
+- 命名管道保留 status 与 access.\* 的认证协议。manager、scan、stop 不从外部管道启动或解绑服务，返回 MANAGER_REQUIRED。管理器通过自己持有的 Go 子进程输入管道发送命令，Go 原生核验直接父进程并监测完整身份；配置、日志、报告、缓存、检查点、scope、验证与诊断仍由固定白名单调用，不能公开成 HTTP 管理接口。
 - Electron 只接受本窗口顶层 frame 与精确管理文档（hash 为页内路由），保留白名单；系统目录选择／打开文件／托盘留在 Electron，其他工作调用 Go。
-- 启动就绪／停止／重启、管理器退出服务存活、隐藏再打开、取消保留已提交、父控制程序退出的协作取消与陈旧锁恢复都必须差分。切换只在新合成实例中进行，不抢用现有实例。
+- 启动就绪／停止／重启、管理器退出时正常结束、隐藏再打开、取消保留已提交、父控制程序退出的协作取消与陈旧锁恢复都必须验证。独立存活按 101 号明确撤销，其他协议语义仍对照。切换只在新合成实例中进行，不抢用现有实例。
 
 ## 差分边界
+
+99 号本机接入以冻结 Node 的 `ownership.js`、`control.js`、`bootstrap.js`、`management.js`、`runner.cjs` 为对照，不更改公共 URL。补充本组必须对照的真实路径：
+
+| 路径                                     | 正常结果与失败边界                                                                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| connection／start／status／stop／restart | 返回既有 connection／状态 DTO；start／stop／restart 只接受管理器会话，重复 start 返回当前服务；管理器会话与 runtime 各自排它；退出等待任务与服务释放，不按 PID 杀进程                                                                                                    |
+| control 与 access.\*                     | 身份匹配的 pipe 回复；错误 token／实例返回 CONTROL_FORBIDDEN；其他操作 CONTROL_OPERATION_INVALID；禁止从外部管道注册／解绑管理器或启动任务，公开 HTTP 没有管理权限                                                                                                       |
+| manage scan.start／status／cancel        | full／incremental、固定平台单选／多选、单作者；确认／范围非法保持原错误；会话内启动真正 Go 任务，scan 排它与 go-scan 原生租约共同防止双 writer；取消保留完整作品事务                                                                                                     |
+| 任务收尾／崩溃                           | 成功 READY，取消 CANCELLED／SCAN_CANCELLED，崩溃映射 SCAN_OWNER_EXITED；保留已提交 Catalog／Search／revision／签名，不将失败改成成功；按 [101 号决定](../design/adr-8-manager_lifecycle.md)，管理器真正退出时先结束扫描再关闭服务，隐藏不退出；独立存活不再对照冻结 Node |
+| 静态恢复与运行库初始化                   | 维护租约内验证 READY／active 指针和来源；缺指针但存在 READY 拒绝；初始化不覆盖已有库；坏库／来源不符不得启动为空库                                                                                                                                                       |
+| 原生窗口桥                               | 原窗口／顶层 frame／精确 URL 和 operation 白名单不变；只用隔离候选显式选择 Go 可执行；目录选择、托盘、窗口仍在 Electron                                                                                                                                                  |
+
+输入错误、认证拒绝和身份错配必须有真正 pipe／进程证据；时间戳、PID、UUID 与计时按各自身份关系核对，不要求跨运行位一致。状态探测不能阻塞在 PowerShell 子进程；新 Go 使用原生进程句柄取得同格式身份。
 
 可重复定义见[后端差分场景](../../validations/scene-backend_parity/validation.md)。原始 Node 对照使用独立冻结构建；黄金结果、输入库、故障注入与日志在仓库外。必须区分“协议一致”“数据与恢复一致”“宿主／浏览器可用”，未运行的批次不写一致。

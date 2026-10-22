@@ -18,7 +18,10 @@ func destroy(w http.ResponseWriter) {
 	}
 }
 func (s *Server) events(w http.ResponseWriter, r *http.Request) {
-	if err := s.boundary(r); err != nil || r.URL.EscapedPath() != "/api/v1/events" {
+	s.dataGate.RLock()
+	err := s.boundary(r)
+	s.dataGate.RUnlock()
+	if err != nil || r.URL.EscapedPath() != "/api/v1/events" {
 		destroy(w)
 		return
 	}
@@ -57,7 +60,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	send := func() error {
-		data, err := s.state(ctx)
+		data, err := s.SnapshotState(ctx)
 		if err != nil {
 			return err
 		}

@@ -29,20 +29,7 @@ const VALIDATION_MAINTENANCE_WAIT_MS = 8000;
 const VALIDATION_MAINTENANCE_RETRY_MS = 100;
 const VALIDATION_START_WAIT_MS = VALIDATION_MAINTENANCE_WAIT_MS + 10000;
 const CHECKS = Object.freeze(
-  [
-    ["filesystem.incomplete", "目录或文件观察不完整", "error"],
-    ["filesystem.unreadable", "平台／作者目录不可读取", "error"],
-    ["filesystem.ignored", "目录层级中的散落文件或未跟随链接", "warning"],
-    ["media.none", "作品没有实际媒体", "info"],
-    ["media.all_hidden", "媒体全部默认隐藏", "info"],
-    ["media.unknown_extension", "存在非媒体附件", "info"],
-    ["cover.multiple", "多个显式封面", "info"],
-    ["cover.conflict", "禁用封面标记与显式封面并存", "info"],
-    ["metadata.missing", "缺少 metadata（保留物理作品）", "info"],
-    ["metadata.unreadable", "metadata 不可读取／读取竞争", "warning"],
-    ["metadata.invalid", "metadata 损坏或非对象", "warning"],
-    ["metadata.fields", "metadata 字段或格式存在诊断", "warning"],
-  ].map(([id, label, severity]) => Object.freeze({ id, label, severity })),
+  require("../../api/inspection-checks.json").map(Object.freeze),
 );
 function fail(code) {
   throw Object.assign(new Error(code), { code });

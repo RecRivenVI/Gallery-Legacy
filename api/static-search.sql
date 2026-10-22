@@ -1,0 +1,23 @@
+CREATE TABLE index_state(singleton INTEGER PRIMARY KEY CHECK(singleton=1),version INTEGER NOT NULL,catalog_work_count INTEGER NOT NULL,catalog_sha256 TEXT NOT NULL,catalog_size INTEGER NOT NULL,catalog_mtime_ms INTEGER NOT NULL,built_at_ms INTEGER NOT NULL);
+CREATE TABLE work_sort(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_id INTEGER NOT NULL,published_sort INTEGER NOT NULL,title_key TEXT NOT NULL,name_key TEXT NOT NULL,has_image INTEGER NOT NULL,has_video INTEGER NOT NULL);
+CREATE TABLE search_docs(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,title TEXT NOT NULL,author TEXT NOT NULL,tags TEXT NOT NULL,body TEXT NOT NULL);
+CREATE TABLE work_tags(work_id INTEGER NOT NULL,tag_id INTEGER NOT NULL,PRIMARY KEY(work_id,tag_id)) WITHOUT ROWID;
+CREATE VIRTUAL TABLE work_fts USING fts5(title,author,tags,body,content='search_docs',content_rowid='work_id',tokenize='trigram');
+CREATE VIRTUAL TABLE short_fts USING fts5(terms,content='',contentless_delete=1,detail='none');
+CREATE TABLE authors(author_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_key TEXT NOT NULL,source_author_id TEXT,identity_key TEXT NOT NULL,name_key TEXT NOT NULL,latest_sort INTEGER NOT NULL,work_count INTEGER NOT NULL);
+CREATE TABLE tags(tag_id INTEGER PRIMARY KEY,display_value TEXT NOT NULL,normalized_key TEXT NOT NULL,work_count INTEGER NOT NULL);
+-- Indexes
+CREATE INDEX idx_search_sort_platform_date ON work_sort(platform_id,published_sort DESC,work_id DESC);
+CREATE INDEX idx_search_sort_platform_title ON work_sort(platform_id,title_key,work_id);
+CREATE INDEX idx_search_sort_platform_name ON work_sort(platform_id,name_key,work_id);
+CREATE INDEX idx_search_sort_author_date ON work_sort(author_id,published_sort DESC,work_id DESC);
+CREATE INDEX idx_search_sort_author_title ON work_sort(author_id,title_key,work_id);
+CREATE INDEX idx_search_sort_author_name ON work_sort(author_id,name_key,work_id);
+CREATE INDEX idx_search_sort_platform_image_date ON work_sort(platform_id,has_image,published_sort DESC,work_id DESC);
+CREATE INDEX idx_search_sort_platform_video_date ON work_sort(platform_id,has_video,published_sort DESC,work_id DESC);
+CREATE INDEX idx_authors_platform_name ON authors(platform_id,name_key,author_id);
+CREATE INDEX idx_authors_platform_latest ON authors(platform_id,latest_sort DESC,author_id DESC);
+CREATE INDEX idx_authors_platform_works ON authors(platform_id,work_count DESC,author_id DESC);
+CREATE INDEX idx_tags_normalized ON tags(normalized_key,tag_id);
+CREATE INDEX idx_tags_count ON tags(work_count DESC,tag_id DESC);
+CREATE INDEX idx_work_tags_tag_work ON work_tags(tag_id,work_id);

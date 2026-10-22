@@ -1,6 +1,6 @@
 "use strict";
 // Thin native host: no Catalog, scan, or process-kill implementation.
-// CLI validates configuration and uses the authenticated local Runtime pipe.
+// Go validates configuration; the owned session is the sole management channel.
 const {
   app,
   BrowserWindow,
@@ -20,10 +20,10 @@ const execute = promisify(require("node:child_process").execFile);
 const productRoot = app.isPackaged
   ? path.join(process.resourcesPath, "runtime")
   : path.resolve(__dirname, "../..");
-const cli = path.join(productRoot, "bin/gallery.cjs");
-const nodeExecutable = app.isPackaged
-  ? path.join(process.resourcesPath, "node/node.exe")
-  : process.env.GALLERY_NODE || "node";
+const runtimeExecutable =
+  process.env.GALLERY_RUNTIME ||
+  path.join(productRoot, "bin/gallery-runtime.exe");
+const { Backend } = require("./backend.js");
 const childEnv = { ...process.env };
 delete childEnv.ELECTRON_RUN_AS_NODE;
 let configArgs = [],
@@ -33,7 +33,7 @@ let configArgs = [],
   quitting = false,
   action = false,
   failure = null,
-  registeredRuntimePid = null;
+  backend = null;
 const managerFile = path.join(productRoot, "public/manager/index.html");
 const managerUrl = pathToFileURL(managerFile).href;
 const adminOperations = new Set([
@@ -88,30 +88,9 @@ async function admin(operation, input = {}) {
     throw Object.assign(new Error("Not allowed"), {
       code: "MANAGEMENT_OPERATION_INVALID",
     });
-  return new Promise((resolve, reject) => {
-    const child = require("node:child_process").execFile(
-      nodeExecutable,
-      [cli, "manage", operation, ...configArgs],
-      { windowsHide: true, env: childEnv, timeout: 210000, maxBuffer: 1048576 },
-      (error, stdout, stderr) => {
-        if (error) {
-          const code = String(stderr || "").trim();
-          return reject(
-            Object.assign(new Error("Management operation failed"), {
-              code: /^[A-Z0-9_]{1,64}$/.test(code) ? code : "MANAGEMENT_FAILED",
-            }),
-          );
-        }
-        try {
-          resolve(JSON.parse(stdout));
-        } catch {
-          reject(new Error("INVALID_RESPONSE"));
-        }
-      },
-    );
-    child.stdin.on("error", () => {});
-    child.stdin.end(JSON.stringify(input));
-  });
+  if (!backend)
+    throw Object.assign(new Error("Offline"), { code: "RUNTIME_OFFLINE" });
+  return backend.call("manage", operation, input);
 }
 async function openDirectory(kind) {
   const locations = await admin("locations");
@@ -120,10 +99,15 @@ async function openDirectory(kind) {
   return shell.openPath(locations[kind]);
 }
 async function invoke(args) {
+  if (args[0] !== "connection") {
+    if (!backend)
+      throw Object.assign(new Error("Offline"), { code: "RUNTIME_OFFLINE" });
+    return backend.call(args[0]);
+  }
   try {
     const result = await execute(
-      nodeExecutable,
-      [cli, ...args, ...configArgs],
+      runtimeExecutable,
+      ["connection", ...configArgs],
       {
         windowsHide: true,
         env: childEnv,
@@ -131,67 +115,29 @@ async function invoke(args) {
         maxBuffer: 1048576,
       },
     );
-    return JSON.parse(result.stdout.trim());
+    return JSON.parse(result.stdout);
   } catch (error) {
-    const value = String(error.stderr || "").trim();
+    const code = String(error.stderr || "").trim();
     throw Object.assign(new Error("Runtime operation failed"), {
-      code: /^[A-Z0-9_]{1,64}$/.test(value) ? value : "HOST_REQUEST_FAILED",
+      code: /^[A-Z0-9_]{1,64}$/.test(code) ? code : "HOST_REQUEST_FAILED",
     });
   }
 }
 async function status() {
-  if (connection) {
-    try {
-      const response = await fetch(connection.url + "/api/v1/status", {
-        signal: AbortSignal.timeout(6000),
-      });
-      const value = await response.json();
-      if (
-        response.ok &&
-        value.protocolVersion === 1 &&
-        value.data?.instanceId === connection.instanceId
-      ) {
-        if (!quitting && !action && value.data.pid !== registeredRuntimePid) {
-          try {
-            await invoke([
-              "control",
-              "manager",
-              "--manager-pid",
-              String(process.pid),
-            ]);
-            registeredRuntimePid = value.data.pid;
-          } catch {
-            /* Read-only status remains useful during an owner transition. */
-          }
-        }
-        return {
-          ...value.data,
-          localControl: true,
-          hostBusy: action,
-          hostFailure: failure,
-        };
-      }
-    } catch {}
-    try {
-      const pending = await invoke(["status"]);
-      return {
-        ...pending,
-        hostBusy: action || pending.state === "STARTING",
-        hostFailure: failure,
-        localControl: true,
-      };
-    } catch (error) {
-      if (error.code !== "RUNTIME_OFFLINE") throw error;
-    }
-  }
-  let scan = { state: "IDLE", running: false };
-  if (connection) scan = await admin("scan.status");
+  if (!backend || !connection)
+    return {
+      state: "STOPPED",
+      localControl: false,
+      hostBusy: action,
+      hostFailure: failure,
+      scan: { state: "IDLE", running: false },
+    };
+  const value = await backend.call("status");
   return {
-    state: action ? "STARTING" : "STOPPED",
-    localControl: !!connection,
-    hostBusy: action,
+    ...value,
+    localControl: true,
+    hostBusy: action || value.state === "STARTING",
     hostFailure: failure,
-    scan,
   };
 }
 async function operate(command) {
@@ -203,20 +149,9 @@ async function operate(command) {
     if (command === "scan")
       return await admin("scan.start", { confirmReadOnly: true });
     const result = await invoke([command]);
-    if (
-      ["start", "restart"].includes(command) &&
-      !quitting &&
-      result.state !== "STARTING"
-    ) {
+    if (["start", "restart"].includes(command))
       connection = await invoke(["connection"]);
-      await invoke([
-        "control",
-        "manager",
-        "--manager-pid",
-        String(process.pid),
-      ]);
-      registeredRuntimePid = result.pid;
-    }
+
     return result;
   } catch (error) {
     failure = error.code;
@@ -252,6 +187,12 @@ async function main() {
     if (!configPath && app.isPackaged && fs.existsSync(pointer))
       configPath = JSON.parse(fs.readFileSync(pointer, "utf8")).configPath;
     if (configPath) configArgs = ["--config", path.resolve(configPath)];
+    configArgs.push(
+      "--frontend",
+      path.join(productRoot, "public"),
+      "--assets",
+      process.env.GALLERY_ASSETS_ROOT || path.join(productRoot, "resources"),
+    );
     connection = await invoke(["connection"]);
   } catch (error) {
     failure = error.code || "CONFIG_REQUIRED";
@@ -279,6 +220,19 @@ async function main() {
   app.setAppLogsPath(path.join(connection?.logsRoot || failureRoot, "desktop"));
   if (!app.requestSingleInstanceLock()) return app.quit();
   await app.whenReady();
+  if (connection) {
+    backend = new Backend(
+      runtimeExecutable,
+      configArgs,
+      childEnv,
+      connection.instanceId,
+    );
+    try {
+      await backend.ready;
+    } catch (error) {
+      failure = error.code || "HOST_REQUEST_FAILED";
+    }
+  }
   const icon =
     process.env.GALLERY_ICON_PATH ||
     path.join(productRoot, "resources/app-icon.png");
@@ -369,7 +323,7 @@ async function main() {
         label: "停止本实例服务",
         click: () => void operate("stop").catch(() => window.show()),
       },
-      { label: "退出管理器（服务继续运行）", click: () => app.quit() },
+      { label: "退出管理器", click: () => app.quit() },
     ]),
   );
   tray.on("double-click", () => {
@@ -385,11 +339,10 @@ async function main() {
     if (quitting) return;
     event.preventDefault();
     quitting = true;
-    const detach = connection
-      ? invoke(["control", "manager"])
-      : Promise.resolve();
-    void detach
-      .catch(() => {})
+    void (backend ? backend.close() : Promise.resolve())
+      .catch((error) => {
+        process.stderr.write((error.code || "HOST_REQUEST_FAILED") + "\n");
+      })
       .finally(() => {
         tray?.destroy();
         app.quit();

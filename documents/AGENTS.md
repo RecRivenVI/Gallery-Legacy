@@ -9,7 +9,7 @@
 | 产品显示名         | 画廊（Gallery）                                                                                                 |
 | 一句话             | 将固定九平台的本地只读作品整理成可浏览、搜索和阅读的个人画廊                                                    |
 | 核心路径           | 选择平台更新图库 → 查看进度 → 浏览作品／作者 → 打开图片、动图或视频                                             |
-| 技术栈附则         | Go 扫描器＋Node 读取／媒体服务、CanvasKit Web、Electron 管理宿主                                                |
+| 技术栈附则         | Go 运行会话／扫描／读取／媒体、CanvasKit Web、Electron 管理宿主；旧 Node 后端待退役                             |
 | 支持的平台         | 当前实际验证目标 Windows x64；其他系统未验收                                                                    |
 | 标识               | npm 见 package.json；Go 模块见 go.mod；保持现有实例身份和 Venera source key                                     |
 | 设计语言与组件库   | 用户冻结设计及最新明确决定；CanvasKit 自绘、原生输入／表单、Fluent System Icons；不是 Fluent UI 组件或 CMP 产品 |

@@ -11,6 +11,7 @@
 | CanvasKit                     | 自绘浏览界面，构建时从锁定 npm 包取得 JS／WASM，产物不入源码                           |
 | ws                            | 公共只读状态事件与合成验证代理                                                         |
 | Gorilla WebSocket             | Go 公共状态事件；与 Node ws 对照，版本由 go.mod／go.sum 管理                           |
+| Microsoft go-winio            | Windows 命名管道的独占监听与读写；缺失不能构建本机控制，不自绘管道协议或放松所有权核验 |
 | Electron                      | 窗口、托盘、目录选择；不是扫描器或数据库服务                                           |
 | Playwright                    | 合成浏览器／原生窗口验证及图标构建；不用于控制在用服务                                 |
 | Prettier                      | 开发时格式化，使用默认设置，不作为自建门禁                                             |
@@ -24,6 +25,8 @@ MiSans／回退字体采用用户合法提供的原始外部资源；源码只�
 IDNA 使用 [Go 官方 x/net/idna](https://pkg.go.dev/golang.org/x/net/idna)（BSD-3-Clause），从官方 Go 模块代理取得，下载位置由 GOMODCACHE／本机路径文件的 moduleCache 决定。不升级既有 x/text 归一化依赖来引入它；确切版本只在 go.mod／go.sum 定义。
 
 Gorilla WebSocket 使用[官方模块](https://pkg.go.dev/github.com/gorilla/websocket)（BSD-2-Clause），通过官方 Go 模块代理取得，缓存同上；[许可原文](https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE)。它代替自行实现 WebSocket 握手／帧，不承担管理认证或扫描控制；源码没有引入 Rust、Kotlin、Tauri 或 CMP 依赖。
+
+go-winio 从 [Microsoft 官方模块](https://pkg.go.dev/github.com/Microsoft/go-winio)经 Go 模块代理取得，版本只在 go.mod／go.sum 定义，模块缓存由本机路径文件指定。[MIT 许可](https://github.com/microsoft/go-winio/blob/v0.6.2/LICENSE)随模块保留；产品分发保留 NOTICE，不引入其他本机守护程序。
 
 ## Windows race 编译器
 

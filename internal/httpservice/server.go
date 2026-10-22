@@ -29,17 +29,18 @@ type Options struct {
 	Status           func() reading.Row
 }
 type Server struct {
-	data    *dataset.Dataset
-	files   *fileview.Browser
-	media   *media.Service
-	links   *shortLinks
-	access  *access
-	options Options
-	mu      sync.Mutex
-	closed  bool
-	sockets map[*websocket.Conn]context.CancelFunc
-	streams sync.WaitGroup
-	version int
+	data     *dataset.Dataset
+	files    *fileview.Browser
+	media    *media.Service
+	links    *shortLinks
+	access   *access
+	options  Options
+	mu       sync.Mutex
+	dataGate sync.RWMutex
+	closed   bool
+	sockets  map[*websocket.Conn]context.CancelFunc
+	streams  sync.WaitGroup
+	version  int
 }
 
 // New takes ownership of data after a successful return. The caller must close
@@ -99,6 +100,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.events(w, r)
 		return
 	}
+	s.dataGate.RLock()
+	defer s.dataGate.RUnlock()
 	w.Header().Set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
 	allowed, finish := s.access.begin(r)
 	tracked := &responseWriter{ResponseWriter: w, status: 200}

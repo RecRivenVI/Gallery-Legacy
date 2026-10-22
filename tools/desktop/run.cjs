@@ -9,8 +9,8 @@ const local = fs.existsSync(localFile)
   : {};
 if (!env.GALLERY_ICON_PATH && local.output)
   env.GALLERY_ICON_PATH = path.join(local.output, "resources/app-icon.png");
-if (!env.GALLERY_SCANNER && local.output)
-  env.GALLERY_SCANNER = path.join(local.output, "bin/gallery-scan.exe");
+if (!env.GALLERY_RUNTIME && local.output)
+  env.GALLERY_RUNTIME = path.join(local.output, "bin/gallery-runtime.exe");
 if (!env.GALLERY_ASSETS_ROOT && local.resources)
   env.GALLERY_ASSETS_ROOT = local.resources;
 delete env.ELECTRON_RUN_AS_NODE;

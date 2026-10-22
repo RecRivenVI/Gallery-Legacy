@@ -16,6 +16,6 @@
 
 Go 扫描配置限定实例工作库路径，固定 sources 与 Node 绑定一致；workers／slowDeviceWorkers／batchSize／metadataLimit 的默认和边界在 [Go Config](../../internal/library/config.go)。无 Everything provider，不用旧清单配置作为回退。处理签名只随成功事务保存。
 
-Go 读取组装使用相同实例 schema，见[读取组装](../design/architecture-dataset.md)。默认服务尚未切换；非空旧 `everything` 字段在新 Go 配置入口返回 CONFIG_FIELD_UNSUPPORTED，而不是静默启用或忽略。
+Go 读取组装使用相同实例 schema，见[读取组装](../design/architecture-dataset.md)。当前源码的管理器使用 Go 会话，在用部署未切换；非空旧 `everything` 字段在 Go 配置入口返回 CONFIG_FIELD_UNSUPPORTED，而不是静默启用或忽略。
 
 改变源根或恢复数据库前须确认无其他所有者；不能让已有记录静默指向新的真实文件。本机路径／字体／工具资源通过本地配置或显式参数传入，不在源码写死用户目录。

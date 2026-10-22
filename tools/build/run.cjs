@@ -79,8 +79,8 @@ async function main() {
       "-buildvcs=false",
       "-ldflags=-X main.version=" + version,
       "-o",
-      path.join(out, "bin/gallery-scan.exe"),
-      "./cmd/gallery-scan",
+      path.join(out, "bin/gallery-runtime.exe"),
+      "./cmd/gallery-runtime",
     ],
     { cwd: root, stdio: "inherit", windowsHide: true },
   );

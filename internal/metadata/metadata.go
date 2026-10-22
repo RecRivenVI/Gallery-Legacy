@@ -231,8 +231,14 @@ func (r *Result) tags(values []any) {
 }
 func (r *Result) metric(m Object, key, path string) { r.Metrics[key] = Integer(Get(m, path), true) }
 func (r *Result) identity(m Object, author, work string, workPaths, authorPaths []string) {
+	invalidBefore := r.InvalidFields
 	r.field(m, r.Work, "sourceWorkId", "work.sourceWorkId", ID, workPaths...)
 	r.field(m, r.Profile, "sourceAuthorId", "authorProfile.sourceAuthorId", ID, authorPaths...)
+	// X validates every raw candidate below, including lower-priority IDs.
+	// Selection must not count the same rejected ID a second time.
+	if r.platform == "X" {
+		r.InvalidFields = invalidBefore
+	}
 	if r.Work["sourceWorkId"] == nil {
 		if x := DirectoryWorkID(work); x != nil {
 			r.Work["sourceWorkId"] = x
@@ -338,6 +344,11 @@ func Parse(platform, author, work string, raw []byte) (Result, Object) {
 			v := Get(m, path)
 			if v != nil && v != "" && ID(v) == nil {
 				r.InvalidFields++
+				if platform == "X" {
+					if _, numeric := v.(json.Number); numeric {
+						r.Warnings++
+					}
+				}
 			}
 		}
 		for _, p := range []string{"postUrl", "post_url", "url", "sourceUrl", "source_url", "permalink", "link", "source.url"} {

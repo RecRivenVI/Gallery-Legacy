@@ -71,8 +71,14 @@ func Load(file string) (Config, error) {
 	if err != nil {
 		return zero, err
 	}
+	return Parse(bytes)
+}
+
+// Parse validates the same document used on disk without persisting a candidate.
+func Parse(bytes []byte) (Config, error) {
+	var zero Config
 	var value any
-	if err = json.Unmarshal(bytes, &value); err != nil {
+	if err := json.Unmarshal(bytes, &value); err != nil {
 		return zero, fmt.Errorf("STATE_INVALID: %w", err)
 	}
 	if !truthy(value) {
@@ -93,7 +99,7 @@ func Load(file string) (Config, error) {
 		return Normalize(nil)
 	}
 	var schema struct{ Properties map[string]any }
-	if err = json.Unmarshal(api.ConfigurationSchema, &schema); err != nil {
+	if err := json.Unmarshal(api.ConfigurationSchema, &schema); err != nil {
 		return zero, err
 	}
 	for key := range source {

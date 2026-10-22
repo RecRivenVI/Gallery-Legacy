@@ -1,0 +1,50 @@
+[
+  {
+    "id": "filesystem.incomplete",
+    "label": "目录或文件观察不完整",
+    "severity": "error"
+  },
+  {
+    "id": "filesystem.unreadable",
+    "label": "平台／作者目录不可读取",
+    "severity": "error"
+  },
+  {
+    "id": "filesystem.ignored",
+    "label": "目录层级中的散落文件或未跟随链接",
+    "severity": "warning"
+  },
+  { "id": "media.none", "label": "作品没有实际媒体", "severity": "info" },
+  { "id": "media.all_hidden", "label": "媒体全部默认隐藏", "severity": "info" },
+  {
+    "id": "media.unknown_extension",
+    "label": "存在非媒体附件",
+    "severity": "info"
+  },
+  { "id": "cover.multiple", "label": "多个显式封面", "severity": "info" },
+  {
+    "id": "cover.conflict",
+    "label": "禁用封面标记与显式封面并存",
+    "severity": "info"
+  },
+  {
+    "id": "metadata.missing",
+    "label": "缺少 metadata（保留物理作品）",
+    "severity": "info"
+  },
+  {
+    "id": "metadata.unreadable",
+    "label": "metadata 不可读取／读取竞争",
+    "severity": "warning"
+  },
+  {
+    "id": "metadata.invalid",
+    "label": "metadata 损坏或非对象",
+    "severity": "warning"
+  },
+  {
+    "id": "metadata.fields",
+    "label": "metadata 字段或格式存在诊断",
+    "severity": "warning"
+  }
+]

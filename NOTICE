@@ -7,5 +7,7 @@ Fluent System Icons：Copyright (c) 2020 Microsoft Corporation，MIT。
 CanvasKit：Google / Skia，BSD-style license，见依赖包的许可文件。
 Gorilla WebSocket：Copyright (c) 2013 The Gorilla WebSocket Authors，BSD-2-Clause。
 许可原文：https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE。
+go-winio：Copyright (c) 2015 Microsoft，MIT。
+许可原文：https://github.com/microsoft/go-winio/blob/v0.6.2/LICENSE。
 MiSans、Noto Color Emoji 等字体由外部资源目录提供，不随本仓库分发。
 打包时保留外部资源所附 licenses 目录；重新分发前核对相应许可。

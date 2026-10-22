@@ -10,7 +10,7 @@ npm ci
 
 使用被忽略的 `tools/build/paths.local.json` 指定本机 Go 可执行文件、仓库外构建输出及合法资源路径；字段见[本机路径示例](../../tools/build/paths.example.json)。运行实例不能放回源码。
 
-resources 指向包含 `misans/manifest.json`、字体及随附许可的原始资源根。构建从锁定 npm 包取 CanvasKit，从 SVG 源生成图标，不在源码跟踪二进制。源码启动也从本机文件读取资源和已构建 scanner；发行目录直接使用其自带资源／scanner。
+resources 指向包含 `misans/manifest.json`、字体及随附许可的原始资源根。构建从锁定 npm 包取 CanvasKit，从 SVG 源生成图标，不在源码跟踪二进制。源码启动从本机文件读取资源和已构建 gallery-runtime；发行目录直接使用其自带资源与 Go 会话。
 
 ## 构建与验证
 
@@ -39,7 +39,7 @@ Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，�
 
 公共 HTTP 组使用 `test:http -- --race`；冻结 Node、同一合成文件与实例的状态／JSON／媒体字节／响应头逐项对照，见[接入验证](../../validations/scene-http_read/validation.md)。已通过且未受影响的基础组不重跑。
 
-独立读取候选仅用于新合成实例，不接到在用服务。先显式构建到仓库外，再配置该验证定义中的 `GALLERY_READ_EXE`、`GALLERY_HTTP_GOLDEN` 和 `GALLERY_HTTP_EVIDENCE`，运行 `test:http-browser`；默认 `npm start` 和 `manager` 不变：
+独立读取命令仅是开发验收工具，不是产品启动入口，不接到在用服务。配置该验证定义中的 GALLERY_READ_EXE、GALLERY_HTTP_GOLDEN 和 GALLERY_HTTP_EVIDENCE 后可运行 `test:http-browser`；产品 `start`／`manager` 统一打开管理器：
 
 ```powershell
 node tools/go/run.cjs build -o <外部候选目录>/gallery-read.exe ./cmd/gallery-read
@@ -47,10 +47,12 @@ node tools/go/run.cjs build -o <外部候选目录>/gallery-read.exe ./cmd/galle
 
 独立命令的参数为 `-config <合成配置>`、`-frontend <public目录>`、`-assets <已准备资源目录>`。它只读已准备的数据库，不代替实例所有者，不负责初始化／扫描／动态恢复切换；用途与关闭边界见[架构](../design/architecture-http_read.md)。
 
+管理会话的实际迁移验证使用 `test:lifecycle-reference`、`test:manager-lifecycle`、`test:management`、`test:inspection`、`test:static-task`、`test:interruption` 和 `test:manager-browser`。显式输入与关闭顺序见[场景定义](../../validations/scene-management/validation.md)，不从默认私有配置寻找实例。需要单独为冻结 Node 准备扫描器时，从 cmd/gallery-scan 构建到该合成根；产品构建只含管理器拥有的 gallery-runtime。
+
 ## 交付
 
 合成评审工具的根与资源分别配置在忽略的 `tools/demo/paths.local.json`（[示例](../../tools/demo/paths.example.json)）。受保护运行时只读该合成根内的资源；不要把真实源设为 root。既有完整／空实例原样保留，不在源码中重建阶段目录。
 
-构建先准备浏览资源、再构建 Go 扫描器和 Node 运行目录。生成物与发行包在仓库外；已有目标不覆盖。未实际运行的包不写作验收通过。
+构建先准备浏览资源，再构建 Go 会话并保留尚未退役的 Node 对照源码。生成物与发行包在仓库外；已有目标不覆盖。未实际运行的包不写作验收通过。
 
 72 号任务已授权界面检查点及 Go 替代每批完成后，提交无正文 `Update` 并正常推送 origin/main；授权只限本任务，不改历史、不强推、不加 CI／机械门禁。

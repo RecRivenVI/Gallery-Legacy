@@ -1,6 +1,6 @@
 # Gallery
 
-只读整理固定九平台的本地作品，浏览、搜索并阅读图片、动图和视频。Go 扫描器、CanvasKit 网页、四页管理端与 Electron；默认读取、媒体和本机控制仍由 Node 提供，另有独立 Go 公共读取验收入口。不是完整 Go 后端。
+只读整理固定九平台的本地作品，浏览、搜索并阅读图片、动图和视频。Go 候选接入读取、媒体、扫描和本机管理，CanvasKit 网页与 Electron 四页管理端保持；Node 旧后端仍保留作迁移对照，在用版本未切换。
 
 ## 支持的平台
 
@@ -24,10 +24,9 @@ npm run build
 
 ```powershell
 npm start -- --config <实例配置文件>
-npm run manager -- --config <实例配置文件>
 ```
 
-管理端“更新图库”执行增量；“全部重新扫描…”执行全量。可复现合成准备与测试见[开发工作流](documents/development/workflow-development.md)。构建不安装、不替换在用实例。
+管理端“更新图库”执行增量；“全部重新扫描…”执行全量。画廊和扫描从管理器启动；关闭窗口收起到托盘，退出管理器会正常结束扫描和服务。可复现合成准备与测试见[开发工作流](documents/development/workflow-development.md)。构建不安装、不替换在用实例。
 
 ## 文档
 
