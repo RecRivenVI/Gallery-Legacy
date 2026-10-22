@@ -31,6 +31,11 @@ type View struct {
 // Open verifies the format of an existing file. The dataset owner additionally
 // validates the configured source bindings before exposing it to requests.
 func Open(ctx context.Context, file, epoch string, live bool) (*Reader, error) {
+	return OpenBound(ctx, file, epoch, live, nil)
+}
+
+// OpenBound checks format and configured source bindings before serving reads.
+func OpenBound(ctx context.Context, file, epoch string, live bool, sources map[string]string) (*Reader, error) {
 	u := url.URL{Scheme: "file", Path: "/" + strings.ReplaceAll(file, "\\", "/")}
 	params := u.Query()
 	params.Set("mode", "ro")
@@ -47,7 +52,7 @@ func Open(ctx context.Context, file, epoch string, live bool) (*Reader, error) {
 		db.Close()
 		return nil, fmt.Errorf("open existing reader: %w", err)
 	}
-	if err = catalog.VerifyContract(ctx, db, catalog.ContractOptions{Live: live}); err != nil {
+	if err = catalog.VerifyContract(ctx, db, catalog.ContractOptions{Live: live, Sources: sources}); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -56,7 +61,11 @@ func Open(ctx context.Context, file, epoch string, live bool) (*Reader, error) {
 func (r *Reader) Close() error { return r.DB.Close() }
 
 func OpenStatic(ctx context.Context, file, search, epoch string) (*Reader, error) {
-	reader, err := Open(ctx, file, epoch, false)
+	return OpenStaticBound(ctx, file, search, epoch, nil)
+}
+
+func OpenStaticBound(ctx context.Context, file, search, epoch string, sources map[string]string) (*Reader, error) {
+	reader, err := OpenBound(ctx, file, epoch, false, sources)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +79,10 @@ func OpenStatic(ctx context.Context, file, search, epoch string) (*Reader, error
 		return nil, fmt.Errorf("attach readonly search: %w", err)
 	}
 	return reader, nil
+}
+
+func (v *View) LiveState() (catalog.LiveState, error) {
+	return catalog.ReadLiveSnapshot(v.ctx, v.tx)
 }
 
 func (r *Reader) Snapshot(ctx context.Context, fn func(*View) (any, error)) (any, error) {

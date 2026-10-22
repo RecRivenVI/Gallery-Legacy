@@ -11,6 +11,7 @@ const {
   noLinks,
 } = require("../library/io-paths.js");
 const { readJson } = require("./files.js");
+const properties = require("../../api/runtime-config.schema.json").properties;
 function fail(code) {
   throw Object.assign(new Error(code), { code });
 }
@@ -96,9 +97,9 @@ function normalizeRuntimeConfig(source) {
         )
       )
         fail("FILE_ROOT_OVERLAP");
-  const mode = source.mode || "local",
-    host = source.listenAddress || source.host || "127.0.0.1",
-    port = source.port ?? 18104;
+  const mode = source.mode || properties.mode.default,
+    host = source.listenAddress || source.host || properties.host.default,
+    port = source.port ?? properties.port.default;
   if (!Number.isInteger(port) || port < 1 || port > 65535) fail("PORT_INVALID");
   const loopback = host === "127.0.0.1" || host === "::1";
   const lan =
@@ -181,7 +182,9 @@ function normalizeRuntimeConfig(source) {
       /[\x00-\x1f\x7f]/.test(target)
     )
       fail("SHORT_LINK_INVALID");
-  const staleAfterMs = source.retention?.staleAfterMs ?? 86400000;
+  const staleAfterMs =
+    source.retention?.staleAfterMs ??
+    properties.retention.properties.staleAfterMs.default;
   if (!Number.isSafeInteger(staleAfterMs) || staleAfterMs < 3600000)
     fail("RETENTION_INVALID");
   const instanceId = require("node:crypto")
@@ -189,7 +192,7 @@ function normalizeRuntimeConfig(source) {
     .update(instanceRoot.toLowerCase())
     .digest("hex");
   const config = {
-    deployment: source.deployment || "development",
+    deployment: source.deployment || properties.deployment.default,
     instanceRoot,
     instanceId,
     liveUpdates: source.liveUpdates === true,
@@ -283,7 +286,6 @@ function normalizeRuntimeConfig(source) {
 function readRuntimeConfig(file = path.join(defaultRoot(), "config.json")) {
   const source = readJson(path.resolve(file));
   if (!source) fail("CONFIG_REQUIRED");
-  const properties = require("../config/runtime.schema.json").properties;
   for (const key of Object.keys(source))
     if (!Object.hasOwn(properties, key)) fail("CONFIG_FIELD_UNSUPPORTED");
   return normalizeRuntimeConfig(source);

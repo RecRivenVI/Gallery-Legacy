@@ -3,6 +3,7 @@ package recovery
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/catalog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
+
+var ErrActiveMissing = errors.New("ACTIVE_GENERATION_MISSING")
 
 type Identity struct {
 	SHA256    string `json:"sha256"`
@@ -192,7 +195,7 @@ func Active(ctx context.Context, instance, generations, pointerPath string) (*Ch
 		return nil, fmt.Errorf("GENERATION_PATH_ESCAPE")
 	}
 	if _, err := os.Stat(pointerPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("ACTIVE_GENERATION_MISSING")
+		return nil, ErrActiveMissing
 	} else if err != nil {
 		return nil, err
 	}

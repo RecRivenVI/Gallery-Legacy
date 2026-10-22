@@ -33,6 +33,7 @@ npm run manager -- --config <实例配置文件>
 
 - [使用管理端](documents/usage/guide-manager.md)
 - [运行架构](documents/design/architecture-runtime.md)
+- [Go 读取组装与验收范围](documents/design/architecture-dataset.md)
 - [实例配置](documents/reference/configuration-instance.md)
 - [当前状态](documents/project/status-repository_standard.md)
 - [技术债与未验证边界](documents/project/debt-runtime.md)

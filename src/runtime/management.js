@@ -350,7 +350,10 @@ async function manage(configPath, operation, input = {}) {
     if (!candidate || typeof candidate !== "object") fail("CONFIG_INVALID");
     for (const key of Object.keys(candidate))
       if (
-        !Object.hasOwn(require("../config/runtime.schema.json").properties, key)
+        !Object.hasOwn(
+          require("../../api/runtime-config.schema.json").properties,
+          key,
+        )
       )
         fail("CONFIG_FIELD_UNSUPPORTED");
     const next = normalizeRuntimeConfig(candidate);

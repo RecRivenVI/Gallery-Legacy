@@ -6,6 +6,7 @@
 | ----------------------------- | -------------------------------------------------------------------------------------- |
 | Go 工具链                     | 构建／测试扫描器；可在本机路径配置中指定官方 portable 工具，不改系统安装               |
 | modernc SQLite、x/sys、x/text | 工作库、Windows 原生核验和文本归一化；受模块锁约束                                     |
+| x/net/idna                    | 配置的国际化 Host 归一化；不是 HTTP 宿主或 Everything 客户端；受 Go 模块锁约束         |
 | Node、better-sqlite3          | 残余读取、schema／恢复、本机控制；不能用 Electron ABI 的 native 模块代替普通 Node 模块 |
 | CanvasKit                     | 自绘浏览界面，构建时从锁定 npm 包取得 JS／WASM，产物不入源码                           |
 | ws                            | 公共只读状态事件与合成验证代理                                                         |
@@ -18,6 +19,8 @@
 外部编码器的确切最低版本尚未验证，不虚构统一兼容范围。它们由运行环境提供，输出进入实例临时／缓存目录，不写源文件。
 
 MiSans／回退字体采用用户合法提供的原始外部资源；源码只含加载器，不附带字体二进制，也不隐式从 CDN 下载。Fluent System Icons 的选用素材及 MIT 声明保持来源，见根 NOTICE。字体实际语言覆盖与正式再分发是独立未决项，不按资源数量宣称全语言验收。
+
+IDNA 使用 [Go 官方 x/net/idna](https://pkg.go.dev/golang.org/x/net/idna)（BSD-3-Clause），从官方 Go 模块代理取得，下载位置由 GOMODCACHE／本机路径文件的 moduleCache 决定。不升级既有 x/text 归一化依赖来引入它；确切版本只在 go.mod／go.sum 定义。
 
 ## Windows race 编译器
 

@@ -1,6 +1,6 @@
 # 实例配置
 
-Node 格式见 [schema](../../src/config/runtime.schema.json)，公开例子见 [example](../../src/config/runtime.example.json)。本机真实值放仓库外实例，路径工具设置用被忽略的本地文件，不提交。
+实例格式见 [schema](../../api/runtime-config.schema.json)，公开例子见 [example](../../src/config/runtime.example.json)。本机真实值放仓库外实例，路径工具设置用被忽略的本地文件，不提交。
 
 | 字段                                                                                    | 作用／范围                                                                             |
 | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -15,5 +15,7 @@ Node 格式见 [schema](../../src/config/runtime.schema.json)，公开例子见 
 | generationsRoot／cacheRoot／logsRoot／tempRoot／stateRoot／reportsRoot／desktopDataRoot | 都在实例内，按职责隔离，不与来源重叠                                                   |
 
 Go 扫描配置限定实例工作库路径，固定 sources 与 Node 绑定一致；workers／slowDeviceWorkers／batchSize／metadataLimit 的默认和边界在 [Go Config](../../internal/library/config.go)。无 Everything provider，不用旧清单配置作为回退。处理签名只随成功事务保存。
+
+Go 读取组装使用相同实例 schema，见[读取组装](../design/architecture-dataset.md)。默认服务尚未切换；非空旧 `everything` 字段在新 Go 配置入口返回 CONFIG_FIELD_UNSUPPORTED，而不是静默启用或忽略。
 
 改变源根或恢复数据库前须确认无其他所有者；不能让已有记录静默指向新的真实文件。本机路径／字体／工具资源通过本地配置或显式参数传入，不在源码写死用户目录。

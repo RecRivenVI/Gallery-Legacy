@@ -23,6 +23,8 @@
     "test:reader": "node tools/validation/reader-diff.cjs",
     "test:schema": "node tools/validation/schema-diff.cjs",
     "test:recovery": "node tools/validation/recovery-diff.cjs",
+    "test:config": "node tools/validation/config-diff.mjs",
+    "test:dataset": "node tools/validation/dataset-diff.mjs",
     "check": "node --check bin/gallery.cjs",
     "check:electron": "node --check src/desktop/main.js && node --check src/desktop/preload.js",
     "prepare:test": "node tools/validation/prepare.cjs",

@@ -35,6 +35,8 @@ Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，�
 
 后端差分用 `test:protocol`、`test:schema`、`test:reader`、`test:recovery`。GALLERY_NODE_REFERENCE_ROOT 指向独立冻结的 Node 构建，GALLERY_TEST_ROOT 指向本轮新的合成结果根；Reader 场景另以 GALLERY_SCANNER 指定已验证的扫描器。每次都生成新实例，不覆盖旧结果；附加 `-- --race` 可让黄金差分本身启用 race。范围和判断见[后端差分定义](../../validations/scene-backend_parity/validation.md)。
 
+配置与数据集组装的独立批次使用 `test:config`、`test:dataset`，同样附加 `-- --race`；输入放 Scratches，留存摘要放 Artifacts，见[组装验证定义](../../validations/scene-dataset/validation.md)。不需要开启 HTTP 服务，也不自动读取默认实例。
+
 ## 交付
 
 合成评审工具的根与资源分别配置在忽略的 `tools/demo/paths.local.json`（[示例](../../tools/demo/paths.example.json)）。受保护运行时只读该合成根内的资源；不要把真实源设为 root。既有完整／空实例原样保留，不在源码中重建阶段目录。

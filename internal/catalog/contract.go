@@ -3,11 +3,14 @@ package catalog
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 
 	"github.com/RecRivenVI/Gallery-Legacy/api"
 )
+
+var ErrSourceBindingMismatch = errors.New("SOURCE_BINDING_MISMATCH")
 
 type ContractOptions struct {
 	Live            bool              `json:"allowLive"`
@@ -106,7 +109,7 @@ func verifyRegistry(ctx context.Context, db *sql.Tx, def api.Catalog, fingerprin
 			return fmt.Errorf("catalog_contract_stale_version")
 		}
 		if options.Sources != nil && rootKey(options.Sources[p.ID]) != p.Key {
-			return fmt.Errorf("SOURCE_BINDING_MISMATCH")
+			return ErrSourceBindingMismatch
 		}
 	}
 	return nil

@@ -29,14 +29,15 @@ func ReadLiveState(ctx context.Context, db *sql.DB) (LiveState, error) {
 		return state, err
 	}
 	defer tx.Rollback()
-	state, err = readLiveState(ctx, tx)
+	state, err = ReadLiveSnapshot(ctx, tx)
 	if err != nil {
 		return state, err
 	}
 	return state, tx.Commit()
 }
 
-func readLiveState(ctx context.Context, tx *sql.Tx) (LiveState, error) {
+// ReadLiveSnapshot reads revisions in the same transaction as the response DTO.
+func ReadLiveSnapshot(ctx context.Context, tx *sql.Tx) (LiveState, error) {
 	var state LiveState
 	def, err := api.LoadCatalog()
 	if err != nil {
