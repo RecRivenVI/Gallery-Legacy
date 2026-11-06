@@ -64,7 +64,7 @@ func (l *runtimeLog) rotate(file string) error {
 			}
 		}
 		if _, err := os.Lstat(dest); err == nil {
-			if err = instance.Recycle(dest); err != nil {
+			if err = instance.RemoveOwned(dest); err != nil {
 				return err
 			}
 		} else if !os.IsNotExist(err) {

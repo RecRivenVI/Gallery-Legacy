@@ -1,13 +1,27 @@
 Gallery
 
-原创代码使用 LICENSE 中的 GNU AGPL v3。
-第三方依赖按 package-lock.json 和 go.sum 中的来源及各自许可使用。
+Miuix Web font loader
+Copyright 2026, compose-miuix-ui contributors
+SPDX-License-Identifier: Apache-2.0
+Source: compose-miuix-ui/miuix, a1ce560e32fce2a5b4b66cc5fc20c087ac0e9f18,
+example/shared/src/webMain/kotlin/webfont.
+The font-family factory exposes local preloading and optional script weights;
+font URL and Latin preload arguments support the bundled official font files.
+License: resources/licenses/miuix-webfont-Apache-2.0.txt.
+
+原创代码：AGPL-3.0-or-later，见 LICENSE。
+Go 依赖版本与来源见 go.mod/go.sum；Rust 见 src-tauri/Cargo.toml 与 Cargo.lock；Kotlin/Compose 见 Gradle 声明。
+Compose Multiplatform、Kotlin、Skiko：JetBrains，Apache-2.0；Skia：Google，BSD-style，分发时保留上游许可。
+Tauri：MIT 或 Apache-2.0；Rust 依赖按各自许可分发。
+Fluent System Icons 新增个人阅读图标来源与固定摘要：tools/icons/personal.lock.json（源码）；随应用使用相同 MIT 许可。
 Fluent System Icons：Copyright (c) 2020 Microsoft Corporation，MIT。
-许可原文：public/platform/fluent-icons.LICENSE。
-CanvasKit：Google / Skia，BSD-style license，见依赖包的许可文件。
-Gorilla WebSocket：Copyright (c) 2013 The Gorilla WebSocket Authors，BSD-2-Clause。
-许可原文：https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE。
-go-winio：Copyright (c) 2015 Microsoft，MIT。
-许可原文：https://github.com/microsoft/go-winio/blob/v0.6.2/LICENSE。
-MiSans、Noto Color Emoji 等字体由外部资源目录提供，不随本仓库分发。
-打包时保留外部资源所附 licenses 目录；重新分发前核对相应许可。
+许可原文：resources/licenses/Fluent-System-Icons-MIT.txt。
+Gorilla WebSocket：BSD-2-Clause，https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE。
+go-winio：MIT，https://github.com/microsoft/go-winio/blob/v0.6.2/LICENSE。
+Venera source 模板保留原协议与标识，位于 ui/src/wasmJsMain/resources/venera/source.js。
+本应用使用 MiSans 字体。官方 CSS 与原始 WOFF2 子集的来源和 SHA256 见 resources/misans-cdn/SHA256.json；保留版权与 resources/misans/official-license.pdf。
+九种小语种 MiSans 可变字体来自官方 MiSans Global 包，原样复制。Noto Color Emoji 依 SIL OFL 1.1，原文见 resources/licenses/NotoColorEmoji-OFL.txt。
+不使用第三方自制拉丁子集，不自行制作字体子集或转换格式。
+
+图像缩放使用 libvips 官方 Windows web 动态库构建，LGPL 原文、依赖许可说明与固定来源见 resources/licenses/libvips/。DLL 可替换，不将它们静态链接进原创代码。
+ThumbHash Go 实现：Copyright (c) 2023 Nicolas Martyanoff <nicolas@n16f.net>，ISC，许可原文见 resources/licenses/ThumbHash-ISC.txt；依赖版本来自 go.mod。

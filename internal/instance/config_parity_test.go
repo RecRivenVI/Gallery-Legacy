@@ -11,7 +11,7 @@ import (
 func TestNodeConfiguration(t *testing.T) {
 	file := os.Getenv("GALLERY_CONFIG_GOLDEN")
 	if file == "" {
-		t.Skip("run npm run test:config for frozen Node differential")
+		t.Skip("set GALLERY_CONFIG_GOLDEN from the frozen reference; see validations/scene-backend_parity")
 	}
 	data, err := os.ReadFile(file)
 	if err != nil {

@@ -1,45 +1,44 @@
 # Gallery
 
-只读整理固定九平台的本地作品，浏览、搜索并阅读图片、动图和视频。Go 候选接入读取、媒体、扫描和本机管理，CanvasKit 网页与 Electron 四页管理端保持；Node 旧后端仍保留作迁移对照，在用版本未切换。
+将固定九平台的本地作品只读整理成画廊，浏览、搜索并阅读图片、动图和视频。业务由 Go 实现，桌面管理器采用 Tauri，两端界面采用 Kotlin Compose/WasmJS，维持既有设计，不使用 Miuix。
 
 ## 支持的平台
 
-当前验收目标为 Windows x64。九平台及产品边界见[项目范围](documents/project/overview-gallery.md)。真实源始终只读，实例与源码分离。
+当前构建与验收目标为 Windows x64、WebView2 和支持 WasmGC 的现代浏览器。其他系统未验收。产品边界见[项目范围](documents/project/overview-gallery.md)。
 
 ## 快速开始
 
-Node、Go 与依赖要求分别以 [package.json](package.json)、[go.mod](go.mod) 和[依赖说明](documents/reference/dependency-runtime.md)为准。
+开发环境、字体准备和工具要求见[依赖说明](documents/reference/dependency-runtime.md)。
 
 ```powershell
 npm ci
 ```
 
-参照 [本机路径示例](tools/build/paths.example.json)填写被忽略的 `tools/build/paths.local.json`，指定 Go、仓库外输出及合法字体资源。浏览器验证需 Playwright Chromium。
+根据[本机路径示例](tools/build/paths.example.json)填写被忽略的 `tools/build/paths.local.json`。需要 JDK、Go、Rust/MSVC、WebView2，以及合法的 MiSans Global 和 Noto Color Emoji 资源。构建输出必须在仓库外。
 
 ```powershell
-npm run build
+npm run build -- -Output <外部构建目录>
 ```
 
-将[实例示例](src/config/runtime.example.json)复制到源码外，填写九平台目录、实例路径及独立端口；日常 Go 扫描配置使用 `liveUpdates: true`。
+根据[实例示例](api/runtime.example.json)在源码外准备实例配置；字段定义见[实例配置](documents/reference/configuration-instance.md)。
 
 ```powershell
-npm start -- --config <实例配置文件>
+npm start -- -Product <外部构建目录>/Gallery -Config <实例配置文件>
 ```
 
-管理端“更新图库”执行增量；“全部重新扫描…”执行全量。画廊和扫描从管理器启动；关闭窗口收起到托盘，退出管理器会正常结束扫描和服务。可复现合成准备与测试见[开发工作流](documents/development/workflow-development.md)。构建不安装、不替换在用实例。
+画廊服务和扫描由管理器启动；关闭窗口收起到托盘，真正退出会正常结束任务和服务。构建不会替换在用安装。
 
 ## 文档
 
-- [使用管理端](documents/usage/guide-manager.md)
+- [产品总览与功能状态](documents/project/overview-gallery.md)
+- [使用管理器](documents/usage/guide-manager.md)
+- [浏览画廊](documents/usage/guide-gallery.md)
+- [构建与验证](documents/development/workflow-development.md)
 - [运行架构](documents/design/architecture-runtime.md)
-- [Go 读取组装与验收范围](documents/design/architecture-dataset.md)
-- [Go HTTP 接入与验收范围](documents/design/architecture-http_read.md)
-- [Tauri／WasmJS 技术评估](documents/research/survey-tauri_wasmjs.md)与[底层栈范围补充](documents/research/survey-wasmjs_stack_scope.md)
-- [实例配置](documents/reference/configuration-instance.md)
-- [当前状态](documents/project/status-repository_standard.md)
-- [技术债与未验证边界](documents/project/debt-runtime.md)
-- [冻结设计依据](documents/design/overview-ui_baseline.md)
+- [完整迁移决定](documents/design/adr-9-full_stack_migration.md)
+- [当前进度](documents/project/status-repository_standard.md)
+- [冻结设计](documents/design/overview-ui_baseline.md)与[用户后续决定](documents/design/adr-1-user_design_decisions.md)
 
 ## 许可
 
-使用 [AGPL-3.0-or-later](LICENSE)。第三方材料说明见 [NOTICE](NOTICE)。
+原创代码采用 [AGPL-3.0-or-later](LICENSE)。第三方说明见 [NOTICE](NOTICE)。官方 MiSans 子集随应用分发，运行时不访问外部字体 CDN；字体原文件和许可一同打包。

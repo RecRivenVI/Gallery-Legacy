@@ -11,6 +11,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/indexing"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/physical"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/recovery"
 )
 
@@ -40,13 +41,13 @@ func runPipeline(ctx context.Context, c instance.Config, in ScanInput, ids []str
 		scanFile := filepath.Join(c.StateRoot, "scanner.json")
 		if err == nil {
 			scanFile = filepath.Join(workingRoot, "state/scanner.json")
-			err = instance.WriteJSON(scanFile, library.Config{InstanceRoot: workingRoot, Database: filepath.Join(workingRoot, "live/catalog.sqlite"), Sources: c.Sources, TestOnly: true, ListingSource: "filesystem"})
+			err = instance.WriteJSON(scanFile, library.Config{InstanceRoot: workingRoot, Database: filepath.Join(workingRoot, "live/catalog.sqlite"), Sources: c.Sources, TestOnly: true, ListingSource: "auto", AllowNative: in.AllowNative})
 		}
 		if err == nil {
 			var config library.Config
 			config, err = library.Load(scanFile)
 			if err == nil {
-				p := indexing.Pipeline{Config: config, Mode: in.Mode, AuthorDirectoryName: author, Delay: delay, Emit: persist}
+				p := indexing.Pipeline{Config: config, Mode: in.Mode, AuthorDirectoryName: author, Delay: delay, Emit: persist, PhysicalOrder: physical.SeekOrder}
 				err = p.Run(ctx, ids)
 			}
 		}

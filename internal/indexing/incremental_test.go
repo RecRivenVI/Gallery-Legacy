@@ -3,6 +3,7 @@ package indexing
 import (
 	"context"
 	"database/sql"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/catalog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"testing"
@@ -15,7 +16,8 @@ func TestIncrementalReuseRequiresCommittedCompatiblePhysicalWork(t *testing.T) {
 	}
 	defer db.Close()
 	_, e = db.Exec(`CREATE TABLE live_scan_works(platform_id TEXT,relative_path_key TEXT,fingerprint TEXT,adapter_version INTEGER,authority_at_ms INTEGER,authority_source_id TEXT);
-	CREATE TABLE works(platform_id TEXT,relative_path_key TEXT,metadata_state TEXT,adapter_version INTEGER,relative_path TEXT,filesystem_files_state TEXT,filesystem_state TEXT);`)
+	CREATE TABLE works(platform_id TEXT,relative_path_key TEXT,metadata_state TEXT,adapter_version INTEGER,relative_path TEXT,filesystem_files_state TEXT,filesystem_state TEXT);
+	CREATE TABLE live_scan_work_profiles(platform_id TEXT,relative_path_key TEXT,projection BLOB);`)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -27,7 +29,7 @@ func TestIncrementalReuseRequiresCommittedCompatiblePhysicalWork(t *testing.T) {
 		want                         bool
 	}{
 		{"current", processedSignature("pixiv", "hash"), "valid", "complete", metadata.Versions["pixiv"], true},
-		{"legacy-same-contract", "hash", "valid", "complete", metadata.Versions["pixiv"], true},
+		{"legacy-needs-projection", "hash", "valid", "complete", metadata.Versions["pixiv"], false},
 		{"future-contract", "go2:hash", "valid", "complete", metadata.Versions["pixiv"], false},
 		{"changed-listing", "different", "valid", "complete", metadata.Versions["pixiv"], false},
 		{"old-adapter", processedSignature("pixiv", "hash"), "valid", "complete", 0, false},
@@ -37,13 +39,20 @@ func TestIncrementalReuseRequiresCommittedCompatiblePhysicalWork(t *testing.T) {
 		{"missing-is-physical", processedSignature("pixiv", "hash"), "missing", "complete", metadata.Versions["pixiv"], true},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			if _, e = db.Exec("DELETE FROM works;DELETE FROM live_scan_works"); e != nil {
+			if _, e = db.Exec("DELETE FROM works;DELETE FROM live_scan_works;DELETE FROM live_scan_work_profiles"); e != nil {
 				t.Fatal(e)
 			}
 			if _, e = db.Exec("INSERT INTO works VALUES (?,?,?,?,?,?,?)", "pixiv", w.Key, c.state, c.adapter, w.Relative, c.physical, "present"); e != nil {
 				t.Fatal(e)
 			}
 			if _, e = db.Exec("INSERT INTO live_scan_works VALUES (?,?,?,?,?,?)", "pixiv", w.Key, c.stamp, c.adapter, 42, "900719925474099312345"); e != nil {
+				t.Fatal(e)
+			}
+			blob, err := catalog.EncodeAuthority(catalog.PreparedWork{Platform: "pixiv", AuthorKey: "synthetic", Key: w.Key, AuthorityID: "900719925474099312345", AuthorityTime: 42, Qualified: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, e = db.Exec("INSERT INTO live_scan_work_profiles VALUES (?,?,?)", "pixiv", w.Key, blob); e != nil {
 				t.Fatal(e)
 			}
 			p, ok, e := committedWork(ctx, db, "pixiv", w, "hash")

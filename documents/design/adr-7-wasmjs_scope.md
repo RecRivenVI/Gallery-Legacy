@@ -2,7 +2,7 @@
 
 ## 状态
 
-已接受。
+已被 adr-9-full_stack_migration 取代
 
 ## 背景
 

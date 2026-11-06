@@ -24,6 +24,8 @@ import (
 // Access history is not authorization: it can refuse a blocked public client,
 // but no address (including localhost) grants management operations.
 type access struct {
+	rule           banRule
+	windows        map[string]*accessWindow
 	mu             sync.Mutex
 	file, id       string
 	enabled, dirty bool
@@ -96,7 +98,7 @@ func validDays(value any, day int64) reading.Row {
 	return result
 }
 func newAccess(config instance.Config, now func() time.Time) (*access, error) {
-	a := &access{file: filepath.Join(config.StateRoot, "access-history.json"), id: config.InstanceID, enabled: true, clients: []reading.Row{}, events: []reading.Row{}, now: now, stop: make(chan struct{}), done: make(chan struct{})}
+	a := &access{rule: defaultBanRule(), windows: map[string]*accessWindow{}, file: filepath.Join(config.StateRoot, "access-history.json"), id: config.InstanceID, enabled: true, clients: []reading.Row{}, events: []reading.Row{}, now: now, stop: make(chan struct{}), done: make(chan struct{})}
 	if err := library.NoLinks(a.file); err != nil {
 		return nil, err
 	}
@@ -105,12 +107,16 @@ func newAccess(config instance.Config, now func() time.Time) (*access, error) {
 		return nil, err
 	}
 	var saved struct {
+		AutoBan         *banRule `json:"autoBan"`
 		Version         int
 		InstanceID      string
 		Enabled         *bool
 		Clients, Events []reading.Row
 	}
 	if json.Unmarshal(b, &saved) == nil && saved.Version == 1 && saved.InstanceID == a.id {
+		if saved.AutoBan != nil {
+			a.rule = *saved.AutoBan
+		}
 		if saved.Enabled != nil {
 			a.enabled = *saved.Enabled
 		}
@@ -119,7 +125,7 @@ func newAccess(config instance.Config, now func() time.Time) (*access, error) {
 			if !ok || len(ip) > 64 || c["id"] != clientID(a.id, ip) || count(c["lastSeenAtMs"]) < a.now().Add(-30*24*time.Hour).UnixMilli() {
 				continue
 			}
-			c = reading.Row{"id": c["id"], "address": ip, "agent": c["agent"], "blocked": c["blocked"], "days": c["days"], "requests": c["requests"], "errors": c["errors"], "bytes": c["bytes"], "lastSeenAtMs": c["lastSeenAtMs"]}
+			c = reading.Row{"id": c["id"], "address": ip, "agent": c["agent"], "blocked": c["blocked"], "blockedUntilMs": count(c["blockedUntilMs"]), "days": c["days"], "requests": c["requests"], "errors": c["errors"], "bytes": c["bytes"], "lastSeenAtMs": c["lastSeenAtMs"]}
 			c["local"], c["active"] = local(ip), int64(0)
 			c["blocked"] = !local(ip) && c["blocked"] == true
 			if !slices.Contains([]string{"Browser", "Venera", "Other"}, stringValue(c["agent"])) {
@@ -206,6 +212,7 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 			if old < 0 {
 				return false, func(int, int64) {}
 			}
+			delete(a.windows, stringValue(a.clients[old]["id"]))
 			a.clients = slices.Delete(a.clients, old, old+1)
 		}
 		agent := "Other"
@@ -218,6 +225,11 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 		client = reading.Row{"id": id, "address": ip, "local": local(ip), "agent": agent, "requests": int64(0), "errors": int64(0), "active": int64(0), "bytes": int64(0), "blocked": false, "lastSeenAtMs": int64(0), "days": reading.Row{}}
 		a.clients = append(a.clients, client)
 	}
+	if until := count(client["blockedUntilMs"]); until > 0 && until <= a.now().UnixMilli() {
+		client["blocked"] = false
+		client["blockedUntilMs"] = int64(0)
+	}
+	a.checkBan(client, false)
 	day := strconv.FormatInt(today(a.now()), 10)
 	days := client["days"].(map[string]any)
 	counter, ok := days[day].(map[string]any)
@@ -236,6 +248,9 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 		defer a.mu.Unlock()
 		client["active"] = count(client["active"]) - 1
 		client["lastSeenAtMs"] = a.now().UnixMilli()
+		if status >= 400 && status != 403 {
+			a.checkBan(client, true)
+		}
 		if status >= 400 {
 			client["errors"] = count(client["errors"]) + 1
 			counter["errors"] = count(counter["errors"]) + 1
@@ -256,6 +271,7 @@ func (a *access) flush() error {
 		c["days"] = validDays(c["days"], day)
 		if count(c["active"]) == 0 && count(c["lastSeenAtMs"]) < a.now().Add(-30*24*time.Hour).UnixMilli() {
 			a.dirty = true
+			delete(a.windows, stringValue(c["id"]))
 			return true
 		}
 		return false
@@ -281,7 +297,7 @@ func (a *access) flush() error {
 		row["active"] = 0
 		clients = append(clients, row)
 	}
-	if err := instance.WriteJSON(a.file, reading.Row{"version": 1, "instanceId": a.id, "enabled": a.enabled, "clients": clients, "events": a.events}); err != nil {
+	if err := instance.WriteJSON(a.file, reading.Row{"version": 1, "instanceId": a.id, "enabled": a.enabled, "autoBan": a.rule, "clients": clients, "events": a.events}); err != nil {
 		return err
 	}
 	a.dirty = false

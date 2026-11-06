@@ -9,7 +9,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/RecRivenVI/Gallery-Legacy/api"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/catalog"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 
 	_ "modernc.org/sqlite"
 )
@@ -17,15 +20,22 @@ import (
 type Row = map[string]any
 
 type Reader struct {
-	DB    *sql.DB
-	Epoch string
-	Live  bool
+	DB           *sql.DB
+	Epoch        string
+	Live         bool
+	Enriched     bool
+	legacySearch bool
+	PersonalFile string
 }
 type View struct {
-	tx    *sql.Tx
-	ctx   context.Context
-	epoch string
-	live  bool
+	tx           *sql.Tx
+	ctx          context.Context
+	epoch        string
+	live         bool
+	enriched     bool
+	legacySearch bool
+	personal     bool
+	accountID    string
 }
 
 // Open verifies the format of an existing file. The dataset owner additionally
@@ -56,7 +66,12 @@ func OpenBound(ctx context.Context, file, epoch string, live bool, sources map[s
 		db.Close()
 		return nil, err
 	}
-	return &Reader{DB: db, Epoch: epoch, Live: live}, nil
+	var enriched int
+	if err = db.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE name='work_details' AND type='table'").Scan(&enriched); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("read enrichment version: %w", err)
+	}
+	return &Reader{DB: db, Epoch: epoch, Live: live, Enriched: enriched == 1}, nil
 }
 func (r *Reader) Close() error { return r.DB.Close() }
 
@@ -78,6 +93,20 @@ func OpenStaticBound(ctx context.Context, file, search, epoch string, sources ma
 		reader.Close()
 		return nil, fmt.Errorf("attach readonly search: %w", err)
 	}
+	var readableColumn int
+	if err = reader.DB.QueryRowContext(ctx, "SELECT count(*) FROM pragma_table_info('work_sort','search') WHERE name='has_readable'").Scan(&readableColumn); err != nil {
+		reader.Close()
+		return nil, fmt.Errorf("read search projection: %w", err)
+	}
+	if readableColumn == 0 {
+		// Only older immutable recovery files need this connection-local view.
+		_, err = reader.DB.ExecContext(ctx, `CREATE TEMP VIEW gallery_work_sort AS SELECT s.*,EXISTS(SELECT 1 FROM main.media m WHERE m.work_id=s.work_id AND gallery_visible_media(m.filesystem_file_name,EXISTS(SELECT 1 FROM main.field_sources fs WHERE fs.work_id=s.work_id AND fs.field='media.extractedPreviews'))=1) AS has_readable FROM search.work_sort s`)
+		if err != nil {
+			reader.Close()
+			return nil, fmt.Errorf("project immutable search: %w", err)
+		}
+		reader.legacySearch = true
+	}
 	return reader, nil
 }
 
@@ -86,12 +115,33 @@ func (v *View) LiveState() (catalog.LiveState, error) {
 }
 
 func (r *Reader) Snapshot(ctx context.Context, fn func(*View) (any, error)) (any, error) {
-	tx, err := r.DB.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	connection, err := r.DB.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire catalog reader: %w", err)
+	}
+	defer connection.Close()
+	if r.PersonalFile != "" {
+		var attached int
+		if err = connection.QueryRowContext(ctx, "SELECT count(*) FROM pragma_database_list WHERE name='personal'").Scan(&attached); err != nil {
+			return nil, fmt.Errorf("inspect personal attachment: %w", err)
+		}
+		if attached == 0 {
+			u := url.URL{Scheme: "file", Path: "/" + strings.ReplaceAll(r.PersonalFile, "\\", "/")}
+			values := u.Query()
+			values.Set("mode", "ro")
+			u.RawQuery = values.Encode()
+			if _, err = connection.ExecContext(ctx, "ATTACH DATABASE ? AS personal", u.String()); err != nil {
+				return nil, fmt.Errorf("attach personal reader: %w", err)
+			}
+		}
+	}
+	tx, err := connection.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	value, err := fn(&View{tx: tx, ctx: ctx, epoch: r.Epoch, live: r.Live})
+	accountID, _ := ctx.Value(accountKey{}).(string)
+	value, err := fn(&View{tx: tx, ctx: ctx, epoch: r.Epoch, live: r.Live, enriched: r.Enriched, legacySearch: r.legacySearch, personal: r.PersonalFile != "", accountID: accountID})
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +221,14 @@ func (v *View) mediaDTO(m Row, previews bool) (Row, error) {
 	address := func(kind string) string {
 		return "/api/v1/" + kind + "/" + id(m["media_id"]) + "?g=" + component(v.epoch) + suffix
 	}
-	return Row{"id": id(m["media_id"]), "fileName": m["filesystem_file_name"], "relativePath": slash(m["relative_path"]), "type": m["filesystem_media_type"], "size": m["filesystem_size"], "durationMs": m["duration_ms"], "url": address("media"), "thumbnailUrl": address("thumbnails"), "role": role, "defaultVisible": visible}, nil
+	thumbnails := Row{}
+	for _, tier := range []string{"s", "m", "l"} {
+		fingerprint := imaging.Key(text(identity["platform_id"]), text(identity["work_relative_path"])+"/"+text(m["relative_path"]), m["filesystem_size"].(int64), m["filesystem_mtime_ns"].(int64), tier)
+		thumbnails[tier] = address("thumbnails") + "&tier=" + tier + "&v=" + fingerprint
+	}
+	result := (api.MediaSummary{ID: id(m["media_id"]), FileName: text(m["filesystem_file_name"]), RelativePath: slash(m["relative_path"]), Type: text(m["filesystem_media_type"]), Size: m["filesystem_size"].(int64), DurationMs: m["duration_ms"], URL: address("media"), ThumbnailURL: thumbnails["s"].(string), Role: role, DefaultVisible: visible}).Row()
+	result["thumbnails"] = thumbnails
+	return result, nil
 }
 
 func (v *View) Works(ids []int64, mediaType string) ([]Row, error) {
@@ -195,7 +252,11 @@ func (v *View) Works(ids []int64, mediaType string) ([]Row, error) {
 		for _, tag := range tags {
 			labels = append(labels, Row{"id": id(tag["tag_id"]), "label": tag["display_value"]})
 		}
-		media, err := v.rows("SELECT m.* FROM media m WHERE work_id=? AND NOT EXISTS(SELECT 1 FROM field_sources f WHERE f.work_id=m.work_id AND f.field='media.coverDisabled')", workID)
+		mediaQuery := "SELECT m.* FROM media m WHERE work_id=? AND NOT EXISTS(SELECT 1 FROM field_sources f WHERE f.work_id=m.work_id AND f.field='media.coverDisabled')"
+		if w["cover_media_id"] != nil && mediaType != "video" {
+			mediaQuery = "SELECT m.* FROM media m WHERE work_id=? AND m.media_id=" + id(w["cover_media_id"])
+		}
+		media, err := v.rows(mediaQuery, workID)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +280,27 @@ func (v *View) Works(ids []int64, mediaType string) ([]Row, error) {
 		if source != nil && text(source["source_text"]) != "" {
 			sourceURL = source["source_text"]
 		}
-		result = append(result, Row{"id": id(w["work_id"]), "stableId": publicPath(text(w["platform_id"]), text(w["relative_path"])), "platformId": w["platform_id"], "authorId": id(w["author_id"]), "sourceWorkId": w["source_work_id"], "sourceUrl": sourceURL, "title": w["title"], "authorName": w["author_name"], "publishedAtMs": w["published_at_ms"], "sortAtMs": w["sort_at_ms"], "metadataState": w["metadata_state"], "enrichmentState": w["enrichment_state"], "flags": Row{"adult": flag(w["is_adult"]), "aiGenerated": flag(w["is_ai_generated"])}, "counts": Row{"images": w["image_count"], "videos": w["video_count"], "media": w["media_count"]}, "tags": labels, "cover": cover})
+		summary := (api.WorkSummary{ID: id(w["work_id"]), StableID: publicPath(text(w["platform_id"]), text(w["relative_path"])), PlatformID: text(w["platform_id"]), AuthorID: id(w["author_id"]), SourceWorkID: w["source_work_id"], SourceURL: sourceURL, Title: text(w["title"]), AuthorName: text(w["author_name"]), PublishedAtMs: w["published_at_ms"], SortAtMs: w["sort_at_ms"], MetadataState: text(w["metadata_state"]), EnrichmentState: text(w["enrichment_state"]), Flags: Row{"adult": flag(w["is_adult"]), "aiGenerated": flag(w["is_ai_generated"]), "paid": flag(w["is_paid"])}, Counts: Row{"images": w["image_count"], "videos": w["video_count"], "media": w["media_count"]}, Tags: labels, Cover: cover}).Row()
+		details, err := v.workDetails(workID)
+		if err != nil {
+			return nil, err
+		}
+		readable, err := v.ReadableCount(workID)
+		if err != nil {
+			return nil, err
+		}
+		summary["counts"].(map[string]any)["media"] = readable
+		summary["details"] = details
+		summary["personal"], err = v.personalState(workID)
+		if err != nil {
+			return nil, err
+		}
+		summary["language"] = text(w["language"])
+		summary["metrics"], err = v.row("SELECT likes,replies,comments,reposts,views,bookmarks FROM work_metrics WHERE work_id=?", workID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, summary)
 	}
 	return result, nil
 }
@@ -252,14 +333,21 @@ func (v *View) Work(workID int64) (Row, error) {
 		}
 		pages = append(pages, page)
 	}
-	description, err := v.row("SELECT source_format,source_text FROM work_text WHERE work_id=?", workID)
+	description, err := v.row("SELECT source_format,source_text,plain_text FROM work_text WHERE work_id=?", workID)
 	if err != nil {
 		return nil, err
 	}
 	item["media"] = pages
 	item["description"] = nil
 	if description != nil {
-		item["description"] = Row{"format": description["source_format"], "text": description["source_text"]}
+		plain := description["plain_text"]
+		if plain == nil {
+			plain = metadata.PlainText(text(description["source_text"]), text(description["source_format"]))
+		}
+		item["description"] = (api.TextSource{Format: "plain", Text: text(plain)}).Row()
+	}
+	if err = v.workExtras(workID, item); err != nil {
+		return nil, err
 	}
 	return item, nil
 }
@@ -294,7 +382,7 @@ func (v *View) Authors(ids []int64) ([]Row, error) {
 		if profile != nil && text(profile["profile_url"]) != "" {
 			source = profile["profile_url"]
 		}
-		items = append(items, Row{"id": id(a["author_id"]), "stableId": publicPath(text(a["platform_id"]), text(a["relative_path"])), "platformId": a["platform_id"], "sourceAuthorId": a["source_author_id"], "name": a["display_name"], "handle": a["handle"], "workCount": a["work_count"], "latestAtMs": a["latest_work_at_ms"], "profileState": a["profile_state"], "sourceUrl": source, "cover": cover})
+		items = append(items, (api.AuthorSummary{ID: id(a["author_id"]), StableID: publicPath(text(a["platform_id"]), text(a["relative_path"])), PlatformID: text(a["platform_id"]), SourceAuthorID: a["source_author_id"], Name: text(a["display_name"]), Handle: a["handle"], WorkCount: a["work_count"].(int64), LatestAtMs: a["latest_work_at_ms"], ProfileState: text(a["profile_state"]), SourceURL: source, Cover: cover}).Row())
 	}
 	return items, nil
 }

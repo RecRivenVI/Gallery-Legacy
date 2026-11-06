@@ -5,13 +5,8 @@
   "required": ["instanceRoot", "sources"],
   "additionalProperties": false,
   "properties": {
-    "everything": {
-      "type": ["object", "null"],
-      "properties": {
-        "endpoint": { "type": "string", "default": "http://127.0.0.1:54321/" }
-      },
-      "additionalProperties": false
-    },
+    "ffmpegPath": { "type": "string", "default": "ffmpeg" },
+    "thumbnailCacheBytes": { "type": "integer", "minimum": 0, "default": 21474836480 },
     "liveUpdates": { "type": "boolean", "default": false },
     "deployment": {
       "enum": ["development", "staging", "production"],
@@ -97,5 +92,5 @@
     "reportsRoot": { "type": "string" },
     "desktopDataRoot": { "type": "string" }
   },
-  "$comment": "Native absolute paths, physical aliases, overlap and source/generation safety are checked by src/instance/config.js and internal/instance; null example values intentionally do not validate until configured."
+  "$comment": "Native absolute paths, physical aliases, overlap and source/generation safety are checked by internal/instance. Example placeholders must be replaced by explicit configured paths."
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/RecRivenVI/Gallery-Legacy/api"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/searchquery"
 )
 
 type Error struct {
@@ -50,6 +51,9 @@ type Query struct {
 	Revision   *int64            `json:"revision"`
 	Cursor     map[string]string `json:"cursor,omitempty"`
 	Key        string            `json:"key"`
+	Terms      []api.SearchTerm  `json:"terms"`
+	Platforms  []string          `json:"platforms"`
+	Filters    url.Values        `json:"filters"`
 }
 
 func Identifier(value string) (int64, error) {
@@ -102,6 +106,7 @@ func stringify(value any) ([]byte, error) {
 func ParseQuery(params url.Values, kind, generation string, revision *int64) (Query, error) {
 	var result Query
 	allowed := []string{"platform", "author", "tag", "q", "sort", "mediaType", "hideEmpty", "pageSize", "page", "cursor", "g", "rev"}
+	allowed = append(allowed, filterKeys...)
 	for key, values := range params {
 		if !slices.Contains(allowed, key) || len(values) != 1 {
 			return result, invalid("INVALID_PARAMETER")
@@ -133,7 +138,7 @@ func ParseQuery(params url.Values, kind, generation string, revision *int64) (Qu
 	if kind == "tags" && params.Has("sort") {
 		return result, invalid("INVALID_PARAMETER")
 	}
-	if utf8.RuneCountInString(q) > 256 || (tag != nil && (*tag == "" || len(utf16.Encode([]rune(*tag))) > 512)) {
+	if utf8.RuneCountInString(q) > 2048 || (tag != nil && (*tag == "" || len(utf16.Encode([]rune(*tag))) > 512)) {
 		return result, invalid("QUERY_TOO_LONG")
 	}
 	contract, err := api.Load()
@@ -203,6 +208,33 @@ func ParseQuery(params url.Values, kind, generation string, revision *int64) (Qu
 	}
 	hash := sha256.Sum256(keyBytes)
 	result = Query{AuthorID: authorID, Text: q, Tag: tag, Sort: sort, MediaType: media, HideEmpty: params.Get("hideEmpty") == "1", Limit: size, Page: page, PageSize: size, Revision: revision, Key: hex.EncodeToString(hash[:])}
+	result.Terms = searchquery.Parse(q)
+	result.Platforms = searchquery.Selected(result.Terms)
+	result.Filters = url.Values{}
+	for _, k := range filterKeys {
+		if params.Has(k) {
+			result.Filters.Set(k, params.Get(k))
+		}
+	}
+	if len(result.Platforms) == 0 && params.Get("platforms") != "" {
+		for _, p := range strings.Split(params.Get("platforms"), ",") {
+			if searchquery.Platform(p) == "" {
+				return result, invalid("INVALID_PLATFORM")
+			}
+			result.Platforms = append(result.Platforms, searchquery.Platform(p))
+		}
+	}
+	if kind != "tags" && len(result.Platforms) > 1 && !HasSearchCondition(result) {
+		return result, invalid("SEARCH_CONDITION_REQUIRED")
+	}
+	if err = validateFilters(result.Filters); err != nil {
+		return result, err
+	}
+	if len(result.Filters) > 0 {
+		keyBytes, _ = stringify([]any{result.Key, result.Filters})
+		hash = sha256.Sum256(keyBytes)
+		result.Key = hex.EncodeToString(hash[:])
+	}
 	if platform != "" {
 		result.PlatformID = &platform
 	}
@@ -269,7 +301,7 @@ func decodeCursor(value, key, kind, sort string, revision *int64) (map[string]st
 	if !ok || len(utf16.Encode([]rune(value))) > 20000 {
 		return nil, invalid("INVALID_CURSOR")
 	}
-	if strings.HasPrefix(sort, "date_") || strings.HasPrefix(sort, "latest_") || strings.HasPrefix(sort, "posts_") {
+	if strings.HasPrefix(sort, "date_") || strings.HasPrefix(sort, "latest_") || strings.HasPrefix(sort, "posts_") || slices.Contains([]string{"bookmarks_desc", "views_desc", "likes_desc", "rating_desc", "favorite_desc"}, sort) {
 		if !signedDigits.MatchString(value) {
 			return nil, invalid("INVALID_CURSOR")
 		}

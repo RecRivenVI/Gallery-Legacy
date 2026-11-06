@@ -41,7 +41,7 @@ func ManagerIdentity() (*control.Identity, error) {
 		return nil, fmt.Errorf("MANAGER_REQUIRED")
 	}
 	name := strings.ToLower(filepath.Base(id.Exe))
-	if name != "electron.exe" && name != "gallery.exe" {
+	if name != "gallery.exe" {
 		return nil, fmt.Errorf("MANAGER_REQUIRED")
 	}
 	info, err := os.Stdin.Stat()
@@ -91,7 +91,11 @@ func (s *Session) stop() (any, error) {
 func (s *Session) command(command, op string, input Row) (any, error) {
 	switch command {
 	case "connection":
-		return Connection(s.config), nil
+		c, err := instance.Load(s.options.ConfigFile)
+		if err != nil {
+			return nil, err
+		}
+		return Connection(c), nil
 	case "start":
 		return s.start()
 	case "stop":

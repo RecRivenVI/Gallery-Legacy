@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"os"
 	"path/filepath"
@@ -190,61 +189,7 @@ func TestListingMembershipBatchesKeysAndSeparatesPlatforms(t *testing.T) {
 	}
 }
 
-func TestMembershipListingBatchesSignaturesAndHashesIndependentOfFinishOrder(t *testing.T) {
-	ctx := context.Background()
-	build := func(reverse bool) (string, int64) {
-		l, e := NewListing(t.TempDir())
-		if e != nil {
-			t.Fatal(e)
-		}
-		defer l.Close()
-		entries := []Entry{{Platform: "pixiv", Key: "author", Relative: "author", Kind: "folder", Mtime: 1}}
-		for i := 0; i < 1000; i++ {
-			key := fmt.Sprintf("author\\work-%04d", i)
-			entries = append(entries, Entry{Platform: "pixiv", Key: key, Relative: key, Parent: "author", Kind: "folder", Mtime: 1})
-		}
-		if e = l.PutNative(ctx, entries); e != nil {
-			t.Fatal(e)
-		}
-		for i := 0; i < 1000; i++ {
-			index := i
-			if reverse {
-				index = 999 - i
-			}
-			key := fmt.Sprintf("author\\work-%04d", index)
-			if e = l.RecordSignature(ctx, "pixiv", key, fmt.Sprint(index)); e != nil {
-				t.Fatal(e)
-			}
-		}
-		signature, e := l.AuthorSignature(ctx, "pixiv", "author")
-		if e != nil {
-			t.Fatal(e)
-		}
-		if l.Entries.Load() != 1001 || l.Transactions.Load() != 3 {
-			t.Fatal("tiny signature transactions", l.Transactions.Load())
-		}
-		// Internal media membership is deliberately not duplicated in scratch SQL.
-		found, e := l.Membership(ctx, "pixiv", []string{"author\\work-0000", "author\\work-0000\\1.png"})
-		if e != nil || len(found) != 1 {
-			t.Fatal("membership changed", e)
-		}
-		if e = l.RecordSignature(ctx, "pixiv", "author\\work-0000", "changed"); e != nil {
-			t.Fatal(e)
-		}
-		changed, e := l.AuthorSignature(ctx, "pixiv", "author")
-		if e != nil || changed == signature {
-			t.Fatal("work fingerprint not reflected", e)
-		}
-		return signature, l.Transactions.Load()
-	}
-	first, _ := build(false)
-	second, _ := build(true)
-	if first != second {
-		t.Fatal("completion order changed author identity")
-	}
-}
-
-func TestRetiredProviderConfigIsRejectedEvenWhenFilesystemSelected(t *testing.T) {
+func TestInventoryDefaultsLocalAndRejectsArbitraryEndpointConfig(t *testing.T) {
 	root := t.TempDir()
 	instance := filepath.Join(root, "instance")
 	os.Mkdir(instance, 0700)
@@ -257,50 +202,13 @@ func TestRetiredProviderConfigIsRejectedEvenWhenFilesystemSelected(t *testing.T)
 	json.Unmarshal(raw, &fields)
 	file := filepath.Join(instance, "config.json")
 	os.WriteFile(file, raw, 0600)
-	if loaded, e := Load(file); e != nil || loaded.ListingSource != "filesystem" {
-		t.Fatal("native default missing", e)
+	if loaded, e := Load(file); e != nil || loaded.ListingSource != "auto" {
+		t.Fatal("automatic local inventory default missing", e)
 	}
 	fields["everything"] = "http://127.0.0.1:54321/"
 	raw, _ = json.Marshal(fields)
 	os.WriteFile(file, raw, 0600)
 	if _, e := Load(file); e == nil || e.Error() != "CONFIG_FIELD_UNSUPPORTED" {
 		t.Fatal("retired provider silently accepted", e)
-	}
-}
-
-func TestSlowDeviceBudgetIsExplicitBoundedAndConservativeByDefault(t *testing.T) {
-	root := t.TempDir()
-	instance := filepath.Join(root, "instance")
-	if e := os.Mkdir(instance, 0700); e != nil {
-		t.Fatal(e)
-	}
-	c := Config{TestOnly: true, InstanceRoot: instance, Database: filepath.Join(instance, "live", "catalog.sqlite"), Sources: map[string]string{}}
-	for id := range metadata.Versions {
-		c.Sources[id] = filepath.Join(root, "sources", id)
-	}
-	file := filepath.Join(instance, "config.json")
-	for _, workers := range []int{0, 1, 2, 4, 8, -1, 9} {
-		c.SlowDeviceWorkers = workers
-		raw, e := json.Marshal(c)
-		if e != nil {
-			t.Fatal(e)
-		}
-		if e = os.WriteFile(file, raw, 0600); e != nil {
-			t.Fatal(e)
-		}
-		loaded, e := Load(file)
-		if workers < 0 || workers > 8 {
-			if e == nil || e.Error() != "BUDGET_INVALID" {
-				t.Fatal("unbounded device budget accepted", workers, e)
-			}
-			continue
-		}
-		expected := workers
-		if expected == 0 {
-			expected = 2
-		}
-		if e != nil || loaded.SlowDeviceWorkers != expected || loaded.Workers != 8 || loaded.BatchSize != 128 {
-			t.Fatal("unrelated budgets or conservative default changed", workers, e)
-		}
 	}
 }

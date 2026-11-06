@@ -1,0 +1,2140 @@
+{
+  "models": [
+    {
+      "name": "Protocol",
+      "fields": [
+        {
+          "name": "version",
+          "go": "Version",
+          "type": "int"
+        },
+        {
+          "name": "workSorts",
+          "go": "WorkSorts",
+          "type": "strings"
+        },
+        {
+          "name": "authorSorts",
+          "go": "AuthorSorts",
+          "type": "strings"
+        },
+        {
+          "name": "mediaFilters",
+          "go": "MediaFilters",
+          "type": "strings"
+        },
+        {
+          "name": "runtimeStates",
+          "go": "RuntimeStates",
+          "type": "strings"
+        },
+        {
+          "name": "scanStates",
+          "go": "ScanStates",
+          "type": "strings"
+        }
+      ]
+    },
+    {
+      "name": "LiveState",
+      "fields": [
+        {
+          "name": "schemaVersion",
+          "go": "SchemaVersion",
+          "type": "int"
+        },
+        {
+          "name": "baseGenerationId",
+          "go": "BaseGenerationID",
+          "type": "nullableString"
+        },
+        {
+          "name": "epoch",
+          "go": "Epoch",
+          "type": "string"
+        },
+        {
+          "name": "revision",
+          "go": "Revision",
+          "type": "long"
+        },
+        {
+          "name": "initializedAtMs",
+          "go": "InitializedAtMS",
+          "type": "long"
+        },
+        {
+          "name": "platformRevisions",
+          "go": "PlatformRevisions",
+          "type": "longMap"
+        }
+      ]
+    },
+    {
+      "name": "ScanStatus",
+      "fields": [
+        {
+          "name": "running",
+          "go": "Running",
+          "type": "bool"
+        },
+        {
+          "name": "state",
+          "go": "State",
+          "type": "string"
+        },
+        {
+          "name": "phase",
+          "go": "Phase",
+          "type": "string"
+        },
+        {
+          "name": "startedAtMs",
+          "go": "StartedAtMs",
+          "type": "long"
+        },
+        {
+          "name": "finishedAtMs",
+          "go": "FinishedAtMs",
+          "type": "long"
+        },
+        {
+          "name": "elapsedMs",
+          "go": "ElapsedMs",
+          "type": "long"
+        },
+        {
+          "name": "counts",
+          "go": "Counts",
+          "type": "longMap"
+        },
+        {
+          "name": "platformIds",
+          "go": "PlatformIds",
+          "type": "strings"
+        },
+        {
+          "name": "progress",
+          "go": "Progress",
+          "type": "ScanProgress",
+          "goType": "map[string]any"
+        },
+        {
+          "name": "failure",
+          "go": "Failure",
+          "type": "nullable:Failure",
+          "goType": "string"
+        },
+        {
+          "name": "observedWorks",
+          "go": "ObservedWorks",
+          "type": "long"
+        },
+        {
+          "name": "works",
+          "go": "Works",
+          "type": "long"
+        },
+        {
+          "name": "indexedWorks",
+          "go": "IndexedWorks",
+          "type": "long"
+        },
+        {
+          "name": "reusedWorks",
+          "go": "ReusedWorks",
+          "type": "long"
+        },
+        {
+          "name": "totalWorks",
+          "go": "TotalWorks",
+          "type": "long"
+        },
+        {
+          "name": "preflight",
+          "go": "Preflight",
+          "type": "ScanPreflight"
+        },
+        {
+          "name": "platformResults",
+          "go": "PlatformResults",
+          "type": "list:PlatformResult"
+        },
+        {
+          "name": "activePlatforms",
+          "go": "ActivePlatforms",
+          "type": "strings"
+        },
+        {
+          "name": "changes",
+          "go": "Changes",
+          "type": "ScanChanges"
+        },
+        {
+          "name": "diagnosticCount",
+          "go": "DiagnosticCount",
+          "type": "long"
+        },
+        {
+          "name": "mode",
+          "go": "Mode",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkSummary",
+      "row": true,
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "stableId",
+          "go": "StableID",
+          "type": "string"
+        },
+        {
+          "name": "platformId",
+          "go": "PlatformID",
+          "type": "string"
+        },
+        {
+          "name": "authorId",
+          "go": "AuthorID",
+          "type": "string"
+        },
+        {
+          "name": "sourceWorkId",
+          "go": "SourceWorkID",
+          "type": "nullableString",
+          "goType": "any"
+        },
+        {
+          "name": "sourceUrl",
+          "go": "SourceURL",
+          "type": "nullableString",
+          "goType": "any"
+        },
+        {
+          "name": "title",
+          "go": "Title",
+          "type": "string"
+        },
+        {
+          "name": "authorName",
+          "go": "AuthorName",
+          "type": "string"
+        },
+        {
+          "name": "publishedAtMs",
+          "go": "PublishedAtMs",
+          "type": "nullableLong",
+          "goType": "any"
+        },
+        {
+          "name": "sortAtMs",
+          "go": "SortAtMs",
+          "type": "nullableLong",
+          "goType": "any"
+        },
+        {
+          "name": "metadataState",
+          "go": "MetadataState",
+          "type": "string"
+        },
+        {
+          "name": "enrichmentState",
+          "go": "EnrichmentState",
+          "type": "string"
+        },
+        {
+          "name": "flags",
+          "go": "Flags",
+          "type": "WorkFlags",
+          "goType": "map[string]any"
+        },
+        {
+          "name": "counts",
+          "go": "Counts",
+          "type": "WorkCounts",
+          "goType": "map[string]any"
+        },
+        {
+          "name": "tags",
+          "go": "Tags",
+          "type": "list:Tag",
+          "goType": "[]map[string]any"
+        },
+        {
+          "name": "cover",
+          "go": "Cover",
+          "type": "nullable:MediaSummary",
+          "goType": "any"
+        },
+        {
+          "name": "details",
+          "go": "Details",
+          "type": "nullable:WorkDetails",
+          "goType": "any"
+        },
+        {
+          "name": "metrics",
+          "go": "Metrics",
+          "type": "nullable:WorkMetrics",
+          "goType": "any"
+        },
+        {
+          "name": "description",
+          "go": "Description",
+          "type": "nullable:TextSource",
+          "goType": "any"
+        },
+        {
+          "name": "media",
+          "go": "Media",
+          "type": "list:MediaSummary",
+          "goType": "any"
+        },
+        {
+          "name": "language",
+          "go": "Language",
+          "type": "string",
+          "goType": "string"
+        },
+        {
+          "name": "links",
+          "go": "Links",
+          "type": "list:SourceLink",
+          "goType": "any"
+        },
+        {
+          "name": "relations",
+          "go": "Relations",
+          "type": "list:WorkRelation",
+          "goType": "any"
+        },
+        {
+          "name": "personal",
+          "go": "Personal",
+          "type": "nullable:PersonalState"
+        }
+      ]
+    },
+    {
+      "name": "AuthorSummary",
+      "row": true,
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "stableId",
+          "go": "StableID",
+          "type": "string"
+        },
+        {
+          "name": "platformId",
+          "go": "PlatformID",
+          "type": "string"
+        },
+        {
+          "name": "sourceAuthorId",
+          "go": "SourceAuthorID",
+          "type": "nullableString",
+          "goType": "any"
+        },
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        },
+        {
+          "name": "handle",
+          "go": "Handle",
+          "type": "nullableString",
+          "goType": "any"
+        },
+        {
+          "name": "workCount",
+          "go": "WorkCount",
+          "type": "long"
+        },
+        {
+          "name": "latestAtMs",
+          "go": "LatestAtMs",
+          "type": "nullableLong",
+          "goType": "any"
+        },
+        {
+          "name": "profileState",
+          "go": "ProfileState",
+          "type": "string"
+        },
+        {
+          "name": "sourceUrl",
+          "go": "SourceURL",
+          "type": "nullableString",
+          "goType": "any"
+        },
+        {
+          "name": "cover",
+          "go": "Cover",
+          "type": "nullable:MediaSummary",
+          "goType": "any"
+        }
+      ]
+    },
+    {
+      "name": "MediaSummary",
+      "row": true,
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "fileName",
+          "go": "FileName",
+          "type": "string"
+        },
+        {
+          "name": "relativePath",
+          "go": "RelativePath",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "go": "Type",
+          "type": "string"
+        },
+        {
+          "name": "size",
+          "go": "Size",
+          "type": "long"
+        },
+        {
+          "name": "durationMs",
+          "go": "DurationMs",
+          "type": "nullableLong",
+          "goType": "any"
+        },
+        {
+          "name": "url",
+          "go": "URL",
+          "type": "string"
+        },
+        {
+          "name": "thumbnailUrl",
+          "go": "ThumbnailURL",
+          "type": "string"
+        },
+        {
+          "name": "role",
+          "go": "Role",
+          "type": "string"
+        },
+        {
+          "name": "defaultVisible",
+          "go": "DefaultVisible",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "thumbnails",
+          "go": "Thumbnails",
+          "type": "nullable:ThumbnailUrls",
+          "goType": "any"
+        },
+        {
+          "name": "width",
+          "go": "Width",
+          "type": "int"
+        },
+        {
+          "name": "height",
+          "go": "Height",
+          "type": "int"
+        },
+        {
+          "name": "thumbHash",
+          "go": "ThumbHash",
+          "type": "string"
+        },
+        {
+          "name": "animated",
+          "go": "Animated",
+          "type": "bool"
+        },
+        {
+          "name": "subtitles",
+          "go": "Subtitles",
+          "type": "list:Subtitle",
+          "goType": "any"
+        }
+      ]
+    },
+    {
+      "name": "TextSource",
+      "row": true,
+      "fields": [
+        {
+          "name": "format",
+          "go": "Format",
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "go": "Text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Episode",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "title",
+          "go": "Title",
+          "type": "string"
+        },
+        {
+          "name": "publishedAtMs",
+          "go": "PublishedAtMS",
+          "type": "nullableLong"
+        }
+      ]
+    },
+    {
+      "name": "AuthorLink",
+      "fields": [
+        {
+          "name": "platform",
+          "go": "Platform",
+          "type": "string"
+        },
+        {
+          "name": "sourceId",
+          "go": "SourceID",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkDetails",
+      "fields": [
+        {
+          "name": "workType",
+          "go": "WorkType",
+          "type": "string"
+        },
+        {
+          "name": "rating",
+          "go": "Rating",
+          "type": "nullableLong"
+        },
+        {
+          "name": "seriesId",
+          "go": "SeriesID",
+          "type": "string"
+        },
+        {
+          "name": "seriesTitle",
+          "go": "SeriesTitle",
+          "type": "string"
+        },
+        {
+          "name": "planName",
+          "go": "PlanName",
+          "type": "string"
+        },
+        {
+          "name": "planFee",
+          "go": "PlanFee",
+          "type": "nullableLong"
+        },
+        {
+          "name": "previous",
+          "go": "Previous",
+          "type": "nullable:Episode"
+        },
+        {
+          "name": "next",
+          "go": "Next",
+          "type": "nullable:Episode"
+        },
+        {
+          "name": "tools",
+          "go": "Tools",
+          "type": "strings"
+        },
+        {
+          "name": "region",
+          "go": "Region",
+          "type": "string"
+        },
+        {
+          "name": "originalService",
+          "go": "OriginalService",
+          "type": "string"
+        },
+        {
+          "name": "originalUser",
+          "go": "OriginalUser",
+          "type": "string"
+        },
+        {
+          "name": "originalPost",
+          "go": "OriginalPost",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkFlags",
+      "fields": [
+        {
+          "name": "adult",
+          "go": "Adult",
+          "type": "nullableBool"
+        },
+        {
+          "name": "aiGenerated",
+          "go": "AiGenerated",
+          "type": "nullableBool"
+        },
+        {
+          "name": "paid",
+          "go": "Paid",
+          "type": "nullableBool"
+        }
+      ]
+    },
+    {
+      "name": "WorkCounts",
+      "fields": [
+        {
+          "name": "images",
+          "go": "Images",
+          "type": "long"
+        },
+        {
+          "name": "videos",
+          "go": "Videos",
+          "type": "long"
+        },
+        {
+          "name": "media",
+          "go": "Media",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "Tag",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "label",
+          "go": "Label",
+          "type": "string"
+        },
+        {
+          "name": "count",
+          "go": "Count",
+          "type": "long"
+        },
+        {
+          "name": "workCount",
+          "go": "WorkCount",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "ThumbnailUrls",
+      "fields": [
+        {
+          "name": "s",
+          "go": "S",
+          "type": "string"
+        },
+        {
+          "name": "m",
+          "go": "M",
+          "type": "string"
+        },
+        {
+          "name": "l",
+          "go": "L",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkMetrics",
+      "fields": [
+        {
+          "name": "likes",
+          "go": "Likes",
+          "type": "nullableLong"
+        },
+        {
+          "name": "replies",
+          "go": "Replies",
+          "type": "nullableLong"
+        },
+        {
+          "name": "comments",
+          "go": "Comments",
+          "type": "nullableLong"
+        },
+        {
+          "name": "reposts",
+          "go": "Reposts",
+          "type": "nullableLong"
+        },
+        {
+          "name": "views",
+          "go": "Views",
+          "type": "nullableLong"
+        },
+        {
+          "name": "bookmarks",
+          "go": "Bookmarks",
+          "type": "nullableLong"
+        }
+      ]
+    },
+    {
+      "name": "Failure",
+      "fields": [
+        {
+          "name": "code",
+          "go": "Code",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Page",
+      "fields": [
+        {
+          "name": "items",
+          "go": "Items",
+          "type": "list:T"
+        },
+        {
+          "name": "total",
+          "go": "Total",
+          "type": "long"
+        },
+        {
+          "name": "page",
+          "go": "Page",
+          "type": "int"
+        },
+        {
+          "name": "pageSize",
+          "go": "PageSize",
+          "type": "int"
+        },
+        {
+          "name": "totalPages",
+          "go": "TotalPages",
+          "type": "int"
+        },
+        {
+          "name": "cursor",
+          "go": "Cursor",
+          "type": "nullableString"
+        },
+        {
+          "name": "complete",
+          "go": "Complete",
+          "type": "nullableBool"
+        },
+        {
+          "name": "truncated",
+          "go": "Truncated",
+          "type": "bool"
+        }
+      ],
+      "generic": "T"
+    },
+    {
+      "name": "Resolved",
+      "fields": [
+        {
+          "name": "item",
+          "go": "Item",
+          "type": "nullable:T"
+        }
+      ],
+      "generic": "T"
+    },
+    {
+      "name": "PlatformSummary",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "works",
+          "go": "Works",
+          "type": "long"
+        },
+        {
+          "name": "media",
+          "go": "Media",
+          "type": "long"
+        },
+        {
+          "name": "enabled",
+          "go": "Enabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "FileRoot",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "FileEntry",
+      "fields": [
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "go": "Type",
+          "type": "string"
+        },
+        {
+          "name": "relativePath",
+          "go": "RelativePath",
+          "type": "string"
+        },
+        {
+          "name": "size",
+          "go": "Size",
+          "type": "long"
+        },
+        {
+          "name": "url",
+          "go": "URL",
+          "type": "string"
+        },
+        {
+          "name": "thumbnailUrl",
+          "go": "ThumbnailURL",
+          "type": "string"
+        },
+        {
+          "name": "thumbnails",
+          "go": "Thumbnails",
+          "type": "nullable:ThumbnailUrls"
+        },
+        {
+          "name": "width",
+          "go": "Width",
+          "type": "int"
+        },
+        {
+          "name": "height",
+          "go": "Height",
+          "type": "int"
+        },
+        {
+          "name": "thumbHash",
+          "go": "ThumbHash",
+          "type": "string"
+        },
+        {
+          "name": "animated",
+          "go": "Animated",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "GenerationSummary",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "createdAtMs",
+          "go": "CreatedAtMS",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "ServiceStatus",
+      "fields": [
+        {
+          "name": "live",
+          "go": "Live",
+          "type": "nullable:LiveState"
+        },
+        {
+          "name": "platforms",
+          "go": "Platforms",
+          "type": "list:PlatformSummary"
+        },
+        {
+          "name": "loadedGenerationId",
+          "go": "LoadedGenerationID",
+          "type": "string"
+        },
+        {
+          "name": "generations",
+          "go": "Generations",
+          "type": "list:GenerationSummary"
+        },
+        {
+          "name": "scan",
+          "go": "Scan",
+          "type": "nullable:ScanStatus"
+        }
+      ]
+    },
+    {
+      "name": "Subtitle",
+      "fields": [
+        {
+          "name": "url",
+          "go": "URL",
+          "type": "string"
+        },
+        {
+          "name": "language",
+          "go": "Language",
+          "type": "string"
+        },
+        {
+          "name": "label",
+          "go": "Label",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ConfigSnapshot",
+      "fields": [
+        {
+          "name": "revision",
+          "go": "Revision",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "go": "Value",
+          "type": "RuntimeConfiguration"
+        }
+      ]
+    },
+    {
+      "name": "ThumbnailProgress",
+      "fields": [
+        {
+          "name": "total",
+          "go": "Total",
+          "type": "long"
+        },
+        {
+          "name": "completed",
+          "go": "Completed",
+          "type": "long"
+        },
+        {
+          "name": "failed",
+          "go": "Failed",
+          "type": "long"
+        },
+        {
+          "name": "paused",
+          "go": "Paused",
+          "type": "bool"
+        },
+        {
+          "name": "running",
+          "go": "Running",
+          "type": "bool"
+        },
+        {
+          "name": "waitingForScan",
+          "go": "WaitingForScan",
+          "type": "bool"
+        },
+        {
+          "name": "planning",
+          "go": "Planning",
+          "type": "bool"
+        },
+        {
+          "name": "failure",
+          "go": "Failure",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "LibraryCounts",
+      "fields": [
+        {
+          "name": "works",
+          "go": "Works",
+          "type": "long"
+        },
+        {
+          "name": "media",
+          "go": "Media",
+          "type": "long"
+        },
+        {
+          "name": "authors",
+          "go": "Authors",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "ManagerStatus",
+      "fields": [
+        {
+          "name": "state",
+          "go": "State",
+          "type": "string"
+        },
+        {
+          "name": "hostFailure",
+          "go": "HostFailure",
+          "type": "string"
+        },
+        {
+          "name": "counts",
+          "go": "Counts",
+          "type": "LibraryCounts"
+        },
+        {
+          "name": "platforms",
+          "go": "Platforms",
+          "type": "list:PlatformSummary"
+        },
+        {
+          "name": "scan",
+          "go": "Scan",
+          "type": "ScanStatus"
+        },
+        {
+          "name": "thumbnails",
+          "go": "Thumbnails",
+          "type": "ThumbnailProgress"
+        }
+      ]
+    },
+    {
+      "name": "ClientAccess",
+      "fields": [
+        {
+          "name": "id",
+          "go": "Id",
+          "type": "string"
+        },
+        {
+          "name": "address",
+          "go": "Address",
+          "type": "string"
+        },
+        {
+          "name": "agent",
+          "go": "Agent",
+          "type": "string"
+        },
+        {
+          "name": "local",
+          "go": "Local",
+          "type": "bool"
+        },
+        {
+          "name": "requests",
+          "go": "Requests",
+          "type": "long"
+        },
+        {
+          "name": "errors",
+          "go": "Errors",
+          "type": "long"
+        },
+        {
+          "name": "lastSeenAtMs",
+          "go": "LastSeenAtMs",
+          "type": "long"
+        },
+        {
+          "name": "blocked",
+          "go": "Blocked",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "AccessSnapshot",
+      "fields": [
+        {
+          "name": "enabled",
+          "go": "Enabled",
+          "type": "bool"
+        },
+        {
+          "name": "clients",
+          "go": "Clients",
+          "type": "list:ClientAccess"
+        },
+        {
+          "name": "autoBan",
+          "go": "AutoBan",
+          "type": "AutoBanRule"
+        }
+      ]
+    },
+    {
+      "name": "ValidationStatus",
+      "fields": [
+        {
+          "name": "id",
+          "go": "Id",
+          "type": "string"
+        },
+        {
+          "name": "running",
+          "go": "Running",
+          "type": "bool"
+        },
+        {
+          "name": "works",
+          "go": "Works",
+          "type": "long"
+        },
+        {
+          "name": "finishedAtMs",
+          "go": "FinishedAtMs",
+          "type": "long"
+        },
+        {
+          "name": "total",
+          "go": "Total",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "Finding",
+      "fields": [
+        {
+          "name": "index",
+          "go": "Index",
+          "type": "long"
+        },
+        {
+          "name": "code",
+          "go": "Code",
+          "type": "string"
+        },
+        {
+          "name": "platformId",
+          "go": "PlatformId",
+          "type": "string"
+        },
+        {
+          "name": "relativePath",
+          "go": "RelativePath",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "EnvironmentCheck",
+      "fields": [
+        {
+          "name": "tool",
+          "go": "Tool",
+          "type": "string"
+        },
+        {
+          "name": "platform",
+          "go": "Platform",
+          "type": "string"
+        },
+        {
+          "name": "available",
+          "go": "Available",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "Environment",
+      "fields": [
+        {
+          "name": "checks",
+          "go": "Checks",
+          "type": "list:EnvironmentCheck"
+        }
+      ]
+    },
+    {
+      "name": "StorageUsage",
+      "fields": [
+        {
+          "name": "bytes",
+          "go": "Bytes",
+          "type": "long"
+        },
+        {
+          "name": "files",
+          "go": "Files",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "StorageSnapshot",
+      "fields": [
+        {
+          "name": "cache",
+          "go": "Cache",
+          "type": "StorageUsage"
+        }
+      ]
+    },
+    {
+      "name": "LogFile",
+      "fields": [
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "LogText",
+      "fields": [
+        {
+          "name": "text",
+          "go": "Text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "InspectionCheck",
+      "fields": [
+        {
+          "name": "id",
+          "go": "Id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PlatformResult",
+      "fields": [
+        {
+          "name": "platformId",
+          "go": "PlatformId",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "go": "Status",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ScanProgress",
+      "fields": [
+        {
+          "name": "platformResults",
+          "go": "PlatformResults",
+          "type": "list:PlatformResult"
+        },
+        {
+          "name": "platformProgress",
+          "go": "PlatformProgress",
+          "type": "list:PlatformScanProgress"
+        },
+        {
+          "name": "issues",
+          "go": "Issues",
+          "type": "list:ScanIssue"
+        }
+      ]
+    },
+    {
+      "name": "ScanChanges",
+      "fields": [
+        {
+          "name": "worksAdded",
+          "go": "WorksAdded",
+          "type": "long"
+        },
+        {
+          "name": "worksUpdated",
+          "go": "WorksUpdated",
+          "type": "long"
+        },
+        {
+          "name": "worksDeleted",
+          "go": "WorksDeleted",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "ScanPreflight",
+      "fields": [
+        {
+          "name": "totalWorks",
+          "go": "TotalWorks",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "BackgroundPreference",
+      "fields": [
+        {
+          "name": "work",
+          "go": "Work",
+          "type": "string"
+        },
+        {
+          "name": "media",
+          "go": "Media",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Preferences",
+      "fields": [
+        {
+          "name": "size",
+          "go": "Size",
+          "type": "int",
+          "default": "3"
+        },
+        {
+          "name": "aspect",
+          "go": "Aspect",
+          "type": "string",
+          "default": "\"square\""
+        },
+        {
+          "name": "privacy",
+          "go": "Privacy",
+          "type": "bool"
+        },
+        {
+          "name": "hideEmpty",
+          "go": "HideEmpty",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "hideAuthorAvatar",
+          "go": "HideAuthorAvatar",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "reduced",
+          "go": "Reduced",
+          "type": "bool"
+        },
+        {
+          "name": "background",
+          "go": "Background",
+          "type": "nullable:BackgroundPreference"
+        },
+        {
+          "name": "dim",
+          "go": "Dim",
+          "type": "float",
+          "default": "0.66f"
+        },
+        {
+          "name": "pageSize",
+          "go": "PageSize",
+          "type": "int",
+          "default": "48"
+        },
+        {
+          "name": "theme",
+          "go": "Theme",
+          "type": "string",
+          "default": "\"system\""
+        },
+        {
+          "name": "expanded",
+          "go": "Expanded",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "recordHistory",
+          "go": "RecordHistory",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "mangaMode",
+          "go": "MangaMode",
+          "type": "string",
+          "default": "\"auto\""
+        },
+        {
+          "name": "history",
+          "go": "History",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "mangaDefault",
+          "go": "MangaDefault",
+          "type": "string"
+        },
+        {
+          "name": "autoRefresh",
+          "go": "AutoRefresh",
+          "type": "bool",
+          "default": "true"
+        }
+      ]
+    },
+    {
+      "name": "LogEntry",
+      "fields": [
+        {
+          "name": "event",
+          "go": "Event",
+          "type": "string"
+        },
+        {
+          "name": "changes",
+          "go": "Changes",
+          "type": "nullable:ScanChanges"
+        },
+        {
+          "name": "platformChanges",
+          "go": "PlatformChanges",
+          "type": "nullable:ScanChanges"
+        },
+        {
+          "name": "platformId",
+          "go": "PlatformId",
+          "type": "string"
+        },
+        {
+          "name": "platform",
+          "go": "Platform",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "go": "Mode",
+          "type": "string"
+        },
+        {
+          "name": "elapsedMs",
+          "go": "ElapsedMs",
+          "type": "long"
+        },
+        {
+          "name": "total",
+          "go": "Total",
+          "type": "long"
+        },
+        {
+          "name": "message",
+          "go": "Message",
+          "type": "string"
+        },
+        {
+          "name": "msg",
+          "go": "Msg",
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "go": "Time",
+          "type": "string"
+        },
+        {
+          "name": "at",
+          "go": "At",
+          "type": "string"
+        },
+        {
+          "name": "level",
+          "go": "Level",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "FontFile",
+      "fields": [
+        {
+          "name": "url",
+          "go": "Url",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "FontFamily",
+      "fields": [
+        {
+          "name": "key",
+          "go": "Key",
+          "type": "string"
+        },
+        {
+          "name": "files",
+          "go": "Files",
+          "type": "list:FontFile"
+        }
+      ]
+    },
+    {
+      "name": "FontManifest",
+      "fields": [
+        {
+          "name": "families",
+          "go": "Families",
+          "type": "list:FontFamily"
+        },
+        {
+          "name": "latin",
+          "go": "Latin",
+          "type": "strings"
+        }
+      ]
+    },
+    {
+      "name": "ApiEnvelope",
+      "generic": "T",
+      "fields": [
+        {
+          "name": "protocolVersion",
+          "go": "ProtocolVersion",
+          "type": "int"
+        },
+        {
+          "name": "data",
+          "go": "Data",
+          "type": "nullable:T"
+        },
+        {
+          "name": "error",
+          "go": "Error",
+          "type": "nullable:Failure"
+        }
+      ]
+    },
+    {
+      "name": "FetchResponse",
+      "fields": [
+        {
+          "name": "status",
+          "go": "Status",
+          "type": "int"
+        },
+        {
+          "name": "text",
+          "go": "Text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SourceLink",
+      "fields": [
+        {
+          "name": "url",
+          "go": "URL",
+          "type": "string"
+        },
+        {
+          "name": "label",
+          "go": "Label",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkRelation",
+      "fields": [
+        {
+          "name": "type",
+          "go": "Type",
+          "type": "string"
+        },
+        {
+          "name": "targetPlatform",
+          "go": "TargetPlatform",
+          "type": "string"
+        },
+        {
+          "name": "targetId",
+          "go": "TargetID",
+          "type": "string"
+        },
+        {
+          "name": "targetPath",
+          "go": "TargetPath",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ImagePayload",
+      "fields": [
+        {
+          "name": "encoded",
+          "go": "Encoded",
+          "type": "string"
+        },
+        {
+          "name": "width",
+          "go": "Width",
+          "type": "int"
+        },
+        {
+          "name": "height",
+          "go": "Height",
+          "type": "int"
+        },
+        {
+          "name": "animated",
+          "go": "Animated",
+          "type": "bool"
+        },
+        {
+          "name": "durationMs",
+          "go": "DurationMs",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "SearchTerm",
+      "fields": [
+        {
+          "name": "field",
+          "go": "Field",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "go": "Value",
+          "type": "string"
+        },
+        {
+          "name": "exclude",
+          "go": "Exclude",
+          "type": "bool"
+        },
+        {
+          "name": "raw",
+          "go": "Raw",
+          "type": "string"
+        },
+        {
+          "name": "start",
+          "go": "Start",
+          "type": "long"
+        },
+        {
+          "name": "end",
+          "go": "End",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "Account",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        },
+        {
+          "name": "avatar",
+          "go": "Avatar",
+          "type": "string"
+        },
+        {
+          "name": "hasPassword",
+          "go": "HasPassword",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "PersonalState",
+      "fields": [
+        {
+          "name": "favorite",
+          "go": "Favorite",
+          "type": "bool"
+        },
+        {
+          "name": "rating",
+          "go": "Rating",
+          "type": "int"
+        },
+        {
+          "name": "page",
+          "go": "Page",
+          "type": "int"
+        },
+        {
+          "name": "readAt",
+          "go": "ReadAt",
+          "type": "long"
+        },
+        {
+          "name": "readingMode",
+          "go": "ReadingMode",
+          "type": "string"
+        },
+        {
+          "name": "rtl",
+          "go": "RTL",
+          "type": "bool"
+        },
+        {
+          "name": "coverAlone",
+          "go": "CoverAlone",
+          "type": "bool",
+          "default": "true"
+        },
+        {
+          "name": "tags",
+          "go": "Tags",
+          "type": "strings"
+        },
+        {
+          "name": "collections",
+          "go": "Collections",
+          "type": "strings"
+        },
+        {
+          "name": "totalPages",
+          "go": "TotalPages",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "PersonalChange",
+      "fields": [
+        {
+          "name": "work",
+          "go": "Work",
+          "type": "string"
+        },
+        {
+          "name": "action",
+          "go": "Action",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "go": "Value",
+          "type": "bool"
+        },
+        {
+          "name": "number",
+          "go": "Number",
+          "type": "int"
+        },
+        {
+          "name": "text",
+          "go": "Text",
+          "type": "string"
+        },
+        {
+          "name": "values",
+          "go": "Values",
+          "type": "strings"
+        },
+        {
+          "name": "rtl",
+          "go": "RTL",
+          "type": "bool"
+        },
+        {
+          "name": "coverAlone",
+          "go": "CoverAlone",
+          "type": "bool"
+        },
+        {
+          "name": "accountId",
+          "go": "AccountID",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Collection",
+      "fields": [
+        {
+          "name": "id",
+          "go": "ID",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "go": "Name",
+          "type": "string"
+        },
+        {
+          "name": "count",
+          "go": "Count",
+          "type": "long"
+        },
+        {
+          "name": "latestAt",
+          "go": "LatestAt",
+          "type": "long"
+        },
+        {
+          "name": "covers",
+          "go": "Covers",
+          "type": "strings"
+        }
+      ]
+    },
+    {
+      "name": "AccountSession",
+      "fields": [
+        {
+          "name": "account",
+          "go": "Account",
+          "type": "nullable:Account"
+        },
+        {
+          "name": "preferences",
+          "go": "Preferences",
+          "type": "object"
+        },
+        {
+          "name": "counts",
+          "go": "Counts",
+          "type": "longMap"
+        }
+      ]
+    },
+    {
+      "name": "SearchParse",
+      "fields": [
+        {
+          "name": "terms",
+          "go": "Terms",
+          "type": "list:SearchTerm"
+        },
+        {
+          "name": "platforms",
+          "go": "Platforms",
+          "type": "strings"
+        }
+      ]
+    },
+    {
+      "name": "AuthorPage",
+      "fields": [
+        {
+          "name": "author",
+          "go": "Author",
+          "type": "AuthorSummary"
+        },
+        {
+          "name": "bio",
+          "go": "Bio",
+          "type": "string"
+        },
+        {
+          "name": "pages",
+          "go": "Pages",
+          "type": "long"
+        },
+        {
+          "name": "firstAt",
+          "go": "FirstAt",
+          "type": "nullableLong"
+        },
+        {
+          "name": "lastAt",
+          "go": "LastAt",
+          "type": "nullableLong"
+        },
+        {
+          "name": "types",
+          "go": "Types",
+          "type": "longMap"
+        },
+        {
+          "name": "tags",
+          "go": "Tags",
+          "type": "list:Tag"
+        },
+        {
+          "name": "linked",
+          "go": "Linked",
+          "type": "list:AuthorSummary"
+        },
+        {
+          "name": "key",
+          "go": "Key",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "EpisodeNavigation",
+      "fields": [
+        {
+          "name": "previous",
+          "go": "Previous",
+          "type": "nullable:WorkSummary"
+        },
+        {
+          "name": "next",
+          "go": "Next",
+          "type": "nullable:WorkSummary"
+        }
+      ]
+    },
+    {
+      "name": "AccountPreferences",
+      "fields": [
+        {
+          "name": "view",
+          "go": "View",
+          "type": "Preferences"
+        },
+        {
+          "name": "theme",
+          "go": "Theme",
+          "type": "string"
+        },
+        {
+          "name": "expanded",
+          "go": "Expanded",
+          "type": "bool"
+        },
+        {
+          "name": "history",
+          "go": "History",
+          "type": "bool",
+          "default": "true"
+        }
+      ]
+    },
+    {
+      "name": "AvailableFilters",
+      "fields": [
+        {
+          "name": "workTypes",
+          "go": "WorkTypes",
+          "type": "strings"
+        },
+        {
+          "name": "metrics",
+          "go": "Metrics",
+          "type": "strings"
+        },
+        {
+          "name": "paid",
+          "go": "Paid",
+          "type": "bool"
+        },
+        {
+          "name": "pixiv",
+          "go": "Pixiv",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "WorkPosition",
+      "fields": [
+        {
+          "name": "path",
+          "go": "Path",
+          "type": "string"
+        },
+        {
+          "name": "page",
+          "go": "Page",
+          "type": "long"
+        },
+        {
+          "name": "seriesId",
+          "go": "SeriesID",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PlatformScanProgress",
+      "fields": [
+        {
+          "name": "platformId",
+          "go": "PlatformId",
+          "type": "string"
+        },
+        {
+          "name": "totalWorks",
+          "go": "TotalWorks",
+          "type": "long"
+        },
+        {
+          "name": "totalAuthors",
+          "go": "TotalAuthors",
+          "type": "long"
+        },
+        {
+          "name": "scannedWorks",
+          "go": "ScannedWorks",
+          "type": "long"
+        },
+        {
+          "name": "skippedWorks",
+          "go": "SkippedWorks",
+          "type": "long"
+        },
+        {
+          "name": "scannedAuthors",
+          "go": "ScannedAuthors",
+          "type": "long"
+        },
+        {
+          "name": "skippedAuthors",
+          "go": "SkippedAuthors",
+          "type": "long"
+        },
+        {
+          "name": "failedWorks",
+          "go": "FailedWorks",
+          "type": "long"
+        }
+      ]
+    },
+    {
+      "name": "ScanIssue",
+      "fields": [
+        {
+          "name": "platformId",
+          "go": "PlatformId",
+          "type": "string"
+        },
+        {
+          "name": "work",
+          "go": "Work",
+          "type": "string"
+        },
+        {
+          "name": "severity",
+          "go": "Severity",
+          "type": "string"
+        },
+        {
+          "name": "code",
+          "go": "Code",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AutoBanRule",
+      "fields": [
+        {
+          "name": "enabled",
+          "go": "Enabled",
+          "type": "bool"
+        },
+        {
+          "name": "windowSeconds",
+          "go": "WindowSeconds",
+          "type": "long",
+          "default": "60L"
+        },
+        {
+          "name": "maxRequests",
+          "go": "MaxRequests",
+          "type": "long",
+          "default": "600L"
+        },
+        {
+          "name": "maxErrors",
+          "go": "MaxErrors",
+          "type": "long",
+          "default": "60L"
+        },
+        {
+          "name": "banMinutes",
+          "go": "BanMinutes",
+          "type": "long",
+          "default": "30L"
+        }
+      ]
+    }
+  ]
+}

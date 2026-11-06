@@ -8,6 +8,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/inspection"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/personal"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/task"
 )
 
@@ -31,7 +32,39 @@ func Manage(ctx context.Context, c instance.Config, o Options, operation string,
 	if err := task.Layout(c); err != nil {
 		return nil, err
 	}
+	if strings.HasPrefix(operation, "accounts.") {
+		store, err := personal.Open(c.StateRoot + "/people")
+		if err != nil {
+			return nil, err
+		}
+		defer store.Close()
+		id, _ := input["id"].(string)
+		switch operation {
+		case "accounts.reset":
+			value, _ := input["password"].(string)
+			err = store.ResetPassword(ctx, id, value)
+		case "accounts.delete":
+			err = store.Delete(ctx, id)
+		case "accounts.list":
+		default:
+			return nil, fmt.Errorf("CONTROL_OPERATION_INVALID")
+		}
+		if err != nil {
+			return nil, err
+		}
+		items, err := store.Accounts(ctx)
+		return Row{"items": items}, err
+	}
 	switch operation {
+	case "scan.issues":
+		page := 1
+		if value, ok := input["page"].(float64); ok {
+			if value < 1 || value > 1000000 || value != float64(int(value)) {
+				return nil, fmt.Errorf("INVALID_INPUT")
+			}
+			page = int(value)
+		}
+		return task.Issues(c, page)
 	case "scan.cancel":
 		return task.Cancel(c)
 	case "scan.status":
@@ -42,6 +75,9 @@ func Manage(ctx context.Context, c instance.Config, o Options, operation string,
 		return Row{"instance": c.InstanceRoot, "config": parent(o.ConfigFile), "logs": c.LogsRoot, "reports": c.ReportsRoot, "cache": c.CacheRoot}, nil
 	}
 	if strings.HasPrefix(operation, "access.") {
+		return control.Call(ctx, c, operation, input)
+	}
+	if strings.HasPrefix(operation, "thumbnails.") {
 		return control.Call(ctx, c, operation, input)
 	}
 	if strings.HasPrefix(operation, "validation.") {

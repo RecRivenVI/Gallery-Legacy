@@ -32,7 +32,7 @@ func NoLinks(path string) error {
 			return errors.New("PATH_REPARSE")
 		}
 		if e != nil && !os.IsNotExist(e) {
-			return errors.New("PATH_UNAVAILABLE")
+			return fmt.Errorf("PATH_UNAVAILABLE: %w", e)
 		}
 		next := filepath.Dir(at)
 		if at == next {

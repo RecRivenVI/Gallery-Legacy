@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-host-call"
+description = "Allow the management window to call the fixed local host bridge."
+commands.allow = ["host_call"]

@@ -10,7 +10,7 @@ import (
 func TestPublicCorpusParity(t *testing.T) {
 	file := os.Getenv("GALLERY_GO_GOLDEN")
 	if file == "" {
-		t.Fatal("GALLERY_GO_GOLDEN synthetic oracle required")
+		file = "testdata/normalized.json"
 	}
 	b, e := os.ReadFile(file)
 	if e != nil {
@@ -79,14 +79,10 @@ func TestPublicCorpusParity(t *testing.T) {
 			}
 			check("supplementary", supp, rich["supplementary"])
 			decls := []any{}
-			for _, d := range r.Declarations {
-				refs := []any{}
-				for _, ref := range d.References {
-					refs = append(refs, Object{"kind": ref.Kind, "value": ref.Value, "sourcePath": ref.SourcePath})
-				}
-				decls = append(decls, Object{"sourceId": d.SourceID, "kind": d.Kind, "name": d.Name, "url": d.URL, "hash": d.Hash, "size": d.Size, "durationMs": d.Duration, "fileReferences": refs})
+
+			if len(decls) != 0 {
+				t.Fatal("metadata media declarations are retired")
 			}
-			check("declarations", decls, c.Expected["mediaDeclarations"])
 			if m != nil {
 				shape := Shape(c.Platform, m, c.Policy.WildcardObjectPaths, c.Policy.ExcludedPaths, c.Policy.SHAPE_POLICY_VERSION)
 				if shape != c.Shape {

@@ -1,6 +1,7 @@
 package httpservice
 
 import (
+	"io/fs"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,7 +14,16 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/media"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/protocol"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/webui"
 )
+
+func (s *Server) frontendFile(name string) ([]byte, error) {
+	files := webui.Files()
+	if s.options.Frontend != "" {
+		files = os.DirFS(s.options.Frontend) // explicit development/oracle fixtures only
+	}
+	return fs.ReadFile(files, name)
+}
 
 func decodePath(value string) (string, error) {
 	decoded, err := url.PathUnescape(value)
@@ -34,7 +44,7 @@ func bytesResponse(w http.ResponseWriter, r *http.Request, status int, b []byte)
 }
 func (s *Server) static(w http.ResponseWriter, r *http.Request, p string) error {
 	if p == "/venera-source.js" {
-		b, err := os.ReadFile(filepath.Join(s.options.Frontend, "venera/source.js"))
+		b, err := s.frontendFile("venera/source.js")
 		if err != nil {
 			return err
 		}
@@ -88,27 +98,41 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request, p string) error 
 	var err error
 	switch {
 	case p == "/":
-		target = filepath.Join(s.options.Frontend, "gallery/index.html")
-	case p == "/manage":
-		target = filepath.Join(s.options.Frontend, "manager/index.html")
+		target = "index.html"
+		b, err = s.frontendFile(target)
 	case p == "/protocol/protocol.json":
 		b = api.ProtocolJSON
 		target = "protocol.json"
 	case strings.HasPrefix(p, "/frontend/"):
-		root, rel := s.options.Frontend, strings.TrimPrefix(p, "/frontend/")
-		if strings.HasPrefix(rel, "assets/canvas/") {
-			root, rel = s.options.Assets, strings.TrimPrefix(rel, "assets/canvas/")
+		rel := strings.TrimPrefix(p, "/frontend/")
+		if rel == "gallery/index.html" || rel == "manager/index.html" {
+			rel = "index.html"
 		}
 		rel, err = decodePath(rel)
 		if err != nil {
 			return media.Failure("INVALID_URL", 400)
 		}
-		target = filepath.Join(root, filepath.FromSlash(rel))
-		if root == "" || !library.Inside(root, target) || filepath.Clean(root) == target {
+		if !fs.ValidPath(rel) || strings.Contains(rel, `\`) {
 			return media.Failure("NOT_FOUND", 404)
+		}
+		if strings.HasPrefix(rel, "assets/canvas/") {
+			root := s.options.Assets
+			target = filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(rel, "assets/canvas/")))
+			if root == "" || !library.Inside(root, target) || filepath.Clean(root) == target {
+				return media.Failure("NOT_FOUND", 404)
+			}
+		} else {
+			target = rel
+			b, err = s.frontendFile(rel)
 		}
 	default:
 		return media.Failure("NOT_FOUND", 404)
+	}
+	if err != nil {
+		if os.IsNotExist(err) {
+			return media.Failure("NOT_FOUND", 404)
+		}
+		return err
 	}
 	if b == nil {
 		st, e := os.Stat(target)
@@ -120,10 +144,11 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request, p string) error 
 			return err
 		}
 	}
-	if p == "/manage" {
-		b = []byte(strings.Replace(string(b), "<head>", `<head><base href="/frontend/manager/">`, 1))
+	if filepath.Ext(target) == ".html" {
+		w.Header().Set("Content-Security-Policy", api.BrowserCSP)
+		b = []byte(strings.Replace(string(b), "<head>", `<head><base href="/frontend/">`, 1))
 	}
-	types := map[string]string{".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf", ".wasm": "application/wasm", ".png": "image/png", ".svg": "image/svg+xml"}
+	types := map[string]string{".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".mjs": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".woff2": "font/woff2", ".ttf": "font/ttf", ".otf": "font/otf", ".wasm": "application/wasm", ".png": "image/png", ".svg": "image/svg+xml"}
 	kind := types[filepath.Ext(target)]
 	if kind == "" {
 		kind = "application/octet-stream"

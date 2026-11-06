@@ -1,58 +1,87 @@
-# 开发工作流
+# 开发与验证
 
-从仓库根运行；常用命令以 [package scripts](../../package.json) 为唯一入口，Go 工具和依赖版本由 go.mod 管理。缺少工具链时只使用官方 portable 版本，不改系统 PATH／注册表。
+从仓库根目录执行。完整构建生成 Go 运行会话、Tauri 管理器、两端 Compose/WasmJS 和合法字体资源；输出不含 Node/Electron。范围与未验证项见[进度](../project/status-repository_standard.md)。
 
-## 准备
+## 环境与构建
+
+准备 JDK 17、Go、Rust/MSVC、WebView2、Node 和 Playwright Chromium；版本声明见[依赖](../reference/dependency-runtime.md)。按[路径示例](../../tools/build/paths.example.json)填写 `paths.local.json`。资源目录包含官方小语种 manifest/files/许可与 Noto Color Emoji；miSansCdn 指向仓外官方 CSS/190 子集缓存，libvipsCache 指向仓外固定 DLL 与许可缓存。构建通过 fonts lock 核对或获取缺少的原文件，运行时不访问 CDN。
 
 ```powershell
 npm ci
+npx playwright install chromium
+npm run build -- -Output <新的仓外目录>
 ```
 
-使用被忽略的 `tools/build/paths.local.json` 指定本机 Go 可执行文件、仓库外构建输出及合法资源路径；字段见[本机路径示例](../../tools/build/paths.example.json)。运行实例不能放回源码。
+`<新的仓外目录>` 不得已有产品；可预先仅放与 InstanceConfig 对应的 Instance。开发候选可加 `-DebugBuild`。Gradle Wrapper 固定发行版；构建先生成 Compose 浏览器资源，再构建 Go、图标与 Tauri。`paths.local.json` 可设 `buildRoot` 复用仓外构建缓存、`gradle` 指定已有 Gradle；默认使用 Wrapper。不得在运行同一路径的 Gallery.exe 时覆盖该构建。
 
-resources 指向包含 `misans/manifest.json`、字体及随附许可的原始资源根。构建从锁定 npm 包取 CanvasKit，从 SVG 源生成图标，不在源码跟踪二进制。源码启动从本机文件读取资源和已构建 gallery-runtime；发行目录直接使用其自带资源与 Go 会话。
-
-## 构建与验证
+产物为 `Gallery/Gallery.exe`、`gallery-runtime.exe`、`resources/`、LICENSE/NOTICE。两端界面分别嵌在两个可执行文件中，不发行 frontend 目录。加 `-Portable -InstanceConfig <实例配置>` 生成单顶层 Gallery 的便携 ZIP。运行时无 Node。开发与生产实例不互换配置。
 
 ```powershell
-npm run build
-npm test
+npm start -- -Product <构建目录>/Gallery -Config <显式实例配置>
+```
+
+## 单元与静态验证
+
+```powershell
 npm run test:go
 npm run vet:go
 npm run test:race
-npm run format
+./ui/gradlew.bat -p ui -PgalleryBuildRoot=<仓外构建缓存> check wasmJsBrowserDistribution
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo clippy --locked --manifest-path src-tauri/Cargo.toml
+cargo test --locked --manifest-path src-tauri/Cargo.toml
 ```
 
-Go 数据库／Adapter 测试需要合成空库与黄金输入。先通过 `npm run prepare:test -- <新合成根>` 生成，再将其 `instance/live/catalog.sqlite` 和 `golden.json` 填入本机路径文件的 testSeed／golden；`<新合成根>` 必须在 GALLERY_TEST_ROOT 环境变量指定的根下，默认是系统临时目录的 Gallery-Legacy 子目录。
+Cargo 构建需将 `CARGO_TARGET_DIR`、`GALLERY_ICON`、`GALLERY_TRAY_ICON` 指向构建工具生成的仓外缓存/图标，并以 `TAURI_CONFIG` 指定相对于 `src-tauri` 的前端目录。不能把 Windows 绝对路径直接作为 frontendDist，它会被当成 URL。完整构建入口会设置这些参数。
 
-`npm run test:integration` 另需 GALLERY_GO_ACCEPTANCE_EXE 指向本轮构建扫描器。合成测试不读取已有真实库或下载真实素材。完整工具／输出字段示例见 [paths.example.json](../../tools/build/paths.example.json)。
+Go 常规数据库测试可自行创建合成空库，metadata 对照固定在 `internal/metadata/testdata`。旧黄金差分仅在显式提供对应环境变量时运行；跳过不是一致结论。原生控制及媒体场景以 `GALLERY_CONTROL_ROOT`、`GALLERY_UNIT_ROOT` 指向新的仓外合成结果根。Windows race 需独立 MinGW-w64/UCRT，设置本机路径的 raceCompiler 或 CC，不更换系统编译器。
 
-Windows race 在本机路径文件设置 raceCompiler；该命令启用 CGO，并只在子命令 PATH 前加入编译器目录。不要把旧系统 gcc 当作已验证的 race 环境，不修改系统 PATH。已验证渠道与校验值见[依赖说明](../reference/dependency-runtime.md)。
+## 接口生成与新实例
 
-先保存迁移前结果，再运行同组迁移后检查。既有超时／身份失败不放松断言；单条长验证约二十分钟仍未完成即记录未完成。失败最多原样重试一次，不能循环跑到绿。
-
-场景操作见 [Gallery 验证定义](../../validations/scene-gallery/validation.md)，真实性能另见 [性能定义](../../validations/performance-scanning/validation.md)。自动实例默认 1920×1080、静音，不用 Computer-Use；真实内容不截图。
-
-后端差分用 `test:protocol`、`test:schema`、`test:reader`、`test:recovery`。GALLERY_NODE_REFERENCE_ROOT 指向独立冻结的 Node 构建，GALLERY_TEST_ROOT 指向本轮新的合成结果根；Reader 场景另以 GALLERY_SCANNER 指定已验证的扫描器。每次都生成新实例，不覆盖旧结果；附加 `-- --race` 可让黄金差分本身启用 race。范围和判断见[后端差分定义](../../validations/scene-backend_parity/validation.md)。
-
-配置与数据集组装的独立批次使用 `test:config`、`test:dataset`，同样附加 `-- --race`；输入放 Scratches，留存摘要放 Artifacts，见[组装验证定义](../../validations/scene-dataset/validation.md)。不需要开启 HTTP 服务，也不自动读取默认实例。
-
-公共 HTTP 组使用 `test:http -- --race`；冻结 Node、同一合成文件与实例的状态／JSON／媒体字节／响应头逐项对照，见[接入验证](../../validations/scene-http_read/validation.md)。已通过且未受影响的基础组不重跑。
-
-独立读取命令仅是开发验收工具，不是产品启动入口，不接到在用服务。配置该验证定义中的 GALLERY_READ_EXE、GALLERY_HTTP_GOLDEN 和 GALLERY_HTTP_EVIDENCE 后可运行 `test:http-browser`；产品 `start`／`manager` 统一打开管理器：
+`api/runtime-config.schema.json` 定义配置类型和默认值，`api/public.json` 定义其余公共记录，protocol/catalog 定义协议值；Go 与 Compose 类型由同一生成器产生，不手工修改生成文件。变更后执行生成及格式化：
 
 ```powershell
-node tools/go/run.cjs build -o <外部候选目录>/gallery-read.exe ./cmd/gallery-read
+node tools/go/run.mjs generate ./api
+./ui/gradlew.bat -p ui -PgalleryBuildRoot=<仓外构建缓存> formatKotlin
+node tools/go/run.mjs run ./tools/instance -config <全新实例配置>
 ```
 
-独立命令的参数为 `-config <合成配置>`、`-frontend <public目录>`、`-assets <已准备资源目录>`。它只读已准备的数据库，不代替实例所有者，不负责初始化／扫描／动态恢复切换；用途与关闭边界见[架构](../design/architecture-http_read.md)。
+实例工具只创建全新工作库，不启动服务或扫描，不覆盖已有数据库。只在已授权的根目录绑定上使用。
 
-管理会话的实际迁移验证使用 `test:lifecycle-reference`、`test:manager-lifecycle`、`test:management`、`test:inspection`、`test:static-task`、`test:interruption` 和 `test:manager-browser`。显式输入与关闭顺序见[场景定义](../../validations/scene-management/validation.md)，不从默认私有配置寻找实例。需要单独为冻结 Node 准备扫描器时，从 cmd/gallery-scan 构建到该合成根；产品构建只含管理器拥有的 gallery-runtime。
+## 合成实例与浏览器
 
-## 交付
+```powershell
+node tools/go/run.mjs run ./tools/demo -root <新的仓外合成根> -port <独立回环端口> -works 32 -video-encoder <FFmpeg程序>
+```
 
-合成评审工具的根与资源分别配置在忽略的 `tools/demo/paths.local.json`（[示例](../../tools/demo/paths.example.json)）。受保护运行时只读该合成根内的资源；不要把真实源设为 root。既有完整／空实例原样保留，不在源码中重建阶段目录。
+生成固定种子抽象素材、九平台、48 页作品、动图、短视频、独立文件根与空工作库；使用管理器自己的更新操作入库，不直接写作品事实。`-works 0` 生成空实例。字体只来自外部合法资源，不下载演示素材。
 
-构建先准备浏览资源，再构建 Go 会话并保留尚未退役的 Node 对照源码。生成物与发行包在仓库外；已有目标不覆盖。未实际运行的包不写作验收通过。
+按[新栈场景](../../validations/scene-full_stack/validation.md)启动自己的合成候选，设置 `GALLERY_TEST_CONFIG`、`GALLERY_TEST_CDP`、`GALLERY_REVIEW_OUTPUT` 后执行：
 
-72 号任务已授权界面检查点及 Go 替代每批完成后，提交无正文 `Update` 并正常推送 origin/main；授权只限本任务，不改历史、不强推、不加 CI／机械门禁。
+```powershell
+npm run test:native
+npm run test:browser
+npm run test:interactions
+node tools/validation/compatibility.mjs
+node tools/validation/scan_tasks.mjs
+node tools/validation/scan_streaming.mjs
+node tools/validation/video_duration.mjs
+node tools/validation/live_updates.mjs
+node tools/validation/viewer_interrupt.mjs
+node tools/validation/thumbnails.mjs
+node tools/validation/manager_preview.mjs
+```
+
+第二阶段的搜索、个人数据、作者关联与漫画阅读另按[个人阅读场景](../../validations/scene-personal_reading/validation.md)执行；约 39 万语料的查询测量按[搜索性能场景](../../validations/perf-search/validation.md)，不得与其他测试并行。
+
+脚本先验证合成标记、所有来源归属、回环端口及当前 Tauri 实例身份，再操作。Playwright 使用 Compose 的语义定位取得控件位置，实际点击画布；不以修改产品状态冒充功能测试。调试候选可设置 GALLERY_VALIDATION_NO_ACTIVATE=1，以不激活窗口的方式显示；该开关在发行构建无效。网页检查也可通过显式合成公共读取测试入口运行，此时不设置 GALLERY_TEST_CDP，不冒充原生验收。截图等待图像与按需字体网络完成；写说明之前须实际查看。manager_preview 仅使用显式内存协议验证管理界面组件，不是原生 Tauri 控制验收；需要额外设置 GALLERY_TEST_ASSETS 为自有合成资源目录。升级合成实例可运行 tools/demo 的 -upgrade，仅对带合成标记的实例执行 metadata 升级，不扫描。人工系统输入法候选窗、目录对话框和托盘点击另验，不称自动通过。
+
+## 格式
+
+```powershell
+npm run format
+./ui/gradlew.bat -p ui -PgalleryBuildRoot=<仓外构建缓存> formatKotlin
+cargo fmt --manifest-path src-tauri/Cargo.toml
+```
+
+不修改冻结设计原文、根 AGENTS.md 或第三方许可正文。无提交/推送授权时只保留工作区变更。

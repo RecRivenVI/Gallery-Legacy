@@ -1,0 +1,12 @@
+PRAGMA user_version=1;
+CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,name TEXT NOT NULL,avatar TEXT NOT NULL DEFAULT '',password_salt TEXT NOT NULL DEFAULT '',password_hash TEXT NOT NULL DEFAULT '',preferences TEXT NOT NULL DEFAULT '{}',created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,expires_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);
+CREATE TABLE IF NOT EXISTS work_state(account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,platform TEXT NOT NULL,relative_key TEXT NOT NULL,stable_path TEXT NOT NULL,favorite_at INTEGER NOT NULL DEFAULT 0,rating INTEGER NOT NULL DEFAULT 0 CHECK(rating BETWEEN 0 AND 5),page INTEGER NOT NULL DEFAULT 0,read_at INTEGER NOT NULL DEFAULT 0,reading_mode TEXT NOT NULL DEFAULT '',rtl INTEGER NOT NULL DEFAULT 0,cover_alone INTEGER NOT NULL DEFAULT 1,PRIMARY KEY(account_id,platform,relative_key)) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS personal_favorite ON work_state(account_id,favorite_at DESC);
+CREATE INDEX IF NOT EXISTS personal_history ON work_state(account_id,read_at DESC);
+CREATE TABLE IF NOT EXISTS work_tags(account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,platform TEXT NOT NULL,relative_key TEXT NOT NULL,label TEXT NOT NULL,normalized TEXT NOT NULL,PRIMARY KEY(account_id,platform,relative_key,normalized)) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS personal_tags ON work_tags(account_id,normalized,platform,relative_key);
+CREATE TABLE IF NOT EXISTS collections(id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,name TEXT NOT NULL,created_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS collection_works(collection_id TEXT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,platform TEXT NOT NULL,relative_key TEXT NOT NULL,stable_path TEXT NOT NULL,added_at INTEGER NOT NULL,PRIMARY KEY(collection_id,platform,relative_key)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS author_links(left_key TEXT NOT NULL,right_key TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('linked','ignored')),PRIMARY KEY(left_key,right_key)) WITHOUT ROWID;

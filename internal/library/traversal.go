@@ -13,8 +13,15 @@ import (
 // A directory observation is a bounded membership snapshot, not a guarantee
 // that arbitrary file contents cannot change after they have been observed.
 type Directory struct {
-	Path string
-	Info os.FileInfo
+	Path  string
+	Info  os.FileInfo
+	Proof DirectoryProof
+}
+
+type DirectoryProof struct {
+	Volume uint32
+	Index  uint64
+	Mtime  int64
 }
 
 // Nested parts of one directory observation, excluding the consumer callback.
@@ -35,6 +42,9 @@ func (d Directory) Verify() error {
 // All observed work directories are checked individually after metadata reads.
 // The root and author retain their full ancestor check before their scope seals.
 func (d Directory) VerifyLeaf() error {
+	if d.Info == nil {
+		return verifyDirectoryProof(d.Path, d.Proof)
+	}
 	now, e := observeDirectoryLeaf(d.Path)
 	if e != nil || now.Mode()&(os.ModeSymlink|os.ModeIrregular) != 0 || !now.IsDir() ||
 		!os.SameFile(d.Info, now) || !d.Info.ModTime().Equal(now.ModTime()) {
@@ -90,7 +100,11 @@ func ReadDirectoryMeasured(ctx context.Context, platform, root, relative string,
 		return Directory{}, e
 	}
 	defer f.Close()
-	d := Directory{path, before}
+	proof, e := directoryProof(f, before)
+	if e != nil {
+		return Directory{}, e
+	}
+	d := Directory{Path: path, Info: before, Proof: proof}
 	// Resolve the already verified directory once. Every child name comes from
 	// ReadDir, so rebuilding an absolute path and Rel for each entry is redundant.
 	prefix, e := filepath.Rel(root, path)

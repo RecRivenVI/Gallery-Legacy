@@ -2,6 +2,7 @@
 package fileview
 
 import (
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
+	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/media"
@@ -104,7 +106,11 @@ func fileDTO(root, relative, name string, st os.FileInfo) (reading.Row, error) {
 		return nil, media.Failure("FILE_SIZE_UNSUPPORTED", 422)
 	}
 	q := "?root=" + protocol.FormComponent(root) + "&path=" + protocol.FormComponent(relative)
-	return reading.Row{"name": name, "relativePath": relative, "type": library.MediaKind(filepath.Ext(name)), "size": st.Size(), "url": "/api/v1/file-media" + q, "thumbnailUrl": "/api/v1/file-thumbnails" + q}, nil
+	thumbnails := reading.Row{}
+	for _, tier := range []string{"s", "m", "l"} {
+		thumbnails[tier] = "/api/v1/file-thumbnails" + q + "&tier=" + tier + "&v=" + imaging.Key("file:"+root, relative, st.Size(), st.ModTime().UnixNano(), tier)
+	}
+	return reading.Row{"name": name, "relativePath": relative, "type": library.MediaKind(filepath.Ext(name)), "size": st.Size(), "url": "/api/v1/file-media" + q, "thumbnailUrl": thumbnails["s"], "thumbnails": thumbnails}, nil
 }
 func (b *Browser) Media(root, path string) (media.File, error) {
 	l, err := b.Resolve(root, path)
@@ -173,7 +179,10 @@ func (b *Browser) List(root, relative string, o Options) (reading.Row, error) {
 		child := strings.TrimPrefix(current.Relative+"/"+entry.Name(), "/")
 		found, err := b.Resolve(root, child)
 		if err != nil {
-			diagnostics = append(diagnostics, reading.Row{"code": "FILE_ENTRY_UNAVAILABLE"})
+			var excluded *protocol.Error
+			if !errors.As(err, &excluded) || excluded.Code != "FILE_PLATFORM_EXCLUDED" {
+				diagnostics = append(diagnostics, reading.Row{"code": "FILE_ENTRY_UNAVAILABLE"})
+			}
 			continue
 		}
 		if found.Info.IsDir() {

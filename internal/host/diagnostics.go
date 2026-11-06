@@ -3,7 +3,6 @@ package host
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,11 +11,12 @@ import (
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/dataset"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
 
-func diagnose(ctx context.Context, c instance.Config, file string) (any, error) {
+func diagnose(ctx context.Context, c instance.Config, options Options) (any, error) {
 	checks, findings := []Row{}, []Row{}
 	for _, p := range c.Platforms {
 		st, err := os.Stat(p.PhysicalRoot)
@@ -26,18 +26,23 @@ func diagnose(ctx context.Context, c instance.Config, file string) (any, error) 
 			findings = append(findings, Row{"code": "SOURCE_UNAVAILABLE", "platform": p.ID})
 		}
 	}
-	for _, tool := range []string{"ffmpeg", "magick"} {
+	_, imageErr := imaging.Load(filepath.Join(options.Assets, "libvips"))
+	checks = append(checks, Row{"tool": "libvips", "available": imageErr == nil})
+	if imageErr != nil {
+		findings = append(findings, Row{"code": "MEDIA_TOOL_UNAVAILABLE", "tool": "libvips"})
+	}
+	for _, tool := range []string{c.FFmpegPath} {
 		commandCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		command := exec.CommandContext(commandCtx, tool, "-version")
 		command.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		ok := command.Run() == nil
 		cancel()
-		checks = append(checks, Row{"tool": tool, "available": ok})
+		checks = append(checks, Row{"tool": "ffmpeg", "available": ok})
 		if !ok {
 			findings = append(findings, Row{"code": "MEDIA_TOOL_UNAVAILABLE", "tool": tool})
 		}
 	}
-	d, err := dataset.Load(ctx, file)
+	d, err := dataset.Load(ctx, options.ConfigFile)
 	if err != nil {
 		findings = append(findings, Row{"code": control.Code(err, "GENERATION_INVALID")})
 	} else {
@@ -62,7 +67,7 @@ func diagnose(ctx context.Context, c instance.Config, file string) (any, error) 
 		state = "ISSUES"
 	}
 	report := Row{"atMs": timestamp(), "state": state, "checks": checks, "findings": findings, "privacy": "aggregate only"}
-	name := fmt.Sprintf("manager-diagnostics-%d.json", timestamp())
+	name := "environment.json"
 	report["report"] = name
 	return report, instance.WriteJSON(filepath.Join(c.ReportsRoot, name), report)
 }

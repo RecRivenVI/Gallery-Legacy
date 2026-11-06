@@ -1,51 +1,22 @@
 {
-  "name": "gallery",
-  "version": "10.9.0",
+  "name": "gallery-development",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Filesystem-authoritative Gallery for nine fixed platforms and read-only file browsing",
-  "main": "src/desktop/main.js",
   "engines": {
     "node": ">=22.23.2 <23"
   },
   "scripts": {
-    "start": "node tools/desktop/run.cjs",
-    "manager": "node tools/desktop/run.cjs",
-    "test": "node --test --test-concurrency=1 --test-reporter=spec \"test/**/*.test.js\"",
-    "test:go": "node tools/go/run.cjs test -count=1 -timeout=18m ./internal/...",
-    "vet:go": "node tools/go/run.cjs vet ./internal/... ./cmd/...",
-    "test:race": "node tools/go/run.cjs test -race -count=1 ./cmd/... ./internal/...",
-    "test:protocol": "node tools/validation/protocol-diff.cjs",
-    "test:reader": "node tools/validation/reader-diff.cjs",
-    "test:schema": "node tools/validation/schema-diff.cjs",
-    "test:recovery": "node tools/validation/recovery-diff.cjs",
-    "test:config": "node tools/validation/config-diff.mjs",
-    "test:dataset": "node tools/validation/dataset-diff.mjs",
-    "test:http": "node tools/validation/http-diff.mjs",
-    "test:http-browser": "node tools/validation/http-browser.mjs",
-    "test:lifecycle-reference": "node tools/validation/lifecycle-diff.mjs",
-    "test:manager-lifecycle": "node tools/validation/manager-lifecycle.mjs",
-    "test:management": "node tools/validation/management-diff.mjs",
-    "test:inspection": "node tools/validation/inspection-diff.mjs",
-    "test:static-task": "node tools/validation/static-lifecycle.mjs",
-    "test:static-schema": "node tools/validation/static-schema.cjs",
-    "test:interruption": "node tools/validation/manager-interruption.mjs",
-    "test:manager-browser": "node tools/validation/manager-browser.mjs",
-    "check": "node --check bin/gallery.cjs",
-    "check:electron": "node --check src/desktop/main.js && node --check src/desktop/preload.js",
-    "prepare:test": "node tools/validation/prepare.cjs",
-    "test:integration": "node --test --test-concurrency=1 tools/validation/host-test.cjs tools/validation/incremental-test.cjs tools/validation/native-test.cjs tools/validation/test.cjs tools/validation/dispatch-test.cjs",
-    "build": "node tools/build/run.cjs",
-    "package:windows": "node tools/package/run.cjs",
-    "format": "prettier --write src public bin tools test package.json package-lock.json && node tools/go/run.cjs fmt ./internal/... ./cmd/..."
-  },
-  "dependencies": {
-    "better-sqlite3": "12.11.1",
-    "canvaskit-wasm": "0.42.0",
-    "ws": "8.21.0"
+    "start": "pwsh -NoProfile -File tools/desktop/run.ps1",
+    "build": "pwsh -NoProfile -File tools/build/run.ps1",
+    "test:go": "node tools/go/run.mjs test -count=1 -timeout=18m ./...",
+    "vet:go": "node tools/go/run.mjs vet ./...",
+    "test:race": "node tools/go/run.mjs test -race -count=1 -timeout=18m ./internal/...",
+    "test:browser": "node tools/validation/browser.mjs",
+    "test:native": "node tools/validation/native.mjs",
+    "test:interactions": "node tools/validation/interactions.mjs",
+    "format": "prettier --write tools ui/src/wasmJsMain/resources/bootstrap.js ui/src/wasmJsMain/resources/bootstrap.css ui/src/wasmJsMain/resources/index.html package.json package-lock.json && node tools/go/run.mjs fmt ./..."
   },
   "devDependencies": {
-    "electron": "43.0.0",
     "playwright": "1.61.1",
     "prettier": "3.6.2"
   }

@@ -2,7 +2,9 @@ package httpservice
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/media"
 	"time"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/dataset"
@@ -13,14 +15,56 @@ import (
 func (s *Server) SnapshotState(ctx context.Context) (reading.Row, error) {
 	s.dataGate.RLock()
 	defer s.dataGate.RUnlock()
-	return s.state(ctx)
+	state, err := s.state(ctx)
+	if err != nil {
+		return nil, err
+	}
+	state["thumbnails"], err = s.media.Cache.PreloadStatus(ctx)
+	return state, err
 }
 func (s *Server) ReplaceDataset(next *dataset.Dataset) error {
 	s.dataGate.Lock()
 	defer s.dataGate.Unlock()
 	previous := s.data
+	s.media.Cache.SetScanning(true)
 	s.data = next
+	if next.Reader != nil {
+		next.Reader.PersonalFile = s.people.File
+	}
+	s.media.Cache.SetScanning(false)
 	return previous.Close()
+}
+
+func (s *Server) SetScanning(scanning bool) { s.media.Cache.SetScanning(scanning) }
+func (s *Server) Thumbnails(ctx context.Context, operation string, input reading.Row) (any, error) {
+	if operation == "thumbnails.cancel" {
+		if err := s.media.Cache.CancelPreload(); err != nil {
+			return nil, err
+		}
+	}
+	if operation == "thumbnails.start" {
+		var request media.PreloadRequest
+		b, err := json.Marshal(input)
+		if err != nil {
+			return nil, err
+		}
+		if err = json.Unmarshal(b, &request); err != nil {
+			return nil, err
+		}
+		if err = s.media.Cache.StartPreloadTask(ctx, request); err != nil {
+			return nil, err
+		}
+	}
+	if operation == "thumbnails.pause" {
+		paused, ok := input["paused"].(bool)
+		if !ok {
+			return nil, fmt.Errorf("INVALID_INPUT")
+		}
+		if err := s.media.Cache.PausePreload(paused); err != nil {
+			return nil, err
+		}
+	}
+	return s.media.Cache.PreloadStatus(ctx)
 }
 func (s *Server) Access(operation string, input reading.Row) (any, error) {
 	a := s.access
@@ -73,7 +117,10 @@ func (s *Server) Access(operation string, input reading.Row) (any, error) {
 				events = append(events, copy)
 			}
 		}
-		result = reading.Row{"enabled": a.enabled, "clients": clients, "events": events, "privacy": "local instance only; events contain no addresses, URLs, queries or bodies; maximum 30 days / 256 clients / 200 events", "since": "persisted-history"}
+		result = reading.Row{"enabled": a.enabled, "autoBan": a.rule, "clients": clients, "events": events, "privacy": "local instance only; events contain no addresses, URLs, queries or bodies; maximum 30 days / 256 clients / 200 events", "since": "persisted-history"}
+	case "access.autoban":
+		err = a.configureBan(input)
+		result = a.rule
 	case "access.configure":
 		value, ok := input["enabled"].(bool)
 		if !ok {
@@ -112,6 +159,7 @@ func (s *Server) Access(operation string, input reading.Row) (any, error) {
 			break
 		}
 		client["blocked"] = input["blocked"] == true
+		client["blockedUntilMs"] = int64(0)
 		a.dirty = true
 		result = reading.Row{"id": id, "blocked": client["blocked"]}
 	default:

@@ -8,6 +8,13 @@ node_modules/
 **/*.local.json
 .env.local
 /build/
+.gradle/
+.kotlin/
+/ui/build/
+/internal/webui/assets/*
+!/internal/webui/assets/.keep
+**/target/
+/src-tauri/gen/
 *.exe
 *.dll
 *.wasm

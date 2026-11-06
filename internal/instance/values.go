@@ -99,6 +99,16 @@ func configureValues(config *Config, source map[string]any) error {
 		return fmt.Errorf("DEPLOYMENT_INVALID")
 	}
 	config.ShortLinks = map[string]string{}
+	config.FFmpegPath = stringOr(source["ffmpegPath"], properties["ffmpegPath"]["default"].(string))
+	cacheLimit := source["thumbnailCacheBytes"]
+	if cacheLimit == nil {
+		cacheLimit = properties["thumbnailCacheBytes"]["default"]
+	}
+	limit, ok := cacheLimit.(float64)
+	if !ok || limit < 0 || math.Trunc(limit) != limit || limit > 9007199254740991 {
+		return fmt.Errorf("THUMBNAIL_CACHE_LIMIT_INVALID")
+	}
+	config.ThumbnailCacheBytes = int64(limit)
 	if value := source["shortLinks"]; truthy(value) {
 		links, ok := value.(map[string]any)
 		if !ok {

@@ -1,6 +1,6 @@
 # 后端替换的行为合同
 
-本合同冻结 Node 读取／控制的可观察行为，供 Go 差分对照；不是宣称 Go 已替代。排序及状态集合仍由 [protocol.json](../../api/protocol.json)定义，实例字段仍由[配置合同](configuration-instance.md)定义。不增加账号、协议升级或新界面。
+本合同定义 Go 读取／控制的可观察行为，沿用迁移前的协议。排序及状态集合由 [protocol.json](../../api/protocol.json)定义，实例字段由[配置合同](configuration-instance.md)定义。迁移对照的版本与已知差异见[读取架构](../design/architecture-http_read.md)。
 
 ## 公共请求和响应
 
@@ -19,32 +19,32 @@ JSON 返回 protocolVersion、generationId，工作库增加 revision；成功�
 | GET /api/v1/generations                                                                        | 只读检查点摘要；不暴露管理控制                                                                               |
 | POST /api/v1/scans                                                                             | 即使来自 loopback 也不授权；保留 READ_ONLY_CONFIRMATION_REQUIRED／LOCAL_CONTROL_REQUIRED 的既有响应          |
 | GET、HEAD /api/db-authors、db-posts、db-author-posts、search、db-entry、list、media、thumbnail | Venera 已安装源兼容；p／platformPath／authorId 保持原有稳定路径与旧 DTO                                      |
-| GET、HEAD /、/manage、/frontend/\*、/protocol/protocol.json、/venera-source.js、/robots.txt    | 原有页面与本地资源；manage 只投影网页，不能获得本机 IPC 身份；Venera source key 与模板保持                   |
+| GET、HEAD /、/frontend/\*、/protocol/protocol.json、/venera-source.js、/robots.txt    | 原有页面与本地资源；/manage 已按用户决定移除；Venera source key 与模板保持                   |
 | GET、HEAD /s/:code                                                                             | 已配置或持久化短链，302 到原稳定 hash 目标；缺失 404                                                         |
-| OPTIONS                                                                                        | 仅允许 GET／HEAD，允许请求头 Range、cache-time；其他方法 405                                                 |
+| OPTIONS                                                                                        | 允许 GET／HEAD／POST，允许请求头 Content-Type、Range、cache-time；其他方法 405                                                 |
 | WebSocket /api/v1/events                                                                       | 连接立即及每 1500ms 发送 protocolVersion=1、type=status、data；同样校验 Host／Origin，无管理权限             |
 
 所有公共请求保持 Host／Origin 白名单和访问封禁；代理来源不授予控制权。JSON 使用 no-store、nosniff，静态使用 no-cache 与现有 COOP／COEP；所有响应保留 X-Robots-Tag。CORS 仅对配置的跨源请求回显 Origin 并设置 Vary。未知 API 为 ENDPOINT_NOT_FOUND，其他未知资源为 NOT_FOUND。
 
 ## 列表与游标
 
-- 仅接受 platform、author、tag、q、sort、mediaType、hideEmpty、pageSize、page、cursor、g、rev，每个参数只能出现一次。非作品列表拒绝 author／tag／mediaType／hideEmpty；tags 拒绝 sort。
+- 接受 platform、author、tag、q、sort、mediaType、hideEmpty、pageSize、page、cursor、g、rev，以及下述扩展筛选，每个参数只能出现一次。非作品列表拒绝 author／tag／mediaType／hideEmpty；tags 拒绝 sort。
 - 默认 page=1、pageSize=48，范围分别 1～1000000、1～200；十进制数字可有前导零，不接受科学计数法或负号。ID 为 1～9223372036854775807，最多 19 位，不经浮点数转换。
-- q 最多 256 Unicode 码点；tag 非空且最多 512 UTF-16 代码单元。控制字符拒绝，Tab／LF／CR 仍允许。URLSearchParams 的加号、无效百分号、分号及 UTF-8 替换语义保留。
-- image 指仅图片且不含视频的作品，video 指含视频；标签精确区分大小写。短搜索完整匹配一／二码点，长搜索使用现有 trigram；不能把关键词作为任意 FTS 表达式执行。
+- q 最多 2048 Unicode 码点；tag 非空且最多 512 UTF-16 代码单元。控制字符拒绝，Tab／LF／CR 仍允许。URLSearchParams 的加号、无效百分号、分号及 UTF-8 替换语义保留。
+- image 指仅图片且不含视频的作品，video 指含视频；标签按统一文本归一化后精确匹配。短搜索完整匹配一／二码点，长搜索使用现有 trigram；不能把关键词作为任意 FTS 表达式执行。
 - 所有排序用既有主键与 ID 双重顺序；游标包含 v、查询上下文 SHA256、position、revision。哈希使用 Node JSON.stringify 字节语义，不能因 Go JSON 转义方式不同使已有游标失效。
 - g／rev／cursor 语境不符分别按既有 GENERATION_CHANGED、CONTENT_CHANGED、CURSOR_CONTEXT_MISMATCH 返回；静态库不接受 rev。
 
 ## 媒体与文件
 
 - 原图、字幕与封面均支持单段 bytes= 起止／后缀 Range；多段、非法、越界为 INVALID_RANGE／416。返回 Accept-Ranges、Content-Length、Content-Range；HEAD 不发送正文。零字节非 Range 响应长度为零。
-- 源文件只读；路径、重解析点、物理身份与变化检查不取消。缩略图缓存与临时文件仅写实例；命中状态用 X-Gallery-Thumbnail，失败不回假图。外部 ImageMagick／FFmpeg 有界队列与取消语义保留。
+- 源文件只读；路径、重解析点、物理身份与变化检查不取消。缩略图缓存与临时文件仅写实例；命中状态用 X-Gallery-Thumbnail，失败不回假图。图片由进程内 libvips 生成分档缩略图；视频 FFmpeg 有界队列与取消语义保留。
 - SVG 使用 sandbox CSP；字幕仅 zh-CN／en-US 的同名 VTT、最多 4MiB。媒体 MIME、私有缓存头与失败码与 Node 对照，不直接用 Go 默认 ServeFile 替代合同。
 - cover／preview／content 及 defaultVisible 按文件名和已提取预览标志决定；声明不增加实际媒体，封面停用字段不能丢失作品。
 
 ## 存储与恢复
 
-Catalog v4、live v3、Search、Adapter、shape 分别维持现有版本。完整作品事务仍同时维护事实、搜索、计数、revision、签名与高水位；WAL／FULL 不变，只有一个 writer。读取同一响应使用一致事务，不因连接池混出多个修订的数据。
+Catalog、live、Search、Adapter、shape 分别使用 [catalog 契约](../../api/catalog.json) 声明的版本。完整作品事务仍同时维护事实、搜索、计数、revision、作品文件清单与高水位；WAL／FULL 不变，只有一个 writer。读取同一响应使用一致事务，不因连接池混出多个修订的数据。
 
 已有工作库必须核对结构、版本、来源绑定、聚合与账本；坏库不能被新空库覆盖。新库可从已验证 READY 恢复检查点初始化；不读 BUILDING、不改写 READY。静态快照、manifest、哈希、SQLite sidecar、active 指针及保留策略的验证，沿用现有恢复合同，不能仅因 Go 主链可启动而删除。
 
@@ -73,3 +73,14 @@ Catalog v4、live v3、Search、Adapter、shape 分别维持现有版本。完�
 输入错误、认证拒绝和身份错配必须有真正 pipe／进程证据；时间戳、PID、UUID 与计时按各自身份关系核对，不要求跨运行位一致。状态探测不能阻塞在 PowerShell 子进程；新 Go 使用原生进程句柄取得同格式身份。
 
 可重复定义见[后端差分场景](../../validations/scene-backend_parity/validation.md)。原始 Node 对照使用独立冻结构建；黄金结果、输入库、故障注入与日志在仓库外。必须区分“协议一致”“数据与恢复一致”“宿主／浏览器可用”，未运行的批次不写一致。
+
+## 搜索与个人数据扩展
+
+生成类型的唯一来源是 [public.json](../../api/public.json)，本节定义新增可观察行为。
+
+- `search-parse?q=` 返回字段、包含/排除、原 token 和 UTF-8 字节偏移；高级面板和条件标签使用同一解析结果。语法见[使用说明](../usage/guide-gallery.md)。默认不查正文或来源 ID。
+- `platforms` 是固定平台逗号列表；显式多平台必须有非平台搜索或筛选条件。`includeTags`、`excludeTags`、`myTags` 是 JSON 字符串数组，保留标签内的逗号。`types`、`ratings` 是枚举逗号列表；`ai`、`paid` 取 all/0/1，`from`、`to` 是有效 YYYY-MM-DD，`pages` 取 all/single/multi；`favorite`、`hideRead` 取 0/1，`minRating` 取 0–5。`my`、`collection`、`series`、`linkedAuthor` 限定个人或关联范围。所有条件加入游标上下文。
+- `filter-options` 返回当前平台范围实际可用类型、指标和 pixiv/付费筛选；不枚举来源。works 的 counts.media 表示可阅读页数，排除封面、隐藏文件和提取预览；Catalog 物理计数保持不变。
+- GET `accounts`、`session`、`collections`、`personal-tags`；POST `accounts` 创建并登录，`session` 登录/退出，`account` 更新/删除/偏好，`personal` 收藏/评分/阅读/个人标签/收藏夹，`collections` 创建/改名/删除，`history/clear` 清空历史。个人 POST 正文最多 64 KiB，必须携带当前 accountId；账号切换后的旧请求返回 ACCOUNT_CHANGED。会话 Cookie HttpOnly、SameSite=Lax，保持一年。
+- GET `summary?path=` 返回不读取来源文件的作品概要；`author-pages/:id` 返回统计和关联；POST `author-links` 确认/忽略/手动关联，对全实例有效。GET `episodes?work=` 返回系列/前后篇；`position?path=&pageSize=` 返回章节所属网格页。
+- 管理 IPC 增加 `accounts.list/reset/delete`。HTTP 不提供重设他人密码的管理入口；管理器所有权和退出边界不变。

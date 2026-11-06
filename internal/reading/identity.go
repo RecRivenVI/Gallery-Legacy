@@ -7,10 +7,9 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
-	"unicode/utf16"
 
+	"github.com/RecRivenVI/Gallery-Legacy/internal/mediaorder"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/protocol"
 )
@@ -25,12 +24,8 @@ func (v *View) MediaIdentity(id int64) (string, error) {
 	return mediaIdentity(m), err
 }
 
-func NaturalCompare(a, b string) int {
-	if c := slices.Compare(utf16.Encode([]rune(naturalKey(a))), utf16.Encode([]rune(naturalKey(b)))); c != 0 {
-		return c
-	}
-	return slices.Compare(utf16.Encode([]rune(a)), utf16.Encode([]rune(b)))
-}
+var NaturalCompare = mediaorder.Compare
+
 func publicPath(platform, relative string) string {
 	return "/p/" + component(platform) + "/" + strings.ReplaceAll(relative, "\\", "/")
 }
@@ -61,6 +56,25 @@ func parsePath(value string) (string, string, bool) {
 	}
 	return platform, lower(strings.Join(parts, "\\")), len(parts) > 0
 }
+
+// DecodePath uses the same identity normalization as public resolution.
+func DecodePath(value string) (string, string, bool) { return parsePath(value) }
+
+func (v *View) WorkIdentity(value string) (Row, error) {
+	platform, key, ok := parsePath(value)
+	if !ok {
+		return nil, nil
+	}
+	return v.row("SELECT work_id,media_count FROM works w WHERE platform_id=? AND relative_path_key=?", platform, key)
+}
+
+func (v *View) ReadableCount(workID int64) (int64, error) {
+	row, err := v.row("SELECT "+visibleCountSQL("w")+" n FROM works w WHERE w.work_id=?", workID)
+	if err != nil || row == nil {
+		return 0, err
+	}
+	return row["n"].(int64), nil
+}
 func mediaIdentity(m Row) string {
 	if m == nil {
 		return ""
@@ -76,45 +90,16 @@ func mediaIdentity(m Row) string {
 	return hex.EncodeToString(hash[:])[:32]
 }
 
-var digitRun = regexp.MustCompile(`[0-9]+`)
-var coverFile = regexp.MustCompile(`(?i)^\.?cover\.[^.]+$`)
-var previewFile = regexp.MustCompile(`^[1-9]\.[^.]+$`)
-
-func naturalKey(value string) string {
-	return digitRun.ReplaceAllStringFunc(lower(value), func(digits string) string {
-		number := strings.TrimLeft(digits, "0")
-		if number == "" {
-			number = "0"
-		}
-		length := strconv.Itoa(len(number))
-		return "\x01" + strings.Repeat("0", 10-len(length)) + length + ":" + number + "\x01"
-	})
-}
 func sortMedia(rows []Row) {
 	slices.SortFunc(rows, func(a, b Row) int {
 		x, y := text(a["relative_path"]), text(b["relative_path"])
 		return NaturalCompare(x, y)
 	})
 }
-func presentation(name string, previews bool) (string, bool) {
-	cover, preview := coverFile.MatchString(name), previews && previewFile.MatchString(name)
-	role := "content"
-	if cover {
-		role = "cover"
-	} else if preview {
-		role = "preview"
-	}
-	return role, !cover && !preview && !strings.HasPrefix(name, ".")
-}
-func coverRank(name string, previews bool) int {
-	if previews && strings.HasPrefix(name, "1.") && previewFile.MatchString(name) {
-		return 0
-	}
-	if coverFile.MatchString(name) {
-		return 1
-	}
-	return 2
-}
+
+var presentation = mediaorder.Role
+var coverRank = mediaorder.CoverRank
+
 func sortCover(rows []Row, mediaType string, previews bool) {
 	preferred := "image"
 	if mediaType == "video" {

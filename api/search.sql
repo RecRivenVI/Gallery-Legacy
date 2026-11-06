@@ -1,0 +1,22 @@
+CREATE TABLE __prefix__work_sort(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_id INTEGER NOT NULL,published_sort INTEGER NOT NULL,title_key TEXT NOT NULL,name_key TEXT NOT NULL,has_image INTEGER NOT NULL,has_video INTEGER NOT NULL,has_readable INTEGER NOT NULL);
+    CREATE TABLE __prefix__search_docs(work_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,title TEXT NOT NULL,author TEXT NOT NULL,tags TEXT NOT NULL,body TEXT NOT NULL);
+    CREATE TABLE __prefix__work_tags(work_id INTEGER NOT NULL,tag_id INTEGER NOT NULL,PRIMARY KEY(work_id,tag_id)) WITHOUT ROWID;
+    CREATE VIRTUAL TABLE __prefix__work_fts USING fts5(title,author,tags,body,tokenize='trigram');
+    CREATE VIRTUAL TABLE __prefix__short_fts USING fts5(terms,detail='none',columnsize=0);
+    CREATE TABLE __prefix__authors(author_id INTEGER PRIMARY KEY,platform_id TEXT NOT NULL,author_key TEXT NOT NULL,source_author_id TEXT,identity_key TEXT NOT NULL,name_key TEXT NOT NULL,latest_sort INTEGER NOT NULL,work_count INTEGER NOT NULL);
+    CREATE TABLE __prefix__tags(tag_id INTEGER PRIMARY KEY,display_value TEXT NOT NULL,normalized_key TEXT NOT NULL,work_count INTEGER NOT NULL);
+    CREATE INDEX __prefix__idx_sort_platform_date ON __prefix__work_sort(platform_id,published_sort DESC,work_id DESC);
+    CREATE INDEX __prefix__idx_sort_platform_title ON __prefix__work_sort(platform_id,title_key,work_id);
+    CREATE INDEX __prefix__idx_sort_platform_name ON __prefix__work_sort(platform_id,name_key,work_id);
+    CREATE INDEX __prefix__idx_sort_author_date ON __prefix__work_sort(author_id,published_sort DESC,work_id DESC);
+    CREATE INDEX __prefix__idx_sort_author_title ON __prefix__work_sort(author_id,title_key,work_id);
+    CREATE INDEX __prefix__idx_sort_author_name ON __prefix__work_sort(author_id,name_key,work_id);
+    CREATE INDEX __prefix__idx_sort_media_image ON __prefix__work_sort(platform_id,has_image,published_sort DESC,work_id DESC);
+    CREATE INDEX __prefix__idx_sort_media_video ON __prefix__work_sort(platform_id,has_video,published_sort DESC,work_id DESC);
+    CREATE INDEX __prefix__idx_authors_name ON __prefix__authors(platform_id,name_key,author_id);
+    CREATE INDEX __prefix__idx_authors_latest ON __prefix__authors(platform_id,latest_sort DESC,author_id DESC);
+    CREATE INDEX __prefix__idx_authors_works ON __prefix__authors(platform_id,work_count DESC,author_id DESC);
+    CREATE INDEX __prefix__idx_tags_normalized ON __prefix__tags(normalized_key,tag_id);
+    CREATE INDEX __prefix__idx_tags_count ON __prefix__tags(work_count DESC,tag_id DESC);
+    CREATE INDEX __prefix__idx_work_tags_tag ON __prefix__work_tags(tag_id,work_id);
+    

@@ -2,6 +2,7 @@ package httpservice
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"math/big"
@@ -18,11 +19,14 @@ import (
 )
 
 func body(r *http.Request) (reading.Row, error) {
-	b, err := io.ReadAll(io.LimitReader(r.Body, 4097))
+	return sizedBody(r, 4096)
+}
+func sizedBody(r *http.Request, limit int64) (reading.Row, error) {
+	b, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
 	if err != nil {
 		return nil, media.Failure("INVALID_BODY", 400)
 	}
-	if len(b) > 4096 {
+	if int64(len(b)) > limit {
 		return nil, media.Failure("BODY_TOO_LARGE", 413)
 	}
 	var value any
@@ -70,12 +74,18 @@ func fileOptions(q url.Values, search bool) fileview.Options {
 func (s *Server) route(w http.ResponseWriter, r *http.Request) error {
 	p := r.URL.EscapedPath()
 	q := protocol.Parameters(r.URL.RawQuery)
+	if handled, err := s.personalRoute(w, r); handled || err != nil {
+		return err
+	}
+	if handled, err := s.authorRoute(w, r); handled || err != nil {
+		return err
+	}
 	if r.Method == "OPTIONS" {
-		if m := r.Header.Get("Access-Control-Request-Method"); m != "GET" && m != "HEAD" {
+		if m := r.Header.Get("Access-Control-Request-Method"); m != "GET" && m != "HEAD" && m != "POST" {
 			return media.Failure("METHOD_NOT_ALLOWED", 405)
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD")
-		w.Header().Set("Access-Control-Allow-Headers", "Range, cache-time")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Range, cache-time, Content-Type")
 		w.WriteHeader(204)
 		return nil
 	}
@@ -107,6 +117,39 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request) error {
 	}
 	if r.Method == "GET" {
 		switch p {
+		case "/api/v1/summary":
+			data, revision, err := s.read(r.Context(), func(v *reading.View) (any, error) {
+				if v == nil {
+					return nil, nil
+				}
+				identity, err := v.WorkIdentity(q.Get("path"))
+				if err != nil || identity == nil {
+					return nil, err
+				}
+				items, err := v.Works([]int64{identity["work_id"].(int64)}, "all")
+				if err != nil {
+					return nil, err
+				}
+				return items[0], nil
+			})
+			if err != nil {
+				return err
+			}
+			if data == nil {
+				return media.Failure("WORK_NOT_FOUND", 404)
+			}
+			return s.send(w, r, data, revision)
+		case "/api/v1/filter-options":
+			data, revision, err := s.read(r.Context(), func(v *reading.View) (any, error) {
+				if v == nil {
+					return api.AvailableFilters{WorkTypes: []string{}, Metrics: []string{}}, nil
+				}
+				return v.FilterOptions(q)
+			})
+			if err != nil {
+				return err
+			}
+			return s.send(w, r, data, revision)
 		case "/api/v1/health":
 			contract, err := api.LoadCatalog()
 			if err != nil {
@@ -198,12 +241,37 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, f media.File
 	if thumbnail {
 		var err error
 		var status string
-		f, status, err = s.media.Thumbnail(r.Context(), f)
+		tier := value(r.URL.Query(), "tier", "s")
+		fingerprint, err := media.PreviewKey(f, tier)
 		if err != nil {
 			return err
 		}
+		if v := r.URL.Query().Get("v"); v != "" && v != fingerprint {
+			return media.Failure("MEDIA_CHANGED", 409)
+		}
+		priority := media.Visible
+		if r.URL.Query().Get("priority") == "nearby" {
+			priority = media.Nearby
+		}
+		f, status, err = s.media.Cache.Request(r.Context(), f, tier, priority)
+		if err != nil {
+			return err
+		}
+		defer f.Release()
+		info, err := s.media.Cache.LookupSummary(r.Context(), fingerprint)
+		if err != nil {
+			return err
+		}
+		for name, key := range map[string]string{"X-Gallery-Width": "width", "X-Gallery-Height": "height", "X-Gallery-Animated": "animated", "X-Gallery-Duration": "durationMs"} {
+			if info[key] != nil {
+				headers[name] = fmt.Sprint(info[key])
+			}
+		}
 		headers["X-Gallery-Thumbnail"] = status
-		kind = "image/webp"
+		kind = media.MIME(f.Path)
+		if r.URL.Query().Get("v") != "" {
+			headers["Cache-Control"] = "public, max-age=31536000, immutable"
+		}
 	}
 	return media.Stream(w, r, f, kind, headers)
 }

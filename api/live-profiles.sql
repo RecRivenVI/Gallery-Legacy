@@ -1,0 +1,1 @@
+CREATE TABLE live_scan_work_profiles(platform_id TEXT NOT NULL,relative_path_key TEXT NOT NULL,projection BLOB NOT NULL,PRIMARY KEY(platform_id,relative_path_key),FOREIGN KEY(platform_id,relative_path_key) REFERENCES live_scan_works(platform_id,relative_path_key) ON DELETE CASCADE);

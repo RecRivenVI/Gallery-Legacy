@@ -2,6 +2,7 @@ package reading
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -13,6 +14,12 @@ import (
 )
 
 func init() {
+	sqlite.MustRegisterDeterministicScalarFunction("gallery_normalize", 1, func(_ *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
+		if args[0] == nil {
+			return "", nil
+		}
+		return catalog.Normalize(args[0].(string)), nil
+	})
 	// A pure SQL projection; no connection-scoped cache or database access.
 	sqlite.MustRegisterDeterministicScalarFunction("gallery_visible_media", 2, func(_ *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
 		_, visible := presentation(args[0].(string), args[1] == int64(1))
@@ -44,6 +51,9 @@ type searchResult struct {
 }
 
 func (v *View) table(name string) string {
+	if name == "work_sort" && v.legacySearch {
+		return "temp.gallery_work_sort"
+	}
 	if v.live {
 		return "live_" + name
 	}
@@ -127,7 +137,7 @@ func (v *View) count(from string, conditions []string, args []any) (int64, error
 }
 func cursorNumber(q protocol.Query) (any, error) {
 	value := q.Cursor["value"]
-	if strings.HasPrefix(q.Sort, "date_") || strings.HasPrefix(q.Sort, "latest_") || strings.HasPrefix(q.Sort, "posts_") {
+	if strings.HasPrefix(q.Sort, "date_") || strings.HasPrefix(q.Sort, "latest_") || strings.HasPrefix(q.Sort, "posts_") || q.Sort == "bookmarks_desc" || q.Sort == "views_desc" || q.Sort == "likes_desc" || q.Sort == "rating_desc" || q.Sort == "favorite_desc" {
 		return strconv.ParseInt(value, 10, 64)
 	}
 	return value, nil
@@ -152,18 +162,46 @@ func nextCursor(rows []Row, field, column string) map[string]string {
 
 func (v *View) authorPage(q protocol.Query, offset int64) (searchResult, error) {
 	var result searchResult
-	from := v.table("authors")
+	from := v.table("authors") + " sa JOIN authors a USING(author_id)"
 	order := authorOrders[q.Sort]
+	order.column = "sa." + order.column
 	conditions := []string{}
 	args := []any{}
-	if q.PlatformID != nil {
-		conditions = append(conditions, "platform_id=?")
+	if len(q.Platforms) > 0 {
+		raw, _ := json.Marshal(q.Platforms)
+		conditions = append(conditions, "sa.platform_id IN (SELECT value FROM json_each(?))")
+		args = append(args, string(raw))
+	} else if q.PlatformID != nil {
+		conditions = append(conditions, "sa.platform_id=?")
 		args = append(args, *q.PlatformID)
 	}
-	if text := catalog.NormalizeQuery(q.Text); text != "" {
-		conditions = append(conditions, "instr(name_key,?)>0")
-		args = append(args, text)
+	for _, term := range q.Terms {
+		if term.Field == "platform" {
+			continue
+		}
+		test := "0"
+		values := []any{}
+		switch term.Field {
+		case "any":
+			test = "instr(gallery_normalize(a.display_name||' '||coalesce(a.handle,'')),?)>0"
+			values = append(values, catalog.NormalizeQuery(term.Value))
+		case "author":
+			test = "instr(gallery_normalize(a.display_name),?)>0"
+			values = append(values, catalog.NormalizeQuery(term.Value))
+		case "user":
+			test = "instr(gallery_normalize(coalesce(a.handle,'')),?)>0"
+			values = append(values, catalog.NormalizeQuery(term.Value))
+		case "uid", "id":
+			test = "a.source_author_id=?"
+			values = append(values, term.Value)
+		}
+		if term.Exclude {
+			test = "NOT (" + test + ")"
+		}
+		conditions = append(conditions, test)
+		args = append(args, values...)
 	}
+
 	total, err := v.count(from, conditions, args)
 	if err != nil {
 		return result, err
@@ -185,7 +223,11 @@ func (v *View) tagPage(q protocol.Query, offset int64) (searchResult, error) {
 	var result searchResult
 	conditions := []string{}
 	args := []any{}
-	if q.PlatformID != nil {
+	if len(q.Platforms) > 0 {
+		raw, _ := json.Marshal(q.Platforms)
+		conditions = append(conditions, "s.platform_id IN (SELECT value FROM json_each(?))")
+		args = append(args, string(raw))
+	} else if q.PlatformID != nil {
 		conditions = append(conditions, "s.platform_id=?")
 		args = append(args, *q.PlatformID)
 	}

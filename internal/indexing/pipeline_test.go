@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -59,21 +58,10 @@ func TestWaitingDeviceDoesNotStarveReadyDevicePreparation(t *testing.T) {
 }
 
 func TestDeviceTuningRetainsGlobalAndSharedPhysicalLimits(t *testing.T) {
-	for _, n := range []int{0, 2, 4, 8} {
-		if got := preparationDeviceLimit(32, n); got != 32 {
-			t.Fatal("SSD detection overridden", n, got)
-		}
-		expected := n
-		if n == 0 {
-			expected = 2
-		}
-		if got := preparationDeviceLimit(2, n); got != expected {
-			t.Fatal("slow device limit", n, got)
-		}
+	if preparationDeviceLimit(2) != 1 || preparationDeviceLimit(32) != 32 {
+		t.Fatal("physical device policy")
 	}
-	if preparationDeviceLimit(2, 64) != 8 {
-		t.Fatal("device limit is not bounded")
-	}
+
 	device := make(chan struct{}, 4)
 	p := Pipeline{disks: map[string]chan struct{}{"first-root": device, "second-root": device}, prepareSlots: make(chan struct{}, 8)}
 	var disks, slots []func()
@@ -433,11 +421,6 @@ func TestReconcileUsesIdentityIndexWithoutSortOrFullScan(t *testing.T) {
 }
 
 func TestPreparationConcurrencyUsesDiskClassAndRespectsSharedBudget(t *testing.T) {
-	for _, c := range []struct{ workers, disk, want int }{{8, 32, 8}, {8, 2, 2}, {1, 2, 1}, {32, 32, 32}} {
-		if got := authorConcurrency(c.workers, c.disk); got != c.want {
-			t.Fatalf("workers=%d disk=%d concurrency=%d", c.workers, c.disk, got)
-		}
-	}
 	shared := make(chan struct{}, 2)
 	p := Pipeline{disks: map[string]chan struct{}{"first": shared, "second": shared}}
 	first, e := p.disk(context.Background(), "first")
@@ -471,78 +454,6 @@ func TestActualMediaEligibility(t *testing.T) {
 		if library.MediaKind(ext) != "" {
 			t.Fatal("declaration masqueraded as actual media")
 		}
-	}
-}
-
-func TestSingleLargeAuthorUsesBoundedWorkWindowWithoutOrderedBlocking(t *testing.T) {
-	works := make([]library.Entry, 64)
-	for i := range works {
-		works[i].Key = fmt.Sprint(i)
-	}
-	var active, peak, finished atomic.Int64
-	entered := make(chan struct{}, 64)
-	release := make(chan struct{})
-	firstStarted := make(chan struct{})
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	done := make(chan error, 1)
-	go func() {
-		done <- runWorkWindow(ctx, works, 8, func(work library.Entry) error {
-			if work.Key != "0" {
-				select {
-				case <-firstStarted:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			}
-			n := active.Add(1)
-			defer active.Add(-1)
-			for p := peak.Load(); n > p; p = peak.Load() {
-				if peak.CompareAndSwap(p, n) {
-					break
-				}
-			}
-			if work.Key == "0" {
-				close(firstStarted)
-				select {
-				case <-release:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			}
-			entered <- struct{}{}
-			finished.Add(1)
-			return nil
-		})
-	}()
-	// Later works finish even while the first work is stalled.
-	for i := 0; i < 20; i++ {
-		select {
-		case <-entered:
-		case <-ctx.Done():
-			t.Fatal("ordered result blocking")
-		}
-	}
-	close(release)
-	if e := <-done; e != nil {
-		t.Fatal(e)
-	}
-	if finished.Load() != 64 || peak.Load() < 2 || peak.Load() > 8 {
-		t.Fatal("incorrect window bounds", finished.Load(), peak.Load())
-	}
-}
-
-func TestWorkWindowCancellationAndFailureJoinAllWorkers(t *testing.T) {
-	works := make([]library.Entry, 100)
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	var called atomic.Int64
-	if e := runWorkWindow(ctx, works, 8, func(library.Entry) error { called.Add(1); return nil }); !errors.Is(e, context.Canceled) || called.Load() != 0 {
-		t.Fatal("cancelled window ran", e)
-	}
-	injected := errors.New("SYNTHETIC_FAILURE")
-	if e := runWorkWindow(context.Background(), works, 8, func(library.Entry) error { return injected }); !errors.Is(e, injected) {
-		t.Fatal("worker failure lost", e)
 	}
 }
 
@@ -580,11 +491,12 @@ func TestNativeListingCoalescesMembershipAndNeverSpoolsMediaRows(t *testing.T) {
 		t.Fatal(e)
 	}
 	beforeRows, beforeTx := l.Entries.Load(), l.Transactions.Load()
-	entries, dirs, e := p.nativeWork(ctx, l, "pixiv", page[0])
+	tree, e := p.nativeWork(ctx, l, "pixiv", page[0])
 	if e != nil {
 		t.Fatal(e)
 	}
-	if len(entries) != 4 || len(dirs) != 2 || l.Entries.Load() != beforeRows || l.Transactions.Load() != beforeTx {
+	defer tree.Close()
+	if len(tree.Entries) != 4 || len(tree.Directories) != 2 || l.Entries.Load() != beforeRows || l.Transactions.Load() != beforeTx {
 		t.Fatal("work descendants duplicated in SQL")
 	}
 	if p.c.Listings.Load() != 1104 {

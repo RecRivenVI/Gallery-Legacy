@@ -1,0 +1,22 @@
+{
+  "instanceRoot": "<absolute-instance-root>",
+  "deployment": "staging",
+  "mode": "local",
+  "listenAddress": "127.0.0.1",
+  "port": 18104,
+  "liveUpdates": true,
+  "sources": {
+    "pixiv": "<absolute-pixiv-root>",
+    "pixivFANBOX": "<absolute-fanbox-root>",
+    "Gank": "<absolute-gank-root>",
+    "Fantia": "<absolute-fantia-root>",
+    "Patreon": "<absolute-patreon-root>",
+    "Pawchive": "<absolute-pawchive-root>",
+    "X": "<absolute-x-root>",
+    "微博": "<absolute-weibo-root>",
+    "Venera": "<absolute-venera-root>"
+  },
+  "fileBrowserRoots": [],
+  "shortLinks": {},
+  "retention": { "enabled": false }
+}

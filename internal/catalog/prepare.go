@@ -2,9 +2,10 @@ package catalog
 
 import (
 	"fmt"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/mediaorder"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -18,27 +19,39 @@ type PreparedWork struct {
 	Platform, AuthorKey, Key, Fingerprint string
 	Work, Author, Profile, Shape          Row
 	Children                              map[string][]Row
-	Media, Declarations                   []Row
+	Media                                 []Row
 	Normalized                            metadata.Result
 	AuthorityTime                         int64
 	AuthorityID, AuthorityName            string
 	Qualified                             bool
 	Reused                                bool
+	MetadataOnly                          bool
 	Bytes                                 int64
+	StageFile                             string
 }
 
 // Authority retains one bounded profile candidate per author, not its pages/body.
 func Authority(p PreparedWork) PreparedWork {
-	p.Children, p.Media, p.Declarations = nil, nil, nil
+	p.StageFile = ""
+	p.Children, p.Media = nil, nil
 	p.Normalized.Primary, p.Normalized.Supplementary = nil, nil
-	p.Normalized.Structured, p.Normalized.Declarations = nil, nil
+	p.Normalized.Structured = nil
 	p.Normalized.Tags, p.Normalized.Relations, p.Normalized.Evidence = nil, nil, nil
 	p.Normalized.Work, p.Normalized.Flags, p.Normalized.Access, p.Normalized.Metrics = nil, nil, nil, nil
+	p.Normalized.Details = metadata.Details{}
 	p.Bytes = int64(len(metadata.JSON(p)))
 	return p
 }
 
 func Later(a, b PreparedWork) bool { return later(a, b) }
+
+// A newly visible author has directory facts until its complete scope chooses
+// the final profile. This uses the same mapper as an empty physical author.
+func DirectoryAuthor(platform, name string) Row {
+	r := metadata.New()
+	r.Valid = false
+	return Fill(platform, name, "", name, 0, "missing", nil, nil, r, "", "", nil).Author
+}
 
 func text(v any) string { return metadata.String(v) }
 func integer(v any) int64 {
@@ -70,6 +83,9 @@ func row(fields ...string) Row {
 	return r
 }
 func Fill(platform, author, work, relative string, mtime int64, metadataState string, metaMtime, metaSize any, r metadata.Result, shapeHash, fingerprint string, files []File) PreparedWork {
+	if platform == "Venera" {
+		r.Details.WorkType = "manga"
+	}
 	aKey := strings.ToLower(author)
 	key := strings.ToLower(relative)
 	name, nameSource := author, "directory_raw"
@@ -149,7 +165,7 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 	for _, pair := range [][2]string{{"adult", "is_adult"}, {"aiGenerated", "is_ai_generated"}, {"paid", "is_paid"}, {"restricted", "is_restricted"}, {"sensitive", "is_sensitive"}, {"hasFull", "has_full"}, {"advertisement", "is_advertisement"}} {
 		w[pair[1]] = boolean(r.Flags[pair[0]])
 	}
-	p := PreparedWork{Platform: platform, AuthorKey: aKey, Key: key, Fingerprint: fingerprint, Work: w, Author: a, Normalized: r, Children: map[string][]Row{}, Qualified: metadataState != "unreadable", AuthorityTime: -9007199254740991, AuthorityID: text(sourceWork), AuthorityName: work}
+	p := PreparedWork{Platform: platform, AuthorKey: aKey, Key: key, Fingerprint: fingerprint, Work: w, Author: a, Normalized: r, Children: map[string][]Row{}, Qualified: metadataState == "valid" || metadataState == "missing", AuthorityTime: -9007199254740991, AuthorityID: text(sourceWork), AuthorityName: work}
 	// The filesystem preparation adapter receives the observed directory mtime
 	// as its comparison context; the display sort separately prefers filename time.
 	p.AuthorityTime = mtime / 1000000
@@ -185,23 +201,13 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 		x := row("safe_format", "safe_text", "plain_text", "search_text", "normalizer_version", "sanitizer_version")
 		x["source_format"] = t.SourceFormat
 		x["source_text"] = t.SourceText
+		x["plain_text"] = metadata.PlainText(t.SourceText, t.SourceFormat)
 		p.Children["work_text"] = []Row{x}
 		p.Bytes += int64(len(t.SourceText))
 	}
 	for i, t := range r.Supplementary {
 		p.Children["work_text_sources"] = append(p.Children["work_text_sources"], Row{"ordinal": i, "role": t.Role, "source_path": t.SourcePath, "source_format": t.SourceFormat, "source_text": t.SourceText})
 		p.Bytes += int64(len(t.SourceText))
-	}
-	for i, o := range r.Structured {
-		x := Row{}
-		for k, v := range o {
-			x[k] = v
-		}
-		x["ordinal"] = i
-		p.Children["structured_sources"] = append(p.Children["structured_sources"], x)
-	}
-	if r.Access["currentUserCanView"] != nil || r.Access["minimumCentsPledgedToView"] != nil {
-		p.Children["work_access"] = []Row{{"current_user_can_view": boolean(r.Access["currentUserCanView"]), "minimum_cents_pledged_to_view": r.Access["minimumCentsPledgedToView"]}}
 	}
 	m := row("likes", "replies", "comments", "reposts", "views", "bookmarks")
 	for k, v := range r.Metrics {
@@ -255,8 +261,12 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 		}
 	}
 	for _, f := range files {
-		if platform == "Gank" && strings.Contains("|zip|rar|7z|tar|gz|bz2|xz|tgz|tbz|tbz2|txz|zst|lz|lz4|cab|cbz|cbr|cb7|", "|"+strings.TrimPrefix(strings.ToLower(f.Extension), ".")+"|") {
-			extracted = true
+		if library.IsArchive(f.Extension) {
+			extracted = platform == "Gank"
+			p.Children["field_sources"] = append(p.Children["field_sources"], Row{"field": "files.archivePresent", "source_kind": "filesystem", "source_path": f.Relative, "priority": 1})
+			if platform != "Gank" {
+				break
+			}
 			p.Children["field_sources"] = append(p.Children["field_sources"], Row{"field": "media.extractedPreviews", "source_kind": "filesystem", "source_path": f.Relative, "priority": 1})
 			break
 		}
@@ -268,78 +278,30 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 		if f.Kind != "image" && f.Kind != "video" {
 			continue
 		}
-		x := row("source_media_id", "metadata_ordinal", "metadata_name", "metadata_media_type", "declared_size", "remote_url", "source_hash", "duration_ms")
-		for k, v := range (Row{"relative_path": f.Relative, "relative_path_key": f.Key, "filesystem_file_name": f.Name, "filesystem_extension": f.Extension, "filesystem_size": f.Size, "filesystem_mtime_ns": f.Mtime, "filesystem_media_type": f.Kind}) {
-			x[k] = v
-		}
+		x := mediaRow(f)
 		p.Media = append(p.Media, x)
 		p.Bytes += int64(len(f.Relative) + 256)
 		w[f.Kind+"_count"] = integer(w[f.Kind+"_count"]) + 1
 	}
 	w["media_count"] = int64(len(p.Media))
 	_ = extracted
-	reconcile(&p, r.Declarations, files)
+
 	return p
 }
-func reconcile(p *PreparedWork, declarations []metadata.Declaration, files []File) {
-	edges := make([][]string, len(declarations))
-	fileUsers := map[string][]int{}
-	for i, d := range declarations {
-		seen := map[string]bool{}
-		for _, ref := range d.References {
-			for _, f := range files {
-				match := strings.EqualFold(f.Relative, ref.Value)
-				if ref.Kind == "file_name" {
-					match = strings.EqualFold(f.Name, ref.Value)
-				}
-				if match && !seen[f.Key] {
-					edges[i] = append(edges[i], f.Key)
-					seen[f.Key] = true
-					fileUsers[f.Key] = append(fileUsers[f.Key], i)
-				}
-			}
-		}
+
+func mediaRow(f File) Row {
+	x := row("source_media_id", "metadata_ordinal", "metadata_name", "metadata_media_type", "declared_size", "remote_url", "source_hash", "duration_ms")
+	for k, v := range (Row{"relative_path": f.Relative, "relative_path_key": f.Key, "filesystem_file_name": f.Name, "filesystem_extension": f.Extension, "filesystem_size": f.Size, "filesystem_mtime_ns": f.Mtime, "filesystem_media_type": f.Kind}) {
+		x[k] = v
 	}
-	actual := map[string]Row{}
-	for _, m := range p.Media {
-		actual[text(m["relative_path_key"])] = m
-	}
-	for i, d := range declarations {
-		x := Row{"ordinal": i, "source_media_id": d.SourceID, "declared_name": d.Name, "declared_media_type": d.Kind, "declared_size": d.Size, "remote_url": d.URL, "source_hash": d.Hash, "duration_ms": d.Duration, "match_state": "unmatched", "matched_media_id": nil}
-		if len(edges[i]) > 0 {
-			if len(edges[i]) != 1 || len(fileUsers[edges[i][0]]) != 1 {
-				x["match_state"] = "ambiguous"
-			} else if m := actual[edges[i][0]]; m != nil {
-				kind := text(d.Kind)
-				if kind == "animation_frame" {
-					kind = "image"
-				}
-				if (kind == "image" || kind == "video") && kind != text(m["filesystem_media_type"]) {
-					x["match_state"] = "type_conflict"
-				} else {
-					x["match_state"] = "matched"
-					x["match_key"] = edges[i][0]
-					for k, v := range (Row{"source_media_id": d.SourceID, "metadata_ordinal": i, "metadata_name": d.Name, "metadata_media_type": d.Kind, "declared_size": d.Size, "remote_url": d.URL, "source_hash": d.Hash, "duration_ms": d.Duration}) {
-						m[k] = v
-					}
-				}
-			}
-		}
-		p.Declarations = append(p.Declarations, x)
-	}
+	return x
 }
 func basename(s string) string {
 	return filepath.Base(strings.ReplaceAll(s, "\\", string(filepath.Separator)))
 }
 func presentation(name string, extracted bool) bool {
-	n := strings.ToLower(name)
-	if strings.HasPrefix(n, ".") || regexp.MustCompile(`(?i)^\.?cover\.[^.]+$`).MatchString(n) {
-		return false
-	}
-	if extracted && regexp.MustCompile(`^[1-9]\.[^.]+$`).MatchString(n) {
-		return false
-	}
-	return true
+	_, visible := mediaorder.Role(name, extracted)
+	return visible
 }
 func SortedKeys(r Row) []string {
 	a := []string{}

@@ -152,6 +152,9 @@ func verifyLiveObjects(ctx context.Context, db *sql.Tx, legacy bool) error {
 	core := []string{"live_meta", "live_id_high_water", "live_work_sort", "live_search_docs", "live_work_tags", "live_work_fts", "live_short_fts", "live_authors", "live_tags"}
 	stats := []string{"live_stats", "live_metadata_stats", "live_platform_stats"}
 	ledger := []string{"live_scan_works", "live_scan_authors"}
+	profiles := []string{"live_scan_work_profiles"}
+	enrichment := []string{"work_details", "author_keys"}
+	inventory := []string{"live_scan_files"}
 	var version int
 	if err := db.QueryRowContext(ctx, "SELECT schema_version FROM live_meta WHERE singleton=1").Scan(&version); err != nil {
 		return fmt.Errorf("catalog_live_contract_mismatch: %w", err)
@@ -162,6 +165,15 @@ func verifyLiveObjects(ctx context.Context, db *sql.Tx, legacy bool) error {
 		if version >= 3 {
 			required = append(required, ledger...)
 		}
+		if version >= 4 {
+			required = append(required, profiles...)
+		}
+		if version >= 5 {
+			required = append(required, enrichment...)
+		}
+	}
+	if !legacy && version >= 6 {
+		required = append(required, inventory...)
 	}
 	for _, name := range required {
 		var n int
@@ -173,6 +185,9 @@ func verifyLiveObjects(ctx context.Context, db *sql.Tx, legacy bool) error {
 		}
 	}
 	allowed := append(append(append([]string{}, core...), stats...), ledger...)
+	allowed = append(allowed, profiles...)
+	allowed = append(allowed, enrichment...)
+	allowed = append(allowed, inventory...)
 	for _, base := range []string{"live_work_fts", "live_short_fts"} {
 		for _, suffix := range []string{"_data", "_idx", "_content", "_docsize", "_config"} {
 			allowed = append(allowed, base+suffix)

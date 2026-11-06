@@ -6,7 +6,7 @@ Node 替代的精确边界与差分范围见[后端行为合同](protocol-backen
 
 ## 公共 HTTP
 
-[api/protocol.json](../../api/protocol.json)定义排序、筛选及状态集合；实际路由在[src/server/http.js](../../src/server/http.js)。手工路由与 DTO 尚未由契约生成，列入[技术债](../project/debt-runtime.md)。
+[api/protocol.json](../../api/protocol.json)定义排序、筛选及状态集合；实际路由在[internal/httpservice](../../internal/httpservice)。手工路由与 DTO 尚未由契约生成，列入[技术债](../project/debt-runtime.md)。
 
 JSON envelope 为 `{protocolVersion,generationId,data}`，错误含 `error:{code,message}`，不输出内部栈或源绝对路径。实时读取增加 revision；列表修订不符返回 CONTENT_CHANGED，稳定媒体链接通过物理身份解析。
 
@@ -21,12 +21,10 @@ JSON envelope 为 `{protocolVersion,generationId,data}`，错误含 `error:{code
 
 ## 本机管理
 
-[src/runtime/management.js](../../src/runtime/management.js)通过实例认证管道执行管理；[Electron preload](../../src/desktop/preload.js)仅暴露所需操作。普通浏览页面不能获得管理身份。测试 Manager 的 loopback／CSRF 工具不能用于控制生产。
+[Go 管理会话](../../internal/host/session.go)通过继承管道接收 Tauri 的固定命令；[原生桥](../../src-tauri/src/main.rs)校验窗口、文档和白名单。实例控制仍核对 PID、创建时间、exe、实例及令牌，公开浏览器没有本机身份。
 
 ## Go 扫描
 
-[src/indexing/runner.cjs](../../src/indexing/runner.cjs)负责实例所有权、已验证工作库初始化、启动 Go 与取消请求，配置写入实例 state；Go 只输出逐行聚合状态，标准输入 `cancel`请求取消。COMPLETE 映射为 Manager READY，不能将失败退出当成功。
+[Go 管理会话](../../internal/host/session.go)拥有服务与任务，扫描直接使用既有遍历、准备和唯一 writer；不启动 Node runner。全量／增量可限定平台或作者。
 
-Go 接受完整九平台绑定，可限定一次扫描的所选平台／作者。历史配置字段 `testOnly`仍是子进程握手要求，不代表正式应用只在离线运行；删除这一历史标识需另行协调契约。扫描器不提供 HTTP。
-
-控制管道关闭同样请求协作取消，避免控制器消失后留下孤立扫描。已确认事务保留，Go 自身的独占 lease 仍阻止第二个 writer；不会因父进程退出而放宽数据库或来源检查。
+Tauri 真正退出关闭继承输入，Go 协作取消、保留已提交事务并等待服务及扫描结束。关闭窗口只是隐藏，不放弃实例所有权。不把进程存在当成任务仍运行，也不把失败当成功。

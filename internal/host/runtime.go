@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/diagnostic"
 	"log/slog"
 	"net"
 	"net/http"
@@ -73,9 +74,11 @@ func (r *Runtime) View() Row {
 	_ = control.ReadJSON(r.config.ActiveGenerationPath, &pointer)
 	s["activeGenerationId"] = pointer["generationId"]
 	s["restartRequired"] = pointer["generationId"] != nil && pointer["generationId"] != s["loadedGenerationId"]
-	var memory runtime.MemStats
-	runtime.ReadMemStats(&memory)
-	s["memory"] = Row{"rss": residentMemory(), "heapUsed": memory.HeapAlloc}
+	if diagnostic.Enabled {
+		var memory runtime.MemStats
+		runtime.ReadMemStats(&memory)
+		s["memory"] = Row{"rss": residentMemory(), "heapUsed": memory.HeapAlloc}
+	}
 	s["sourceWriteAttempts"] = 0
 	items := []Row{}
 	entries, _ := os.ReadDir(r.config.GenerationsRoot)
@@ -110,7 +113,7 @@ func (r *Runtime) handle(ctx context.Context, request Row) (any, error) {
 		return s, err
 	case "manager", "stop", "scan":
 		return nil, fmt.Errorf("MANAGER_REQUIRED")
-	case "access.read", "access.configure", "access.clear", "access.block":
+	case "access.read", "access.configure", "access.autoban", "access.clear", "access.block":
 		r.mu.Lock()
 		server := r.server
 		r.mu.Unlock()
@@ -118,6 +121,14 @@ func (r *Runtime) handle(ctx context.Context, request Row) (any, error) {
 			return nil, fmt.Errorf("RUNTIME_OFFLINE")
 		}
 		return server.Access(op, request)
+	case "thumbnails.status", "thumbnails.pause", "thumbnails.start", "thumbnails.cancel":
+		r.mu.Lock()
+		server := r.server
+		r.mu.Unlock()
+		if server == nil {
+			return nil, fmt.Errorf("RUNTIME_OFFLINE")
+		}
+		return server.Thumbnails(ctx, op, request)
 	}
 	return nil, fmt.Errorf("CONTROL_OPERATION_INVALID")
 }

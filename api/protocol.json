@@ -6,7 +6,12 @@
     "title_asc",
     "title_desc",
     "name_asc",
-    "name_desc"
+    "name_desc",
+    "bookmarks_desc",
+    "views_desc",
+    "likes_desc",
+    "rating_desc",
+    "favorite_desc"
   ],
   "authorSorts": [
     "name_asc",
@@ -16,8 +21,18 @@
     "posts_desc",
     "posts_asc"
   ],
-  "mediaFilters": ["all", "image", "video"],
-  "runtimeStates": ["STARTING", "READY", "STOPPING", "STOPPED", "FAILED"],
+  "mediaFilters": [
+    "all",
+    "image",
+    "video"
+  ],
+  "runtimeStates": [
+    "STARTING",
+    "READY",
+    "STOPPING",
+    "STOPPED",
+    "FAILED"
+  ],
   "scanStates": [
     "IDLE",
     "PREPARING",

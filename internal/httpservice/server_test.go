@@ -54,7 +54,7 @@ func equalJSON(t *testing.T, want, got any) {
 func TestFrozenNodeHTTP(t *testing.T) {
 	file := os.Getenv("GALLERY_HTTP_GOLDEN")
 	if file == "" {
-		t.Skip("npm run test:http requires frozen Node synthetic capture")
+		t.Skip("set GALLERY_HTTP_GOLDEN from the frozen reference; see validations/scene-http_read")
 	}
 	b, err := os.ReadFile(file)
 	if err != nil {

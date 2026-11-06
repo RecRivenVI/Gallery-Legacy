@@ -1,6 +1,6 @@
 # Go 读取组装
 
-配置、恢复选择与事务读取已组装为 `internal/dataset`，不包含 HTTP 宿主，也没有切换默认入口。[既有运行架构](architecture-runtime.md)仍描述在用 Node／Electron 边界。
+`internal/dataset` 组装配置、恢复选择与事务读取，供 Go 宿主使用。完整职责见[运行架构](architecture-runtime.md)。
 
 ## 入口与职责
 
@@ -13,13 +13,13 @@
 | `Dataset.Reader.Snapshot`               | 供详细读取复用既有 Reader；空实例无数据库连接                                                           |
 | `Dataset.Close`                         | 关闭连接；关闭后不再提供数据库查询                                                                      |
 
-只读入口不创建、升级、替换数据库，也不争抢 writer。显式新建仍使用 `catalog.CreateLiveFrom`；已有库升级、所有者排他及进程控制留待生命周期批次，不在此处增加临时桥接或第二个 writer。
+只读入口不创建、升级、替换数据库，也不争抢 writer。显式新建仍使用 `catalog.CreateLiveFrom`；已有库升级、所有者排他及进程控制由管理器拥有的 Go 会话承担，不增加第二个 writer。
 
 ## 配置边界
 
-Node 与 Go 共用 API 目录的配置 schema。Go 与冻结 Node 对照路径隔离、九平台绑定、网络 authority／origin、短链、保留参数与失败码；不宣称完整 WHATWG URL 实现或已覆盖所有畸形类型组合。
+API 目录定义配置 schema。Go 与冻结 Node 对照路径隔离、九平台绑定、网络 authority／origin、短链、保留参数与失败码；不宣称完整 WHATWG URL 实现或已覆盖所有畸形类型组合。
 
-Everything 已按用户决定退出产品范围。Go 拒绝非空旧 `everything` 字段；旧 Node 尚保留的空属性不参与 DTO 对照，不恢复清单集成。该差异不是新的用户确认。
+扫描按 [adr-10](adr-10-portable_inventory.md) 使用固定本机 Everything HTTP 清单与原生回退，不接受配置文件里的第二套旧 provider/endpoint 定义。公开读取仍由事务快照提供，不直接访问 Everything。
 
 ## 独立验收
 

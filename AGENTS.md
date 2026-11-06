@@ -276,55 +276,95 @@ go vet ./...
 - **GO-11** 涉及并发的改动，在支持的平台上用 `go test -race` 运行受影响的包。
 - **GO-12** 需要真实大目录、长时间运行或性能测量的验证，按 T-05 定义；数据与结果放在仓库之外。
 
-## 附则：Node.js
+## 附则：Kotlin Compose Multiplatform（Web）
 
-本附则适用于以 Node.js 编写的本地服务与命令行程序，以及由它提供的浏览器界面。结构以 npm 包的默认约定为基础，规则编号以 `NJ-` 开头。
+本附则适用于用 Kotlin 与 Compose Multiplatform 编写、编译为 WasmJS、在浏览器或桌面 WebView 中运行的界面，以 Kotlin Multiplatform 向导生成的项目结构为基础。规则编号以 `CMP-` 开头。
 
 ### 结构
 
-- **NJ-01** 根目录可以有以下技术栈文件与目录：`package.json`、`package-lock.json`、`src/`、`bin/`、`test/`、`public/`。`node_modules/` 被 Git 忽略。
-- **NJ-02** 目录划分：
-  - `src/` 下按职责划分目录，如服务、扫描、存储、浏览器界面，不建 `utils/`、`common/`、`internal/`（L-02）；
-  - 命令行入口放在 `bin/`，只负责解析参数、调用 `src/`；
-  - 浏览器端的静态资源在 `public/`。
-- **NJ-03** 测试与夹具：
-  - 测试放在 `test/` 中，用 Node 内置的测试运行器（`node:test`），目录结构与 `src/` 对应；
-  - 小型夹具放在 `test/fixtures/`；
-  - 大体积的真实数据不进仓库（G-05）。
+- **CMP-01** 以 Compose 为主的仓库，根目录可以有以下技术栈文件：`settings.gradle.kts`、`build.gradle.kts`、`gradle.properties`、`gradlew`、`gradlew.bat`、`gradle/`、`kotlin-js-store/`，以及在 `settings.gradle.kts` 中登记的模块目录。仓库以其他技术栈为主时，界面是根目录 `ui/` 下的独立 Gradle 构建，这些文件都放在 `ui/` 中。`.gradle/`、`.kotlin/`、构建目录和 `local.properties` 被 Git 忽略。
+- **CMP-02** 源码集按 Kotlin Multiplatform 的默认约定：
+  - 与平台无关的模型和逻辑在 `src/commonMain/kotlin/`，测试在 `src/commonTest/kotlin/`；
+  - 界面在 `src/wasmJsMain/kotlin/`，`index.html` 等静态文件在 `src/wasmJsMain/resources/`；
+  - `jvm` 目标只用来在 JVM 上运行公共测试，不放产品代码。
+- **CMP-03** 包按页面或功能划分，不建 `utils`、`common` 这类包（L-02）。与 JavaScript 的互操作（`external` 声明、`js()`）集中在少数按职责命名的文件中；JavaScript 只做浏览器能力的胶水，不承担业务或布局。
 
 ### 事实
 
 | 事实 | 唯一来源 |
 | --- | --- |
-| 产品名称与版本 | `package.json` 的 `name`、`version` |
-| Node 版本 | `package.json` 的 `engines.node` |
-| 依赖版本 | `package.json`、`package-lock.json` |
-| 常用命令 | `package.json` 的 `scripts` |
-| 配置文件格式 | 一份 JSON Schema，代码与文档都从它取值 |
-| 外部程序（如 FFmpeg、ImageMagick） | `documents/reference/dependency-*.md`，写明版本要求与用途 |
+| Kotlin、Compose 等依赖与插件的版本 | `gradle/libs.versions.toml` |
+| Gradle 版本 | `gradle/wrapper/gradle-wrapper.properties` |
+| JDK 版本 | Gradle 工具链设置，写在一处 |
+| 浏览器端 npm 依赖的锁定 | `kotlin-js-store/` 中由 Gradle 生成的锁文件 |
+| 接口类型 | 由后端的接口契约生成，不手写重复的类型 |
+
+- **CMP-04** 唯一允许入库的二进制是 `gradle/wrapper/gradle-wrapper.jar`（G-06）。构建产物不入库，由构建脚本生成。
 
 ### 代码
 
-- **NJ-04** 编码约定：
-  - 使用 ES 模块（`"type": "module"`）和 `async`/`await`，不混用回调风格；
-  - 格式用 Prettier 的默认配置；
-  - 类型检查的方式（TypeScript，或 JSDoc 加 `// @ts-check`）写在项目规范里，全项目统一。
-- **NJ-05** 错误处理：
-  - 以 `Error` 及其子类抛出，带上原因（`cause`）；
-  - 进程级的未处理异常只在入口处统一记录后退出，不吞掉。
-- **NJ-06** 依赖从少：标准库能完成的不引入第三方包。新增依赖说明用途，并记入依赖文档（W-01）。
+- **CMP-05** 遵循 Kotlin 官方风格（`gradle.properties` 中的 `kotlin.code.style=official`）。格式化工具写在项目规范里，全项目统一。
+- **CMP-06** Compose 遵循官方 API 指南：
+  - 可组合函数尽量无状态，状态提升到调用方；
+  - `Modifier` 作为第一个可选参数；
+  - 副作用只放在对应的副作用 API 中；
+  - 数据单向流动，事件向上、状态向下。
+- **CMP-07** 不靠内部或实验性 API 解决问题。确有必要时，集中在一处使用，并在 `documents/reference/upstream-*.md` 写明原因和对应的上游版本，例如带 `@InternalComposeApi` 的接口。
 
 ### 界面
 
-- **NJ-07** 浏览器界面选定一套设计体系或组件库，写在项目规范里，全站统一（U-01）。
-  - 管理功能和日常浏览分开组织（U-02）。
+- **CMP-08** 设计语言与组件库由项目规范指定；主题、颜色、字体与形状集中定义在一处（U-01）。大字库按需加载，首屏不等待完整字库。
+- **CMP-09** 文本输入、输入法、键盘与触屏操作，在实际运行的浏览器或 WebView 中验证（U-07、U-08）。中文输入法这类只能由人判断的项，写进人工验收清单。
 
 ### 运行与验证
 
 ```powershell
-npm ci
-npm test
+cd ui
+.\gradlew.bat wasmJsBrowserDistribution
+.\gradlew.bat check
 ```
 
-- **NJ-08** 常用操作都写成 `package.json` 的 `scripts`，文档中引用脚本名，不复制命令行。
-- **NJ-09** 涉及真实媒体库、长时间扫描或性能的验证，按 T-05 定义，运行实例、数据与结果放在仓库之外。
+- **CMP-10** 界面同时在桌面 WebView 和浏览器中运行时，两边都要实际打开看过（U-08）。
+
+## 附则：Tauri 桌面宿主
+
+本附则适用于以 Tauri 2 构建的桌面应用，以 `create-tauri-app` 生成的项目结构和 Tauri 官方文档为基础。规则编号以 `TA-` 开头。
+
+### 结构
+
+- **TA-01** Rust 部分放在根目录的 `src-tauri/` 中，沿用 Tauri 的默认结构：`Cargo.toml`、`Cargo.lock`、`build.rs`、`tauri.conf.json`、`src/`、`capabilities/`、`permissions/`。`src-tauri/target/` 与 `src-tauri/gen/schemas/` 被 Git 忽略。
+  - 根目录还可以有 `package.json` 和 `package-lock.json`，只放 Tauri 命令行与开发工具（格式化、浏览器测试）的依赖和脚本；`node_modules/` 被 Git 忽略。
+  - 应用图标由一份入库的源图在构建时生成，生成的图标不入库（G-04、G-06）。
+- **TA-02** `src/main.rs` 只负责组装与启动，功能按职责分成模块，例如窗口与托盘、命令、子进程。
+- **TA-03** 与独立后端同用时，Tauri 只做桌面宿主：窗口、托盘、系统对话框、权限与子进程。命令只做参数转换和调用，业务逻辑留在后端，不在 Rust 中复制第二份。
+
+### 事实
+
+| 事实 | 唯一来源 |
+| --- | --- |
+| 产品名称与应用标识 | `src-tauri/tauri.conf.json` 的 `productName`、`identifier` |
+| 产品版本 | `src-tauri/Cargo.toml` 的 `package.version`；`tauri.conf.json` 不另写 `version` |
+| Rust 依赖版本 | `src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` |
+| 窗口、安全策略（CSP）与打包设置 | `src-tauri/tauri.conf.json` |
+| 界面可调用的命令与权限 | `src-tauri/capabilities/`、`src-tauri/permissions/` |
+
+- **TA-04** 同仓的其他程序（如 Go 后端、界面）在构建时从 `Cargo.toml` 取得产品版本。与 Go 附则同用时，以本条为准，Go 程序不以 Git 标签作为版本来源。
+
+### 代码与安全
+
+- **TA-05** 用 `cargo fmt` 格式化，用 `cargo clippy` 检查。错误用 `Result` 和 `?` 向上传递；预期内的失败不用 `unwrap`、`expect` 或 `panic!`（C-09）。
+- **TA-06** 权限从严：
+  - 每个窗口只授予用到的命令与插件权限，写在 `capabilities/` 中；
+  - CSP 写在 `tauri.conf.json` 中，只放行实际用到的来源；
+  - 不开 `withGlobalTauri`；名称带 `dangerous` 的选项只在确有必要时使用，并在 `documents/design/security-*.md` 写明原因。
+- **TA-07** 子进程由宿主启动和回收：宿主退出时，子进程随之结束，不留下孤儿进程，也不按进程名查杀。
+
+### 运行与验证
+
+```powershell
+cargo fmt --check --manifest-path src-tauri/Cargo.toml
+cargo clippy --locked --manifest-path src-tauri/Cargo.toml
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+```
+
+- **TA-08** 托盘、系统对话框、关闭窗口与退出这些宿主行为，要实际运行应用验证；自动测试不向桌面发送键鼠操作。只能由人判断的项，写进人工验收清单。

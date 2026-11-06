@@ -1,10 +1,10 @@
 {
-  "go": "<official-portable-go>/bin/go.exe",
-  "raceCompiler": "<portable-mingw-w64>/bin/gcc.exe",
-  "goCache": "<outside-repository>/GoCache",
-  "moduleCache": "<outside-repository>/GoModules",
-  "output": "<outside-repository>/Build",
-  "resources": "<licensed-ui-resources>",
-  "testSeed": "<synthetic-test-root>/instance/live/catalog.sqlite",
-  "golden": "<synthetic-test-root>/golden.json"
+  "go": "<official-go>/bin/go.exe",
+  "raceCompiler": "<mingw-w64>/bin/gcc.exe",
+  "goCache": "<external-go-cache>",
+  "moduleCache": "<external-go-modules>",
+  "javaHome": "<jdk-17>",
+  "resources": "<licensed-resources-with-misans-manifest>",
+  "miSansCdn": "<external-official-misans-cache>",
+  "libvipsCache": "<external-pinned-libvips-cache>"
 }

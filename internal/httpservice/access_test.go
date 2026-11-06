@@ -49,7 +49,7 @@ func TestFrozenAccessHistory(t *testing.T) {
 			}
 			t.Cleanup(func() {
 				if !t.Failed() {
-					if err := instance.Recycle(root); err != nil {
+					if err := instance.RemoveOwned(root); err != nil {
 						t.Error(err)
 					}
 				}

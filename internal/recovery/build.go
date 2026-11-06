@@ -81,12 +81,12 @@ func Build(ctx context.Context, c instance.Config, id, liveFile string) (*Checkp
 	}
 	defer tx.Rollback()
 	for _, query := range []string{
-		"INSERT INTO search.work_sort SELECT work_id,platform_id,author_id,published_sort,title_key,name_key,has_image,has_video FROM live_work_sort",
+		"INSERT INTO search.work_sort SELECT * FROM live_work_sort",
 		"INSERT INTO search.search_docs SELECT * FROM live_search_docs",
 		"INSERT INTO search.work_tags SELECT * FROM live_work_tags",
 		"INSERT INTO search.authors SELECT * FROM live_authors",
 		"INSERT INTO search.tags SELECT * FROM live_tags",
-		"INSERT INTO search.work_fts(work_fts) VALUES('rebuild')",
+		"INSERT INTO search.work_fts(rowid,title,author,tags,body) SELECT rowid,title,author,tags,body FROM live_work_fts",
 		"INSERT INTO search.short_fts(rowid,terms) SELECT rowid,terms FROM live_short_fts",
 		"DROP TABLE live_work_fts; DROP TABLE live_short_fts;",
 		"DROP TABLE live_search_docs; DROP TABLE live_work_sort; DROP TABLE live_work_tags; DROP TABLE live_authors; DROP TABLE live_tags; DROP TABLE live_meta; DROP TABLE live_stats; DROP TABLE live_metadata_stats; DROP TABLE live_platform_stats; DROP TABLE live_scan_works; DROP TABLE live_scan_authors; DROP TABLE live_id_high_water; DROP INDEX IF EXISTS live_idx_relation_target_all",

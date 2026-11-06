@@ -19,6 +19,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/dataset"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/fileview"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/media"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/personal"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/protocol"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/reading"
 	"github.com/gorilla/websocket"
@@ -41,6 +42,7 @@ type Server struct {
 	sockets  map[*websocket.Conn]context.CancelFunc
 	streams  sync.WaitGroup
 	version  int
+	people   *personal.Store
 }
 
 // New takes ownership of data after a successful return. The caller must close
@@ -50,7 +52,7 @@ func New(data *dataset.Dataset, options Options) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	m, err := media.New(data.Config)
+	m, err := media.New(data.Config, options.Assets)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +67,22 @@ func New(data *dataset.Dataset, options Options) (*Server, error) {
 		m.Close()
 		return nil, err
 	}
+	if data.Reader != nil && data.Live {
+		if err = m.Cache.InitializePreload(data.Config); err != nil {
+			m.Close()
+			s.access.close()
+			return nil, err
+		}
+	}
+	s.people, err = personal.Open(filepath.Join(data.Config.StateRoot, "people"))
+	if err != nil {
+		m.Close()
+		s.access.close()
+		return nil, err
+	}
+	if data.Reader != nil {
+		data.Reader.PersonalFile = s.people.File
+	}
 	return s, nil
 }
 func (s *Server) Close() error {
@@ -76,7 +94,7 @@ func (s *Server) Close() error {
 	}
 	s.mu.Unlock()
 	s.streams.Wait()
-	return errors.Join(s.media.Close(), s.access.close(), s.data.Close())
+	return errors.Join(s.media.Close(), s.access.close(), s.data.Close(), s.people.Close())
 }
 func (s *Server) boundary(r *http.Request) error {
 	allowed := func(values []string, value string) bool {
@@ -117,6 +135,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := s.boundary(r); err != nil {
 		s.failure(w, r, err)
 		return
+	}
+	account, err := s.currentAccount(r)
+	if err != nil {
+		s.failure(w, r, err)
+		return
+	}
+	if account != nil {
+		r = r.WithContext(reading.WithAccount(r.Context(), account.ID))
 	}
 	if o := r.Header.Get("Origin"); o != "" && o != "http://"+r.Host {
 		w.Header().Set("Access-Control-Allow-Origin", o)
@@ -167,6 +193,9 @@ func (s *Server) envelope(ctx context.Context, data reading.Row) reading.Row {
 	return result
 }
 func (s *Server) send(w http.ResponseWriter, r *http.Request, data any, revision *int64) error {
+	if err := s.previews(r.Context(), data); err != nil {
+		return err
+	}
 	result := reading.Row{"protocolVersion": s.version, "generationId": s.data.Epoch, "data": data}
 	if revision != nil {
 		result["revision"] = *revision

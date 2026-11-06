@@ -1,0 +1,53 @@
+{
+  "revision": "9eb184e96268d3293462f9d9d19225b4c7b07774",
+  "icons": [
+    {
+      "name": "filter",
+      "file": "ic_fluent_options_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Options/SVG/ic_fluent_options_20_regular.svg",
+      "sha256": "eeda1235eeb61dab0e9e23386c052fd0f0715a5112b90091ba37e2764557067c"
+    },
+    {
+      "name": "heart",
+      "file": "ic_fluent_heart_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Heart/SVG/ic_fluent_heart_20_regular.svg",
+      "sha256": "cc15b2dedd1099625e50af4d35683b7edb55c5d8ea29276cc0a0a4fe32cba729"
+    },
+    {
+      "name": "heart-filled",
+      "file": "ic_fluent_heart_20_filled.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Heart/SVG/ic_fluent_heart_20_filled.svg",
+      "sha256": "61fdcaebee966cc81c1577210b1d6d7860137f04d5b184352e4e61bb89cbfc12"
+    },
+    {
+      "name": "book",
+      "file": "ic_fluent_book_open_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Book%20Open/SVG/ic_fluent_book_open_20_regular.svg",
+      "sha256": "902200bc2ca473ed6a3087029fb36638feeca826531e1f92a1d0da2a4a11cb96"
+    },
+    {
+      "name": "star",
+      "file": "ic_fluent_star_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Star/SVG/ic_fluent_star_20_regular.svg",
+      "sha256": "dec99558a39bededa688446716215216a8e051c6518a51f886f53a08a67e16cb"
+    },
+    {
+      "name": "star-filled",
+      "file": "ic_fluent_star_20_filled.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Star/SVG/ic_fluent_star_20_filled.svg",
+      "sha256": "81784fe79cae62b5d4c0ed90741d32f276321d841b45c173592df72adf30623b"
+    },
+    {
+      "name": "history",
+      "file": "ic_fluent_history_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/History/SVG/ic_fluent_history_20_regular.svg",
+      "sha256": "37c96212d4efc8c37b0b7d7181d00011153ec2375d387442d0f8c73e2541ed6a"
+    },
+    {
+      "name": "logout",
+      "file": "ic_fluent_sign_out_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Sign%20Out/SVG/ic_fluent_sign_out_20_regular.svg",
+      "sha256": "d1f5a71d52abd196a909cfb2e1f3a75e078780fe1429d63cbf45221e3ea001a1"
+    }
+  ]
+}

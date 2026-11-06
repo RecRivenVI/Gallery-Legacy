@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/RecRivenVI/Gallery-Legacy/api"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -18,7 +19,20 @@ func testWriter(t testing.TB) *Writer {
 	t.Helper()
 	seed := os.Getenv("GALLERY_GO_EMPTY_DB")
 	if seed == "" {
-		t.Fatal("synthetic GALLERY_GO_EMPTY_DB required")
+		root := t.TempDir()
+		definition, err := api.LoadCatalog()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sources := map[string]string{}
+		for _, p := range definition.Platforms {
+			sources[p.ID] = filepath.Join(root, "sources", p.ID)
+		}
+		instance := filepath.Join(root, "instance")
+		if err = CreateLive(context.Background(), instance, sources); err != nil {
+			t.Fatal(err)
+		}
+		seed = filepath.Join(instance, "live", "catalog.sqlite")
 	}
 	b, e := os.ReadFile(seed)
 	if e != nil {
@@ -377,16 +391,10 @@ func TestOpenNeverCreatesMissingDatabase(t *testing.T) {
 }
 func TestMetadataCannotEraseActualMedia(t *testing.T) {
 	files := []File{{Relative: "1.png", Key: "1.png", Name: "1.png", Kind: "image", Extension: ".png", Size: 10, Mtime: 1767225600000000000}}
-	r := metadata.New()
-	r.Declarations = []metadata.Declaration{{Kind: "video", References: []metadata.Reference{{Kind: "file_name", Value: "1.png"}}}, {Kind: "image", References: []metadata.Reference{{Kind: "file_name", Value: "missing.png"}}}}
+	r, _ := metadata.Parse("pixiv", "700", "work", []byte(`{"id":1,"user":{"id":700},"media":[{"name":"missing.png","type":"video","size":123,"duration":999}]} `))
 	p := Fill("pixiv", "700", "work", `700\work`, 1767225600000000000, "valid", nil, nil, r, "", "sig", files)
-	if len(p.Media) != 1 || p.Declarations[0]["match_state"] != "type_conflict" || p.Declarations[1]["match_state"] != "unmatched" {
-		t.Fatal("declaration changed actual media")
-	}
-	r.Declarations = append(r.Declarations, metadata.Declaration{Kind: "image", References: []metadata.Reference{{Kind: "file_name", Value: "1.png"}}})
-	p = Fill("pixiv", "700", "work", `700\work`, 1767225600000000000, "valid", nil, nil, r, "", "sig", files)
-	if len(p.Media) != 1 || p.Declarations[0]["match_state"] != "ambiguous" || p.Declarations[2]["match_state"] != "ambiguous" {
-		t.Fatal("ambiguity erased actual media")
+	if len(p.Media) != 1 || p.Media[0]["metadata_name"] != nil || p.Media[0]["duration_ms"] != nil || p.Media[0]["filesystem_size"] != int64(10) {
+		t.Fatal("metadata replaced actual file attributes", p.Media)
 	}
 }
 func TestSearchNormalization(t *testing.T) {

@@ -47,7 +47,7 @@ func equal(t *testing.T, want, got any) {
 func TestNodeDataset(t *testing.T) {
 	file := os.Getenv("GALLERY_DATASET_GOLDEN")
 	if file == "" {
-		t.Skip("run npm run test:dataset for frozen Node differential")
+		t.Skip("set GALLERY_DATASET_GOLDEN from the frozen reference; see validations/scene-backend_parity")
 	}
 	b, err := os.ReadFile(file)
 	if err != nil {

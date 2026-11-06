@@ -187,7 +187,7 @@ func initializeLive(ctx context.Context, db *sql.DB, def api.Catalog, rows []pla
 			return err
 		}
 	}
-	for _, ddl := range []string{api.LiveCoreSQL, api.LiveSearchSQL, api.LiveStatsSQL, api.LiveLedgerSQL} {
+	for _, ddl := range []string{api.LiveCoreSQL, api.LiveSearchSQL, api.LiveStatsSQL, api.LiveLedgerSQL, api.LiveProfilesSQL, api.EnrichmentSQL, api.InventorySQL} {
 		if _, err = tx.ExecContext(ctx, ddl); err != nil {
 			return fmt.Errorf("create catalog schema: %w", err)
 		}

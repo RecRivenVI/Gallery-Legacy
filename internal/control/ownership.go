@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,7 +41,7 @@ type Lease struct {
 }
 
 func ReadJSON(file string, value any) error {
-	b, err := os.ReadFile(file)
+	b, err := instance.ReadSnapshot(file)
 	if err != nil {
 		return err
 	}
@@ -53,18 +54,23 @@ func ReadJSON(file string, value any) error {
 var codePattern = regexp.MustCompile(`^[A-Z0-9_]{1,64}$`)
 
 func Code(err error, fallback string) string {
-	if err == nil {
-		return fallback
-	}
-	text := err.Error()
-	for n, c := range text {
-		if c == ':' {
-			text = text[:n]
-			break
+	pending := []error{err}
+	for len(pending) > 0 {
+		current := pending[0]
+		pending = pending[1:]
+		if current == nil {
+			continue
 		}
-	}
-	if codePattern.MatchString(text) {
-		return text
+		text, _, _ := strings.Cut(current.Error(), ":")
+		if codePattern.MatchString(text) {
+			return text
+		}
+		switch cause := current.(type) {
+		case interface{ Unwrap() []error }:
+			pending = append(cause.Unwrap(), pending...)
+		case interface{ Unwrap() error }:
+			pending = append([]error{cause.Unwrap()}, pending...)
+		}
 	}
 	return fallback
 }
@@ -213,7 +219,7 @@ func (l *Lease) Close() error {
 	l.wg.Wait()
 	var current Record
 	if readErr := ReadJSON(l.file, &current); readErr == nil && current.Token == l.Token {
-		err = errors.Join(err, instance.Recycle(l.file))
+		err = errors.Join(err, instance.RemoveOwned(l.file))
 	} else if readErr != nil && !os.IsNotExist(readErr) {
 		err = errors.Join(err, readErr)
 	}

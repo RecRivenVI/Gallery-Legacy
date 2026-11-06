@@ -10,12 +10,16 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/host"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/physical"
 )
 
 var version = "dev"
 
 func run() error {
 	args := os.Args[1:]
+	if len(args) == 2 && args[0] == "--physical-order-helper" {
+		return physical.RunHelper(context.Background(), args[1])
+	}
 	if len(args) == 1 && args[0] == "--version" {
 		fmt.Println(version)
 		return nil
@@ -42,6 +46,11 @@ func run() error {
 		}
 		flags[args[i]] = args[i+1]
 	}
+	for key := range flags {
+		if key != "--config" && key != "--assets" {
+			return fmt.Errorf("COMMAND_ARGUMENT_INVALID")
+		}
+	}
 	file := flags["--config"]
 	if file == "" {
 		return fmt.Errorf("CONFIG_REQUIRED")
@@ -50,7 +59,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	o := host.Options{ConfigFile: file, Frontend: flags["--frontend"], Assets: flags["--assets"]}
+	o := host.Options{ConfigFile: file, Assets: flags["--assets"]}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	if command == "manager" {

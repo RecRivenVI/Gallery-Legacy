@@ -49,6 +49,8 @@ type Config struct {
 	PublicURL            string            `json:"publicUrl"`
 	ShortLinks           map[string]string `json:"shortLinks"`
 	Retention            Retention         `json:"retention"`
+	FFmpegPath           string            `json:"ffmpegPath"`
+	ThumbnailCacheBytes  int64             `json:"thumbnailCacheBytes"`
 	GenerationsRoot      string            `json:"generationsRoot"`
 	CacheRoot            string            `json:"cacheRoot"`
 	LogsRoot             string            `json:"logsRoot"`
@@ -64,7 +66,7 @@ type Config struct {
 
 func Load(file string) (Config, error) {
 	var zero Config
-	bytes, err := os.ReadFile(file)
+	bytes, err := ReadSnapshot(file)
 	if os.IsNotExist(err) {
 		return zero, fmt.Errorf("CONFIG_REQUIRED")
 	}
@@ -121,8 +123,8 @@ func Normalize(source map[string]any) (Config, error) {
 			return config, fmt.Errorf("DIRECT_DATABASE_CONFIG_FORBIDDEN")
 		}
 	}
-	// Everything was explicitly retired. Do not silently accept an active legacy
-	// endpoint while running the filesystem-only backend.
+	// The inventory endpoint is fixed by the scanner; runtime configuration does
+	// not accept a second legacy endpoint/provider definition.
 	if source["everything"] != nil {
 		return config, fmt.Errorf("CONFIG_FIELD_UNSUPPORTED")
 	}

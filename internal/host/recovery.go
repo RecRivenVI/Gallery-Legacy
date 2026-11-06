@@ -230,7 +230,7 @@ func retention(c instance.Config, op string, input Row) (any, error) {
 				}
 				return nil, e
 			}
-			if e = instance.Recycle(retired); e != nil {
+			if e = instance.RemoveOwned(retired); e != nil {
 				if restore := os.Rename(retired, target); restore != nil {
 					return nil, fmt.Errorf("restore retired generation: %w", restore)
 				}

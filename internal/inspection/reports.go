@@ -131,7 +131,7 @@ func Operation(ctx context.Context, c instance.Config, op string, input Row) (va
 				return nil, e
 			}
 			if _, e = os.Lstat(p); e == nil {
-				if e = instance.Recycle(p); e != nil {
+				if e = instance.RemoveOwned(p); e != nil {
 					return nil, e
 				}
 			} else if !os.IsNotExist(e) {

@@ -153,7 +153,7 @@ func manageFiles(ctx context.Context, c instance.Config, o Options, op string, i
 			if err != nil {
 				return nil, err
 			}
-			if err = instance.Recycle(file); err != nil {
+			if err = instance.RemoveOwned(file); err != nil {
 				return nil, err
 			}
 			return Row{"cleared": true}, os.WriteFile(file, nil, 0600)
@@ -164,8 +164,18 @@ func manageFiles(ctx context.Context, c instance.Config, o Options, op string, i
 			return nil, err
 		}
 		if _, e := os.Stat(target); e == nil {
-			if err = instance.Recycle(target); err != nil {
+			if err = instance.RemoveOwned(target); err != nil {
 				return nil, err
+			}
+		}
+		for _, suffix := range []string{"", "-wal", "-shm"} {
+			file := filepath.Join(c.CacheRoot, "thumbs.db"+suffix)
+			if _, e := os.Stat(file); e == nil {
+				if err = instance.RemoveOwned(file); err != nil {
+					return nil, err
+				}
+			} else if !os.IsNotExist(e) {
+				return nil, e
 			}
 		}
 		before["cleared"] = true
@@ -173,9 +183,9 @@ func manageFiles(ctx context.Context, c instance.Config, o Options, op string, i
 	case "scope.authors":
 		return authors(c, input)
 	case "cache.orphans", "cache.orphans.clear":
-		return cacheOperation(c, op, input)
+		return cacheOperation(ctx, c, op, input)
 	case "diagnostics.run":
-		return diagnose(ctx, c, o.ConfigFile)
+		return diagnose(ctx, c, o)
 	case "generations.list", "generation.validate", "generation.publish", "generation.rollback", "live.reset", "retention.plan", "retention.apply":
 		return manageRecovery(ctx, c, op, input)
 	}

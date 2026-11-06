@@ -26,7 +26,7 @@ func fixture(t *testing.T) instance.Config {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if e := instance.Recycle(p); e != nil {
+		if e := instance.RemoveOwned(p); e != nil {
 			t.Error(e)
 		}
 	})
@@ -43,23 +43,26 @@ func TestIdentityAndAuthenticatedOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 	node, reference := os.Getenv("GALLERY_NODE"), os.Getenv("GALLERY_NODE_REFERENCE_ROOT")
-	if node == "" || reference == "" {
-		t.Fatal("frozen Node identity oracle required")
+	if id == nil || id.PID != uint32(os.Getpid()) || id.Start == "" {
+		t.Fatal("native identity missing")
 	}
-	script := `const o=require(process.argv[1]);console.log(JSON.stringify({identity:o.processIdentity(Number(process.argv[2])),pipe:o.pipeName({instanceRoot:process.argv[3]})}));`
-	b, err := exec.Command(node, "-e", script, filepath.Join(reference, "src/instance/ownership.js"), fmt.Sprint(os.Getpid()), c.InstanceRoot).CombinedOutput()
-	if err != nil {
-		t.Fatalf("identity oracle: %s %v", b, err)
-	}
-	var oracle struct {
-		Identity *Identity
-		Pipe     string
-	}
-	if err = json.Unmarshal(b, &oracle); err != nil {
-		t.Fatal(err)
-	}
-	if !Same(id, oracle.Identity) || oracle.Pipe != Pipe(c.InstanceRoot, "runtime") {
-		t.Fatalf("identity or pipe differs: %+v %+v", id, oracle)
+	if node != "" && reference != "" {
+
+		script := `const o=require(process.argv[1]);console.log(JSON.stringify({identity:o.processIdentity(Number(process.argv[2])),pipe:o.pipeName({instanceRoot:process.argv[3]})}));`
+		b, err := exec.Command(node, "-e", script, filepath.Join(reference, "src/instance/ownership.js"), fmt.Sprint(os.Getpid()), c.InstanceRoot).CombinedOutput()
+		if err != nil {
+			t.Fatalf("identity oracle: %s %v", b, err)
+		}
+		var oracle struct {
+			Identity *Identity
+			Pipe     string
+		}
+		if err = json.Unmarshal(b, &oracle); err != nil {
+			t.Fatal(err)
+		}
+		if !Same(id, oracle.Identity) || oracle.Pipe != Pipe(c.InstanceRoot, "runtime") {
+			t.Fatalf("identity or pipe differs: %+v %+v", id, oracle)
+		}
 	}
 	owner, err := Acquire(c, "runtime", func(_ context.Context, r Row) (any, error) {
 		if r["operation"] != "status" {
@@ -95,12 +98,14 @@ func TestIdentityAndAuthenticatedOwnership(t *testing.T) {
 			t.Fatalf("reject: %v %v", response, err)
 		}
 	}
-	// Existing Node clients must connect to the genuine Go pipe, not a mock.
-	script = `const c=require(process.argv[1]);c.control(JSON.parse(process.argv[2]),'status').then(v=>console.log(JSON.stringify(v))).catch(e=>{console.error(e.code);process.exitCode=1});`
-	raw, _ := json.Marshal(c)
-	b, err = exec.Command(node, "-e", script, filepath.Join(reference, "src/runtime/control.js"), string(raw)).CombinedOutput()
-	if err != nil || !strings.Contains(string(b), "READY") {
-		t.Fatalf("Node to Go: %s %v", b, err)
+	if node != "" && reference != "" {
+		// Existing Node clients must connect to the genuine Go pipe, not a mock.
+		script := `const c=require(process.argv[1]);c.control(JSON.parse(process.argv[2]),'status').then(v=>console.log(JSON.stringify(v))).catch(e=>{console.error(e.code);process.exitCode=1});`
+		raw, _ := json.Marshal(c)
+		b, err := exec.Command(node, "-e", script, filepath.Join(reference, "src/runtime/control.js"), string(raw)).CombinedOutput()
+		if err != nil || !strings.Contains(string(b), "READY") {
+			t.Fatalf("Node to Go: %s %v", b, err)
+		}
 	}
 	if err = owner.Close(); err != nil {
 		t.Fatal(err)
@@ -155,7 +160,7 @@ func TestUnverifiedReplyAndOversizedRequest(t *testing.T) {
 		t.Fatalf("reply accepted: %v", err)
 	}
 	l.Close()
-	instance.Recycle(filepath.Join(c.StateRoot, "runtime.lock"))
+	instance.RemoveOwned(filepath.Join(c.StateRoot, "runtime.lock"))
 	owner, err := Acquire(c, "runtime", func(context.Context, Row) (any, error) { t.Error("oversized request reached handler"); return nil, nil })
 	if err != nil {
 		t.Fatal(err)

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 4,
-  "liveSchemaVersion": 3,
+  "liveSchemaVersion": 6,
   "searchVersion": 5,
   "adapterContractVersion": 2,
   "shapeSignatureVersion": 1,
@@ -58,63 +58,63 @@
       "id": "pixiv",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "pixivFANBOX",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "Gank",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "Fantia",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "Patreon",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "Pawchive",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "X",
       "family": "social_feed",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "微博",
       "family": "social_feed",
       "enabled": true,
-      "adapterVersion": 3,
+      "adapterVersion": 4,
       "shapePolicyVersion": 1
     },
     {
       "id": "Venera",
       "family": "download_library",
       "enabled": true,
-      "adapterVersion": 1,
+      "adapterVersion": 2,
       "shapePolicyVersion": 1
     }
   ]

@@ -62,5 +62,9 @@ func Prepare(ctx context.Context, c instance.Config) (resultErr error) {
 	}
 	defer func() { resultErr = errors.Join(resultErr, w.Close()) }()
 	_, err = catalog.UpgradeLive(ctx, w.DB, c.Sources)
+	if err != nil {
+		return err
+	}
+	_, err = w.ReparseMetadata(ctx, c.Sources)
 	return err
 }

@@ -23,6 +23,7 @@ import (
 
 type Row = map[string]any
 type ScanInput struct {
+	AllowNative bool     `json:"allowNative"`
 	Mode        string   `json:"mode"`
 	PlatformID  *string  `json:"platformId"`
 	PlatformIDs []string `json:"platformIds"`
@@ -109,6 +110,9 @@ func Parse(value Row) (ScanInput, []string, error) {
 	}
 	if len(ordered) != len(selected) || len(ordered) == 0 {
 		return in, nil, fmt.Errorf("SCAN_PLATFORM_INVALID")
+	}
+	if in.Author != nil && len(ordered) == 1 && ordered[0] == "Venera" {
+		return in, nil, fmt.Errorf("AUTHOR_SCOPE_UNSUPPORTED")
 	}
 	if in.Author != nil && (*in.Author == "" || len(ordered) != 1 || strings.ContainsAny(*in.Author, `\/:`+"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f") || *in.Author == "." || *in.Author == "..") {
 		return in, nil, fmt.Errorf("AUTHOR_DIRECTORY_INVALID")
@@ -236,6 +240,7 @@ func Run(ctx context.Context, c instance.Config, in ScanInput, ids []string, del
 		for k, v := range map[string]string{"platforms": "platformResults", "platformResults": "platformResults", "activePlatforms": "activePlatforms", "metadataStates": "metadataStates"} {
 			r[k] = progress[v]
 		}
+		r["diagnosticCount"] = s.Counts["failures"] + s.Counts["warnings"]
 		r["scope"] = Row{"requestedPlatformIds": ids, "effectivePlatformIds": ids, "authorDirectoryName": in.Author}
 		if s.Failure != "" {
 			r["failure"] = Row{"code": s.Failure}
@@ -302,7 +307,7 @@ func Run(ctx context.Context, c instance.Config, in ScanInput, ids []string, del
 		if e := instance.WriteJSON(c.ScanStatusPath, last); e != nil {
 			return e
 		}
-		return fmt.Errorf("%s", code)
+		return fmt.Errorf("%s: %w", code, err)
 	}
 	report := Row{"state": "READY", "generationId": id, "mode": in.Mode, "effectiveMode": in.Mode, "changes": last["changes"], "scope": last["scope"], "elapsedMs": time.Since(started).Milliseconds(), "searchRebuilt": false, "sourceWriteAttempts": nil, "scanner": "go", "counts": last["counts"]}
 	report["catalog"] = Row{"workCount": counts["works"], "mediaCount": counts["media"]}
@@ -316,9 +321,9 @@ func Run(ctx context.Context, c instance.Config, in ScanInput, ids []string, del
 	if err = instance.WriteJSON(c.ScanStatusPath, last); err != nil {
 		return err
 	}
-	slog.Info("更新完成", "event", "scan.complete", "mode", in.Mode, "changes", last["changes"], "elapsedMs", time.Since(started).Milliseconds())
+	slog.Info("更新完成", "event", "scan.complete", "mode", in.Mode, "changes", last["changes"], "elapsedMs", time.Since(started).Milliseconds(), "timings", last["counts"], "platforms", last["platformResults"])
 	if workingRoot != c.InstanceRoot {
-		return instance.Recycle(workingRoot)
+		return instance.RemoveOwned(workingRoot)
 	}
 	return nil
 }

@@ -10,14 +10,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/api"
 )
 
-type LiveState struct {
-	SchemaVersion     int              `json:"schemaVersion"`
-	BaseGenerationID  *string          `json:"baseGenerationId"`
-	Epoch             string           `json:"epoch"`
-	Revision          int64            `json:"revision"`
-	InitializedAtMS   int64            `json:"initializedAtMs"`
-	PlatformRevisions map[string]int64 `json:"platformRevisions"`
-}
+type LiveState = api.LiveState
 
 var epochPattern = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 var generationPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -92,7 +85,7 @@ func UpgradeLive(ctx context.Context, db *sql.DB, sources map[string]string) (bo
 	if version == def.LiveSchemaVersion {
 		return false, nil
 	}
-	if version != 1 && version != 2 {
+	if version != 1 && version != 2 && version != 3 && version != 4 && version != 5 {
 		return false, fmt.Errorf("LIVE_SCHEMA_UNSUPPORTED")
 	}
 	tx, err := db.BeginTx(ctx, nil)
@@ -113,6 +106,17 @@ func UpgradeLive(ctx context.Context, db *sql.DB, sources map[string]string) (bo
 	}
 	if _, err = tx.ExecContext(ctx, api.LiveLedgerSQL); err != nil {
 		return false, err
+	}
+	if version < 4 {
+		if _, err = tx.ExecContext(ctx, api.LiveProfilesSQL); err != nil {
+			return false, fmt.Errorf("upgrade live profile projections: %w", err)
+		}
+	}
+	if _, err = tx.ExecContext(ctx, api.EnrichmentSQL); err != nil {
+		return false, fmt.Errorf("upgrade live enrichment: %w", err)
+	}
+	if _, err = tx.ExecContext(ctx, api.InventorySQL); err != nil {
+		return false, fmt.Errorf("upgrade file inventory: %w", err)
 	}
 	if _, err = tx.ExecContext(ctx, "UPDATE live_meta SET schema_version=? WHERE singleton=1", def.LiveSchemaVersion); err != nil {
 		return false, err

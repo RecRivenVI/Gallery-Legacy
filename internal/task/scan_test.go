@@ -43,7 +43,7 @@ func TestReportFailureRetainsCommittedCountsAndDoesNotClaimSuccess(t *testing.T)
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if e := instance.Recycle(p); e != nil {
+		if e := instance.RemoveOwned(p); e != nil {
 			t.Error(e)
 		}
 	})
@@ -68,7 +68,7 @@ func TestLiveHostCannotKeepAnEndedScanRunning(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if e := instance.Recycle(p); e != nil {
+		if e := instance.RemoveOwned(p); e != nil {
 			t.Error(e)
 		}
 	})

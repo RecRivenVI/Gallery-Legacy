@@ -3,6 +3,7 @@ package library
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/metadata"
 	"os"
 	"path/filepath"
@@ -10,15 +11,15 @@ import (
 )
 
 type Config struct {
-	InstanceRoot      string            `json:"instanceRoot"`
-	Database          string            `json:"database"`
-	ListingSource     string            `json:"listingSource"`
-	Sources           map[string]string `json:"sources"`
-	TestOnly          bool              `json:"testOnly"`
-	Workers           int               `json:"workers"`
-	SlowDeviceWorkers int               `json:"slowDeviceWorkers,omitempty"`
-	BatchSize         int               `json:"batchSize"`
-	MetadataLimit     int64             `json:"metadataLimit"`
+	InstanceRoot  string            `json:"instanceRoot"`
+	Database      string            `json:"database"`
+	AllowNative   bool              `json:"allowNative"`
+	ListingSource string            `json:"listingSource"`
+	Sources       map[string]string `json:"sources"`
+	TestOnly      bool              `json:"testOnly"`
+	Workers       int               `json:"workers"`
+	BatchSize     int               `json:"batchSize"`
+	MetadataLimit int64             `json:"metadataLimit"`
 }
 
 func Inside(root, target string) bool {
@@ -51,7 +52,7 @@ func Load(file string) (Config, error) {
 		return c, e
 	}
 	if e = json.Unmarshal(b, &c); e != nil {
-		return c, errors.New("CONFIG_INVALID")
+		return c, fmt.Errorf("CONFIG_INVALID: %w", e)
 	}
 	var fields map[string]json.RawMessage
 	_ = json.Unmarshal(b, &fields)
@@ -84,16 +85,13 @@ func Load(file string) (Config, error) {
 		}
 	}
 	if c.ListingSource == "" {
-		c.ListingSource = "filesystem"
+		c.ListingSource = "auto"
 	}
-	if c.ListingSource != "filesystem" {
+	if c.ListingSource != "filesystem" && c.ListingSource != "auto" {
 		return c, errors.New("LISTING_SOURCE_INVALID")
 	}
 	if c.Workers == 0 {
 		c.Workers = 8
-	}
-	if c.SlowDeviceWorkers == 0 {
-		c.SlowDeviceWorkers = 2
 	}
 	if c.BatchSize == 0 {
 		c.BatchSize = 128
@@ -101,7 +99,7 @@ func Load(file string) (Config, error) {
 	if c.MetadataLimit == 0 {
 		c.MetadataLimit = 64 << 20
 	}
-	if c.Workers < 1 || c.Workers > 32 || c.SlowDeviceWorkers < 1 || c.SlowDeviceWorkers > 8 || c.BatchSize < 1 || c.BatchSize > 128 || c.MetadataLimit < 1024 || c.MetadataLimit > 128<<20 {
+	if c.Workers < 1 || c.Workers > 32 || c.BatchSize < 1 || c.BatchSize > 128 || c.MetadataLimit < 1024 || c.MetadataLimit > 128<<20 {
 		return c, errors.New("BUDGET_INVALID")
 	}
 	return c, nil

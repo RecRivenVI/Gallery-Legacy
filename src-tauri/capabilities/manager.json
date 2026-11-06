@@ -1,0 +1,6 @@
+{
+  "identifier": "manager",
+  "description": "Local management window",
+  "windows": ["manager"],
+  "permissions": ["core:default", "allow-host-call"]
+}

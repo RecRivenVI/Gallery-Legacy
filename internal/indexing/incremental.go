@@ -12,8 +12,7 @@ import (
 )
 
 // Independent extraction/cache contract; Catalog v4 and public protocol stay unchanged.
-const extractionContract = "go1-c4-search5-shape1-policy1-map1-media1"
-const initialContract = "go1-c4-search5-shape1-policy1-map1-media1"
+const extractionContract = "go1-c4-search5-shape1-policy1-map1-media1-profile2"
 
 func processedSignature(platform, raw string) string {
 	return fmt.Sprintf("%s-a%d:%s", extractionContract, metadata.Versions[platform], raw)
@@ -29,15 +28,16 @@ func (p *Pipeline) validateScope(platforms []string) error {
 	if p.AuthorDirectoryName == "" {
 		return nil
 	}
+	if len(platforms) == 1 && platforms[0] == "Venera" {
+		return errors.New("AUTHOR_SCOPE_UNSUPPORTED")
+	}
 	if len(platforms) != 1 || strings.ContainsAny(p.AuthorDirectoryName, "\\/:\x00") || p.AuthorDirectoryName == "." || p.AuthorDirectoryName == ".." {
 		return errors.New("AUTHOR_SCOPE_INVALID")
 	}
 	return nil
 }
 
-// Only the transactionally committed ledger qualifies reuse. An older Go full
-// scan stored the identical raw signature: bridge that one known contract only.
-// Future contract changes invalidate both old-prefixed and raw signatures.
+// Only a committed ledger and its matching profile projection qualify reuse.
 func committedWork(ctx context.Context, read *sql.DB, platform string, work library.Entry, raw string) (catalog.PreparedWork, bool, error) {
 	var fingerprint, state, relative string
 	var adapter, workAdapter int
@@ -53,11 +53,22 @@ func committedWork(ctx context.Context, read *sql.DB, platform string, work libr
 	if e != nil {
 		return catalog.PreparedWork{}, false, e
 	}
-	compatible := fingerprint == processedSignature(platform, raw) || extractionContract == initialContract && fingerprint == raw
+	compatible := fingerprint == processedSignature(platform, raw)
 	if !compatible || adapter != metadata.Versions[platform] || workAdapter != adapter || relative != work.Relative || state == "unreadable" {
 		return catalog.PreparedWork{}, false, nil
 	}
-	return catalog.PreparedWork{Platform: platform, AuthorKey: strings.Split(work.Key, "\\")[0], Key: work.Key, Fingerprint: fingerprint, Work: catalog.Row{"metadata_state": state}, Qualified: true, Reused: true, AuthorityTime: at, AuthorityID: sourceID, AuthorityName: work.Name}, true, nil
+	var blob []byte
+	if e = read.QueryRowContext(ctx, "SELECT projection FROM live_scan_work_profiles WHERE platform_id=? AND relative_path_key=?", platform, work.Key).Scan(&blob); e == sql.ErrNoRows {
+		return catalog.PreparedWork{}, false, nil
+	} else if e != nil {
+		return catalog.PreparedWork{}, false, e
+	}
+	cached, e := catalog.DecodeAuthority(blob)
+	if e != nil {
+		return catalog.PreparedWork{}, false, e
+	}
+	cached.Reused, cached.Fingerprint = true, fingerprint
+	return cached, true, nil
 }
 
 func committedAuthor(ctx context.Context, read *sql.DB, platform, key, fingerprint string) (bool, error) {

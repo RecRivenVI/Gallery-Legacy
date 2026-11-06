@@ -1,20 +1,16 @@
-# 配置与读取组装差分
+# 配置、读取与恢复验证
 
 ## 目标
 
-确认显式配置、空实例、现有工作库及 READY 静态恢复可由 Go 组装，查询结果与冻结 Node 一致；不进入 HTTP、媒体或生命周期替换。
+确认 Go 从显式合成配置读取空库、工作库及 READY 恢复；坏库不被当空库，不从真实实例获取测试输入。
 
 ## 运行
 
-1. 将 GALLERY_NODE_REFERENCE_ROOT 指向独立冻结的 Node 构建；将 GALLERY_TEST_ROOT 指向 Scratches 下本次新建的合成根。后者不是既有实例或真实配置。
-2. 执行 `npm run test:config -- --race`，比较冻结 Node、当前 Node 与 Go 的配置值和失败码；包含目录重叠／联接、Unicode／IPv4／IPv6 Host、Origin、短链及配置文件错误。
-3. 执行 `npm run test:dataset -- --race`，生成九平台合成输入，比较空／live／READY 的状态与作品、作者、标签分页，覆盖错误绑定、未准备库、坏指针、BUILDING 与无效工作库身份。
-4. 检查同场景中的显式 Go 新建库读取、取消、只读写入拒绝、关闭／重开和并发提交快照断言。仅新建测试 writer 可写合成库。
-5. 对受影响包运行 Go build／vet；Node 配置保存、修订冲突及备份恢复执行现有相应回归。验证不向桌面发送输入，不启动或操作在用服务。
-6. 通过只保留输入身份、命令与结果摘要；失败保留必要原始数据。清理精确核实的本任务冗余目录一律送回收站，不跟随联接。
+1. 执行 npm run test:go、npm run test:race；数据库测试自行创建九平台合成空库，不依赖产品 Node CLI。
+2. 受影响时单独运行 node tools/go/run.mjs test -count=1 ./internal/instance ./internal/dataset ./internal/reading ./internal/catalog。
+3. 历史配置／读取差分按提交 20ff819 在仓外捕获固定黄金输入，再以相应 GALLERY_*_GOLDEN 环境变量重放。未提供黄金文件的跳过项不算已比较。
+4. 复核来源绑定、空／坏／错误结构、修订、只读与关闭恢复结果；输出与失败证据放仓外。
 
 ## 通过标准
 
-- 声明范围的配置值、稳定 DTO、顺序、错误码与冻结 Node 一致；Everything 的已移除能力不纳入替代范围。
-- 不创建缺失数据库，不将坏库当空库，不混用来源；一次响应不混合不同提交的修订和内容。
-- 无生产／真实源访问，无默认入口切换，无第二个 writer。HTTP、媒体、进程所有权与 Electron 桥接为未验证，不以基础差分代替。
+同一事实读取一致；已提交记录保留，来源、身份、READY 和事务检查不放宽。迁移不创建第二个 writer、不改生产或旧 Runtime。真实多盘长任务不由合成测试推定通过。

@@ -17,6 +17,14 @@ import (
 type File struct {
 	Path, Root, Platform, WorkID, MediaID, RelativeKey, Kind string
 	Info                                                     os.FileInfo
+	release                                                  func()
+}
+
+// Release ends a derived-file response lease after streaming (also on error).
+func (f File) Release() {
+	if f.release != nil {
+		f.release()
+	}
 }
 
 func Failure(code string, status int) error { return &protocol.Error{Code: code, Status: status} }
@@ -68,8 +76,8 @@ func Resolve(config instance.Config, m reading.Row) (File, error) {
 
 type Service struct{ Cache *Cache }
 
-func New(config instance.Config) (*Service, error) {
-	cache, err := NewCache(config)
+func New(config instance.Config, resources string) (*Service, error) {
+	cache, err := NewCache(config, resources)
 	if err != nil {
 		return nil, err
 	}

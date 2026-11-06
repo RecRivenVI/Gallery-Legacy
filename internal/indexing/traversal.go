@@ -2,9 +2,7 @@ package indexing
 
 import (
 	"context"
-	"errors"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
-	"sort"
 	"time"
 )
 
@@ -12,12 +10,42 @@ import (
 // physical-device I/O permits. Membership is written to the existing private
 // listing index; no complete platform tree is retained in memory.
 func (p *Pipeline) enumerate(ctx context.Context, l *library.Listing, platform, relative string) (library.Directory, error) {
+	if d, ok := l.Observation(platform, relative); ok {
+		return d, nil
+	}
 	release, e := p.disk(ctx, p.Config.Sources[platform])
 	if e != nil {
 		return library.Directory{}, e
 	}
 	defer release()
 	return p.enumerateHeld(ctx, l, platform, relative, nil)
+}
+
+// Iterative directory discovery stores large frontiers and observations in
+// the work stage rather than bounding valid source depth or entry count.
+func (p *Pipeline) nativeWork(ctx context.Context, l *library.Listing, platform string, work library.Entry) (*library.WorkTree, error) {
+	tree := library.NewWorkTree(p.Config.InstanceRoot + "/temp")
+	if err := tree.Add(ctx, []library.Entry{work}); err != nil {
+		return nil, err
+	}
+	for {
+		dir, more, err := tree.NextDirectory(ctx)
+		if err != nil {
+			tree.Close()
+			return nil, err
+		}
+		if !more {
+			return tree, nil
+		}
+		d, err := p.enumerateHeld(ctx, l, platform, dir.Relative, func(batch []library.Entry) error { return tree.Add(ctx, batch) })
+		if err == nil {
+			err = tree.MarkDirectory(ctx, d)
+		}
+		if err != nil {
+			tree.Close()
+			return nil, err
+		}
+	}
 }
 
 func (p *Pipeline) enumerateHeld(ctx context.Context, l *library.Listing, platform, relative string, accept func([]library.Entry) error) (library.Directory, error) {
@@ -60,6 +88,9 @@ func (p *Pipeline) enumerateHeld(ctx context.Context, l *library.Listing, platfo
 	if e == nil && accept == nil {
 		if e = flush(); e == nil {
 			e = l.RefreshDirectory(ctx, platform, relative, d)
+			if e == nil {
+				l.RememberDirectory(platform, relative, d)
+			}
 		}
 	}
 	return d, e
@@ -81,64 +112,15 @@ func (p *Pipeline) verifyDirectory(ctx context.Context, platform string, d libra
 	return e
 }
 
-func (p *Pipeline) verifyWorkDirectories(platform string, directories []library.Directory) error {
-	for _, d := range directories {
-		p.c.NativeChecks.Add(1)
-		start := time.Now()
-		e := d.VerifyLeaf()
-		elapsed := time.Since(start).Nanoseconds()
-		p.c.NativeNanos.Add(elapsed)
-		if m := p.preparation[platform]; m != nil {
-			m.Native.Add(elapsed)
-		}
-		if e != nil {
-			return e
-		}
+func (p *Pipeline) verifyWork(ctx context.Context, platform string, tree *library.WorkTree) error {
+	start := time.Now()
+	err := tree.Verify(ctx, p.Config.Sources[platform])
+	elapsed := time.Since(start).Nanoseconds()
+	p.c.NativeNanos.Add(elapsed)
+	p.c.DirectoryVerifyNanos.Add(elapsed)
+	if m := p.preparation[platform]; m != nil {
+		m.Native.Add(elapsed)
+		m.DirectoryVerify.Add(elapsed)
 	}
-	return nil
-}
-
-// Called with one disk permit already held. ReadDir order is not identity
-// order: sort only this bounded work after observation for stable signatures.
-func (p *Pipeline) nativeWork(ctx context.Context, l *library.Listing, platform string, work library.Entry) ([]library.Entry, []library.Directory, error) {
-	entries := []library.Entry{work}
-	positions := map[string]int{work.Key: 0}
-	directories := []library.Directory{}
-	var walk func(library.Entry, int) error
-	walk = func(dir library.Entry, depth int) error {
-		if depth > 128 {
-			return errors.New("WORK_DEPTH_BUDGET_EXCEEDED")
-		}
-		folders := []library.Entry{}
-		d, e := p.enumerateHeld(ctx, l, platform, dir.Relative, func(batch []library.Entry) error {
-			if len(entries)+len(batch) > 131072 {
-				return errors.New("WORK_LISTING_BUDGET_EXCEEDED")
-			}
-			for _, child := range batch {
-				positions[child.Key] = len(entries)
-				entries = append(entries, child)
-				if child.Kind == "folder" {
-					folders = append(folders, child)
-				}
-			}
-			return nil
-		})
-		if e != nil {
-			return e
-		}
-		directories = append(directories, d)
-		// Replace cached parent timestamps with the directory's own facts.
-		entries[positions[dir.Key]].Mtime = d.Info.ModTime().UnixNano()
-		for _, child := range folders {
-			if e = walk(child, depth+1); e != nil {
-				return e
-			}
-		}
-		return nil
-	}
-	if e := walk(work, 0); e != nil {
-		return nil, nil, e
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Key < entries[j].Key })
-	return entries, directories, nil
+	return err
 }
