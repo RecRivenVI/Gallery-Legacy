@@ -39,7 +39,7 @@ func (c *Cache) preloadDisk(p *coverPreload, disk string, wake <-chan struct{}) 
 			// the render worker counts a background read only after dequeueing.
 			c.finishBackground()
 			if err == nil {
-				_, _, err = c.Request(taskCtx, f, "s", Background)
+				_, _, err = c.Request(taskCtx, f, Display, Background)
 			}
 			state, failure := "done", ""
 			if err != nil {
@@ -73,5 +73,5 @@ func preloadFile(p *coverPreload, j coverJob) (File, error) {
 	if info.Size() != j.size || info.ModTime().UnixNano() != j.mtime {
 		return File{}, fmt.Errorf("MEDIA_CHANGED")
 	}
-	return File{Path: path, Root: p.config.Sources[j.platform], Info: info, Platform: j.platform, WorkID: strconv.FormatInt(j.work, 10), MediaID: strconv.FormatInt(j.media, 10), RelativeKey: strings.ToLower(strings.ReplaceAll(j.mediaRelative, "/", `\`)), Kind: j.kind}, nil
+	return File{Path: path, Root: p.config.Sources[j.platform], Info: info, Platform: j.platform, WorkID: strconv.FormatInt(j.work, 10), MediaID: strconv.FormatInt(j.media, 10), RelativeKey: strings.ToLower(strings.ReplaceAll(j.mediaRelative, "/", `\`)), Kind: j.kind, Cover: true}, nil
 }

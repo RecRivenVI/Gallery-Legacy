@@ -3,8 +3,6 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
 )
 
 func platformExtras(r *Result, m Object, platform, author, work string) {
@@ -248,16 +246,6 @@ func socialExtras(r *Result, m Object, platform string) {
 				break
 			}
 		}
-	}
-	if t, ok := r.Work["publishedAtMs"].(int64); ok {
-		r.Work["title"] = time.UnixMilli(t).UTC().Format("2006-01-02T15:04:05.000Z")
-		p := "date"
-		for _, e := range r.Evidence {
-			if e.Field == "work.publishedAtMs" {
-				p = strings.TrimPrefix(e.Path, "$.")
-			}
-		}
-		r.Evidence = append(r.Evidence, Evidence{"work.title", "metadata", "$." + p, 1})
 	}
 	r.field(m, r.Work, "language", "work.language", Str, "lang")
 	socialProfile(r, m, platform)

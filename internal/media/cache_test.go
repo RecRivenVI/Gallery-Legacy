@@ -34,6 +34,7 @@ func TestThumbnailQueueCancellationAndDeduplication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c.index.estimate.Store(1 << 20)
 	file := filepath.Join(root, "synthetic.png")
 	if err = os.WriteFile(file, []byte("synthetic source"), 0600); err != nil {
 		t.Fatal(err)

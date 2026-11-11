@@ -118,22 +118,14 @@ private fun ReaderPage(
     val media = state.media.getOrNull(index) ?: return
     val density = LocalDensity.current
     var rect by remember { mutableStateOf(Rect.Zero) }
-    val large =
-        viewerImage(
-            media,
-            state.zoom,
-            if (continuous) state.areaWidth / density.density
-            else state.areaWidth / density.density / state.reading.spread.size,
-            density.density,
-        )
-    var ready by remember(media.url, state.retry) { mutableStateOf(false) }
+    val large = media.url
     var loaded by remember(large, state.retry) { mutableStateOf(false) }
     var failed by remember(large, state.retry) { mutableStateOf(false) }
     var delayed by remember(large, state.retry) { mutableStateOf(false) }
     val layer = rememberGraphicsLayer()
     val backdrop = remember { Backdrop(layer) }
     LaunchedEffect(large, state.retry) {
-        delay(1000)
+        delay(200)
         delayed = true
     }
     val primary = index == state.page
@@ -163,21 +155,18 @@ private fun ReaderPage(
                     picture,
                     fit = progress > .99f,
                     placeholder = false,
-                    onLoaded = { ready = true },
-                    onError = { ready = true },
                     onInfo = { w, h, animated ->
                         state.mediaInfo(media.relativePath, w, h, animated)
                     },
                 )
-                if (ready)
-                    MediaImage(
-                        large,
-                        picture,
-                        fit = progress > .99f,
-                        placeholder = false,
-                        onLoaded = { loaded = true },
-                        onError = { failed = true },
-                    )
+                MediaImage(
+                    large,
+                    picture,
+                    fit = progress > .99f,
+                    placeholder = false,
+                    onLoaded = { loaded = true },
+                    onError = { failed = true },
+                )
             }
         }
         CompositionLocalProvider(LocalBackdrop provides backdrop) {
@@ -185,7 +174,7 @@ private fun ReaderPage(
                 Box(
                     Modifier.align(Alignment.BottomStart)
                         .fillMaxWidth(.3f)
-                        .height(2.dp)
+                        .height(3.dp)
                         .background(Color.White.copy(alpha = .7f))
                 )
             if (failed)
@@ -253,23 +242,6 @@ private fun ContinuousPages(state: ViewerState, progress: Float) {
                     }
                 }
             }
-    }
-    LaunchedEffect(visible, state.work.stableId) {
-        coroutineScope {
-            ((visible.first - 3 until visible.first) + (visible.last + 1..visible.last + 3))
-                .filter { it in state.media.indices }
-                .forEach { index ->
-                    launch {
-                        try {
-                            prefetchImage(
-                                state.media[index].thumbnails?.l ?: state.media[index].thumbnailUrl
-                            )
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (_: Exception) {}
-                    }
-                }
-        }
     }
     BoxWithConstraints(
         Modifier.fillMaxSize()

@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -72,7 +72,7 @@ func (p *Pipeline) dispatch(ctx context.Context, cancel context.CancelFunc, plat
 				if ctx.Err() != nil {
 					return
 				}
-				stage := &platformStage{id: id, ctx: ctx, output: queue, budget: p.queueBudget}
+				stage := &platformStage{id: id, ctx: ctx, output: queue, budget: p.queueBudget, started: time.Now()}
 				p.coordinate(ctx, l, read, stage, jobs, nil)
 				queue <- message{platform: id, finished: stage}
 			}
@@ -108,10 +108,7 @@ func (p *Pipeline) runWork(ctx context.Context, l *library.Listing, read *sql.DB
 		m.Works.Add(1)
 	}
 	if err == nil {
-		state := textState(prepared.Work["metadata_state"])
-		if state != "valid" && state != "missing" {
-			p.addIssue(a.stage.id, job.work.Relative, "warning", "METADATA_"+strings.ToUpper(state))
-		}
+		p.reportMetadataIssue(a.stage.id, job.work, prepared)
 		err = a.accept(ctx, job.work, prepared)
 	}
 	if err != nil {
@@ -136,6 +133,21 @@ func (p *Pipeline) runWork(ctx context.Context, l *library.Listing, read *sql.DB
 	p.mu.Unlock()
 }
 
+func (p *Pipeline) reportMetadataIssue(platform string, work library.Entry, prepared catalog.PreparedWork) {
+	state := textState(prepared.Work["metadata_state"])
+	if state == "valid" || state == "missing" {
+		return
+	}
+	var details []string
+	for _, field := range prepared.Normalized.Issues {
+		details = append(details, field.Path+" ("+field.Reason+")")
+	}
+	if reason := prepared.Normalized.Reason; reason != "" {
+		details = append(details, reason)
+	}
+	p.addIssue(platform, work.Relative, "warning", "METADATA_"+strings.ToUpper(state), details...)
+}
+
 func (p *Pipeline) coordinate(ctx context.Context, l *library.Listing, read *sql.DB, s *platformStage, jobs chan<- workJob, slots chan struct{}) {
 	p.setState(s.id, "LISTING")
 	var root library.Directory
@@ -148,11 +160,13 @@ func (p *Pipeline) coordinate(ctx context.Context, l *library.Listing, read *sql
 			return
 		}
 
+		authorStart := time.Now()
 		authors, err := p.discoverAuthors(ctx, l, read, s)
 		if err != nil {
 			s.fail(err)
 			return
 		}
+		slog.InfoContext(ctx, "作者统计完成", "platform", s.id, "authors", len(authors), "elapsedMs", time.Since(authorStart).Milliseconds())
 		s.ends = make(chan *authorSession, len(authors))
 		endDone = make(chan struct{})
 		go func() {
@@ -163,17 +177,28 @@ func (p *Pipeline) coordinate(ctx context.Context, l *library.Listing, read *sql
 				}
 			}
 		}()
-		if cap(p.disks[p.Config.Sources[s.id]]) == 1 {
+		if p.Mode == "full" && cap(p.disks[p.Config.Sources[s.id]]) == 1 && (!l.Indexed(s.id) || p.Inventory != nil) {
 			if err = p.loadPhysical(ctx, l, s.id); err != nil {
 				s.fail(err)
 				return
 			}
 		}
+		scheduleStart := time.Now()
 		if err = l.BuildSchedule(ctx, s.id, p.AuthorDirectoryName, cap(p.disks[p.Config.Sources[s.id]]) == 1); err != nil {
 			s.fail(err)
 			return
 		}
+		slog.InfoContext(ctx, "作品排程完成", "platform", s.id, "elapsedMs", time.Since(scheduleStart).Milliseconds())
 		p.setState(s.id, "PREPARING")
+		var reuse *sql.DB
+		if p.Mode == "incremental" && l.Indexed(s.id) {
+			reuse, err = openReuse(ctx, p.Config.Database, l)
+			if err != nil {
+				s.fail(err)
+				return
+			}
+			defer reuse.Close()
+		}
 		for after := int64(0); ; {
 			works, next, err := l.ScheduledPage(ctx, s.id, after)
 			if err != nil {
@@ -184,8 +209,31 @@ func (p *Pipeline) coordinate(ctx context.Context, l *library.Listing, read *sql
 				break
 			}
 			after = next
+			var reused map[string]reuseMatch
+			if reuse != nil {
+				began := time.Now()
+				reused, err = reusablePage(ctx, reuse, s.id, works)
+				p.preparation[s.id].Reuse.Add(time.Since(began).Nanoseconds())
+				if err != nil {
+					s.fail(err)
+					return
+				}
+			}
 			for _, work := range works {
-				if err = p.scheduleWork(ctx, s, authors[work.Work.Parent], work, jobs); err != nil {
+				a := authors[work.Work.Parent]
+				if cached, ok := reused[work.Work.Key]; ok {
+					if err = a.acceptIndexedReuse(ctx, work.Work, cached); err != nil {
+						s.fail(err)
+						return
+					}
+					p.c.Prepared.Add(1)
+					p.completeWork(s.id, true, nil)
+					if a.remaining.Add(-1) == 0 {
+						s.ends <- a
+					}
+					continue
+				}
+				if err = p.scheduleWork(ctx, s, a, work, jobs); err != nil {
 					s.fail(err)
 					return
 				}
@@ -234,11 +282,13 @@ func (p *Pipeline) discoverAuthors(ctx context.Context, l *library.Listing, read
 }
 
 func (p *Pipeline) scheduleWork(ctx context.Context, s *platformStage, author *authorSession, work library.ScheduledWork, jobs chan<- workJob) error {
+	wait := time.Now()
 	select {
 	case author.slots <- struct{}{}:
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+	p.preparation[s.id].AuthorSlot.Add(time.Since(wait).Nanoseconds())
 	at := time.Now()
 	disk, slot, err := p.admitPreparation(ctx, p.Config.Sources[s.id])
 	if m := p.preparation[s.id]; m != nil {

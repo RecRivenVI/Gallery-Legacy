@@ -13,6 +13,7 @@ type jsonField struct {
 	Default    json.RawMessage      `json:"default"`
 	Properties map[string]jsonField `json:"properties"`
 	Items      *jsonField           `json:"items"`
+	Deprecated bool                 `json:"deprecated"`
 }
 
 // The instance schema is also the client configuration's only field/default source.
@@ -54,6 +55,9 @@ func configurationModels() ([]model, error) {
 			m := model{Name: name}
 			for _, key := range keys {
 				child := node.Properties[key]
+				if child.Deprecated {
+					continue
+				}
 				title := strings.ToUpper(key[:1]) + key[1:]
 				typ, err := visit(name+title, child)
 				if err != nil {

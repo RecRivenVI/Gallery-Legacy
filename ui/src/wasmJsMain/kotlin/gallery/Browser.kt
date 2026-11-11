@@ -112,6 +112,18 @@ external fun saveStored(key: String, value: String)
 @JsFun("ms=>new Date(ms).toISOString().slice(0,10)") external fun isoDate(ms: Double): String
 
 @JsFun(
+    "ms=>new Date(ms).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})"
+)
+private external fun localWorkTime(ms: Double): String
+
+fun title(item: ContentItem) = title(item.work)
+
+fun title(work: WorkSummaryWire): String =
+    work.title.ifBlank {
+        (work.publishedAtMs ?: work.sortAtMs)?.let { localWorkTime(it.toDouble()) } ?: "无标题"
+    }
+
+@JsFun(
     "ms=>new Date(ms).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})"
 )
 external fun clock(ms: Double): String

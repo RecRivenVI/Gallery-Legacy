@@ -8,31 +8,14 @@ class ModelTest {
     fun typedWorkKeepsDescriptionFlagsAndNullFields() {
         val work =
             json.decodeFromString<WorkSummaryWire>(
-                """{"id":"9223372036854775807","sourceUrl":null,"flags":{"adult":null,"paid":true},"tags":null,"description":{"format":"plain","text":"一段简介"},"cover":{"width":1600,"height":1200,"thumbnails":{"s":"small","m":"medium","l":"large"}}}"""
+                """{"id":"9223372036854775807","sourceUrl":null,"flags":{"adult":null,"paid":true},"tags":null,"description":{"format":"plain","text":"一段简介"},"cover":{"width":1600,"height":1200,"thumbnailUrl":"cover"}}"""
             )
         assertEquals("9223372036854775807", work.id)
         assertNull(work.sourceUrl)
         assertEquals("一段简介", work.description?.text)
         assertTrue(work.flags.paid == true)
         assertEquals(emptyList(), work.tags)
-        assertEquals("large", work.cover?.thumbnails?.l)
-    }
-
-    @Test
-    fun viewerUsesLargePreviewUntilResolutionNeedsOriginal() {
-        val media =
-            MediaSummaryWire(
-                fileName = "synthetic.jpg",
-                url = "original",
-                width = 4000,
-                height = 3000,
-                thumbnails = ThumbnailUrlsWire(s = "s", m = "m", l = "l"),
-            )
-        assertEquals("l", viewerImage(media, 1f, 1440f, 1f))
-        assertEquals("l", viewerImage(media, 1.2f, 1000f, 1f))
-        assertEquals("original", viewerImage(media, 2.1f, 1000f, 1f))
-        assertEquals("original", viewerImage(media.copy(animated = true), 1f, 1000f, 1f))
-        assertEquals("original", viewerImage(media.copy(type = "video"), 1f, 1000f, 1f))
+        assertEquals("cover", work.cover?.thumbnailUrl)
     }
 
     @Test

@@ -12,6 +12,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/diagnostic"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -110,7 +111,7 @@ type Pipeline struct {
 	issues                    []map[string]string
 	issueLog                  *issueLog
 	Delay                     time.Duration
-	Inventory                 *library.Everything
+	Inventory                 inventoryProvider
 	PhysicalOrder             physicalOrder
 	Device                    func(string) (string, int)
 }
@@ -260,6 +261,9 @@ func (p *Pipeline) Run(parent context.Context, platforms []string) error {
 		return e
 	}
 	defer release()
+	if e := library.RecoverListings(filepath.Join(p.Config.InstanceRoot, "temp")); e != nil {
+		return e
+	}
 	if e := catalog.RecoverWorkStages(filepath.Join(p.Config.InstanceRoot, "temp")); e != nil {
 		return e
 	}
@@ -329,6 +333,9 @@ func (p *Pipeline) Run(parent context.Context, platforms []string) error {
 	state, failure := "COMPLETE", ""
 	p.c.ListingWriteNanos.Store(listing.WriteNanos.Load())
 	p.c.ListingTransactions.Store(listing.Transactions.Load())
+	if e := listing.Close(); e != nil {
+		slog.WarnContext(ctx, "文件清单暂存未能回收", "error", e)
+	}
 	if result != nil {
 		state = "FAILED"
 		failure = code(result)

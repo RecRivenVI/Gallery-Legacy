@@ -197,10 +197,10 @@ func flag(value any) any {
 func slash(value any) string { return strings.ReplaceAll(text(value), "\\", "/") }
 
 func (v *View) Media(id int64) (Row, error) {
-	return v.row("SELECT m.*,w.platform_id,w.relative_path work_relative_path FROM media m JOIN works w USING(work_id) WHERE m.media_id=?", id)
+	return v.row("SELECT m.*,w.platform_id,w.relative_path work_relative_path,w.cover_media_id FROM media m JOIN works w USING(work_id) WHERE m.media_id=?", id)
 }
 
-func (v *View) mediaDTO(m Row, previews bool) (Row, error) {
+func (v *View) mediaDTO(m Row, previews bool, sizes ...string) (Row, error) {
 	identity, err := v.Media(m["media_id"].(int64))
 	if err != nil {
 		return nil, err
@@ -221,14 +221,12 @@ func (v *View) mediaDTO(m Row, previews bool) (Row, error) {
 	address := func(kind string) string {
 		return "/api/v1/" + kind + "/" + id(m["media_id"]) + "?g=" + component(v.epoch) + suffix
 	}
-	thumbnails := Row{}
-	for _, tier := range []string{"s", "m", "l"} {
-		fingerprint := imaging.Key(text(identity["platform_id"]), text(identity["work_relative_path"])+"/"+text(m["relative_path"]), m["filesystem_size"].(int64), m["filesystem_mtime_ns"].(int64), tier)
-		thumbnails[tier] = address("thumbnails") + "&tier=" + tier + "&v=" + fingerprint
+	purpose := "display"
+	if len(sizes) != 0 {
+		purpose = sizes[0]
 	}
-	result := (api.MediaSummary{ID: id(m["media_id"]), FileName: text(m["filesystem_file_name"]), RelativePath: slash(m["relative_path"]), Type: text(m["filesystem_media_type"]), Size: m["filesystem_size"].(int64), DurationMs: m["duration_ms"], URL: address("media"), ThumbnailURL: thumbnails["s"].(string), Role: role, DefaultVisible: visible}).Row()
-	result["thumbnails"] = thumbnails
-	return result, nil
+	fingerprint := imaging.Key(text(identity["platform_id"]), text(identity["work_relative_path"])+"/"+text(m["relative_path"]), m["filesystem_size"].(int64), m["filesystem_mtime_ns"].(int64))
+	return (api.MediaSummary{ID: id(m["media_id"]), FileName: text(m["filesystem_file_name"]), RelativePath: slash(m["relative_path"]), Type: text(m["filesystem_media_type"]), Size: m["filesystem_size"].(int64), DurationMs: m["duration_ms"], URL: address("media"), ThumbnailURL: address("thumbnails") + "&purpose=" + purpose + "&v=" + fingerprint, Role: role, DefaultVisible: visible}).Row(), nil
 }
 
 func (v *View) Works(ids []int64, mediaType string) ([]Row, error) {
@@ -326,8 +324,21 @@ func (v *View) Work(workID int64) (Row, error) {
 	}
 	sortMedia(media)
 	pages := []Row{}
+	var coverID string
+	if cover, ok := item["cover"].(Row); ok {
+		coverID = text(cover["id"])
+	}
+	spread := 0
 	for _, m := range media {
-		page, err := v.mediaDTO(m, preview)
+		_, visible := presentation(text(m["filesystem_file_name"]), preview)
+		purpose := "strip"
+		if id(m["media_id"]) == coverID {
+			purpose = "display"
+		} else if visible && spread < 3 {
+			purpose = "display"
+			spread++
+		}
+		page, err := v.mediaDTO(m, preview, purpose)
 		if err != nil {
 			return nil, err
 		}

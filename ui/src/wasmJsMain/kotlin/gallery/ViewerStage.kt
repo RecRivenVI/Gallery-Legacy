@@ -25,7 +25,6 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
     var rect by remember { mutableStateOf(Rect.Zero) }
     var loaded by remember(media?.url, state.retry) { mutableStateOf(false) }
     var failed by remember(media?.url, state.retry) { mutableStateOf(false) }
-    var previewReady by remember(media?.url, state.retry) { mutableStateOf(false) }
     var delayed by remember(media?.url, state.retry) { mutableStateOf(false) }
     var autoHidden by remember { mutableStateOf(false) }
     val imageLayer = rememberGraphicsLayer()
@@ -47,26 +46,8 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
             if (state.dragging) snap() else spring(dampingRatio = 1f, stiffness = 324f),
         )
     LaunchedEffect(media?.url, state.retry) {
-        delay(1000)
+        delay(200)
         delayed = true
-    }
-    LaunchedEffect(state.work.stableId, state.page) {
-        coroutineScope {
-            (-2..2)
-                .filter { it != 0 }
-                .mapNotNull { state.media.getOrNull(state.page + it) }
-                .forEach { nearby ->
-                    launch {
-                        try {
-                            prefetchImage(nearby.thumbnails?.l ?: nearby.thumbnailUrl)
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (_: Exception) {
-                            /* A failed prefetch is retried on navigation. */
-                        }
-                    }
-                }
-        }
     }
     LaunchedEffect(state.lastPointer) {
         autoHidden = false
@@ -173,8 +154,6 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                             imageModifier,
                             fit = !opening,
                             placeholder = false,
-                            onLoaded = { previewReady = true },
-                            onError = { previewReady = true },
                             onInfo = { w, h, animated ->
                                 state.mediaInfo(picture.relativePath, w, h, animated)
                             },
@@ -189,24 +168,9 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                 }
             }
         }
-        if (
-            media != null &&
-                !failed &&
-                (previewReady ||
-                    media.type == "video" ||
-                    media.animated ||
-                    media.fileName.endsWith(".gif", ignoreCase = true))
-        )
+        if (media != null && !failed)
             BrowserMedia(
-                media.copy(
-                    url =
-                        viewerImage(
-                            media,
-                            state.zoom,
-                            maxOf(rect.width, rect.height) / density.density,
-                            density.density,
-                        )
-                ),
+                media,
                 state,
                 scale,
                 Offset(panX + state.dragX, panY),
@@ -228,7 +192,7 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                     Modifier.align(Alignment.BottomStart)
                         .fillMaxWidth(.3f)
                         .offset { IntOffset((rect.width * x * .7f).roundToInt(), 0) }
-                        .height(2.dp)
+                        .height(3.dp)
                         .background(Color.White.copy(alpha = .7f))
                 )
             }

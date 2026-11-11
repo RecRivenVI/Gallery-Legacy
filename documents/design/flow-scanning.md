@@ -3,7 +3,7 @@
 全量和增量共用文件清单、作品准备与唯一 writer；HTTP 与媒体服务保留独立读取连接。详细机制见[清单与扫描](mechanism-inventory.md)，持久字段见[文件清单](../reference/schema-scan_inventory.md)。
 
 ```text
-选模式/平台或作者并确认 → Everything 清单（不可用先征求同意）
+选模式/平台或作者并确认 → 文件表或 USN 清单（不可用先征求遍历确认）
   → 平台/作者计数与排序 → 逐文件大小、mtime 对比
   → 未变作品复用；变化作品完整枚举、metadata 解析
   → 有界作品队列（HDD 物理读取与作者发布解耦）

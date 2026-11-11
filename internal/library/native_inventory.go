@@ -7,9 +7,23 @@ import (
 
 // The SQLite frontier bounds memory even for a single very large author.
 func (l *Listing) LoadNative(ctx context.Context, platform, root string, measured ...func(DirectoryCosts)) error {
+	return l.LoadNativeScope(ctx, platform, root, "", measured...)
+}
+
+func (l *Listing) LoadNativeScope(ctx context.Context, platform, root, author string, measured ...func(DirectoryCosts)) error {
 	read := func(relative string) error {
 		var costs DirectoryCosts
-		d, err := ReadDirectoryMeasured(ctx, platform, root, relative, func(entries []Entry) error { return l.PutNative(ctx, entries) }, &costs)
+		d, err := ReadDirectoryMeasured(ctx, platform, root, relative, func(entries []Entry) error {
+			if relative == "." && author != "" {
+				for _, entry := range entries {
+					if entry.Kind == "folder" && strings.EqualFold(entry.Relative, author) {
+						return l.PutNative(ctx, []Entry{entry})
+					}
+				}
+				return nil
+			}
+			return l.PutNative(ctx, entries)
+		}, &costs)
 		for _, observe := range measured {
 			observe(costs)
 		}

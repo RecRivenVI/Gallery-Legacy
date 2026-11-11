@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
@@ -28,17 +29,25 @@ type coverPreload struct {
 type coverJob struct {
 	key, platform, relative, kind, disk string
 	mediaRelative                       string
-	work, media, size, mtime            int64
+	work, media, size, mtime, position  int64
 }
 
 func (c *Cache) InitializePreload(config instance.Config) error {
-	_, err := c.index.db.Exec(`CREATE TABLE IF NOT EXISTS cover_jobs(key TEXT PRIMARY KEY,platform TEXT NOT NULL,relative TEXT NOT NULL,work_id INTEGER NOT NULL,media_id INTEGER NOT NULL,kind TEXT NOT NULL,size INTEGER NOT NULL,mtime INTEGER NOT NULL,disk TEXT NOT NULL,position INTEGER NOT NULL DEFAULT -1,state TEXT NOT NULL,failure TEXT NOT NULL DEFAULT '',plan INTEGER NOT NULL,media_relative TEXT NOT NULL);CREATE TABLE IF NOT EXISTS cover_inventory(platform TEXT,key TEXT,relative TEXT,size INTEGER,mtime INTEGER,author TEXT,plan INTEGER,PRIMARY KEY(platform,key)) WITHOUT ROWID;CREATE INDEX IF NOT EXISTS cover_jobs_order ON cover_jobs(disk,state,position);CREATE TABLE IF NOT EXISTS cover_state(singleton INTEGER PRIMARY KEY CHECK(singleton=1),paused INTEGER NOT NULL);INSERT OR IGNORE INTO cover_state VALUES(1,1);UPDATE cover_state SET paused=1 WHERE singleton=1;CREATE TABLE IF NOT EXISTS cover_task(singleton INTEGER PRIMARY KEY CHECK(singleton=1),request TEXT NOT NULL);UPDATE cover_jobs SET state='pending' WHERE state='running';`)
+	_, err := c.index.db.Exec(`CREATE TABLE IF NOT EXISTS cover_jobs(key TEXT PRIMARY KEY,platform TEXT NOT NULL,relative TEXT NOT NULL,work_id INTEGER NOT NULL,media_id INTEGER NOT NULL,kind TEXT NOT NULL,size INTEGER NOT NULL,mtime INTEGER NOT NULL,disk TEXT NOT NULL,position INTEGER NOT NULL DEFAULT -1,state TEXT NOT NULL,failure TEXT NOT NULL DEFAULT '',plan INTEGER NOT NULL,media_relative TEXT NOT NULL);CREATE TABLE IF NOT EXISTS cover_next AS SELECT * FROM cover_jobs WHERE 0;CREATE INDEX IF NOT EXISTS cover_jobs_order ON cover_jobs(disk,state,(CASE WHEN position>=0 THEN 0 ELSE 1 END),position,work_id);CREATE TABLE IF NOT EXISTS cover_state(singleton INTEGER PRIMARY KEY CHECK(singleton=1),paused INTEGER NOT NULL,replan INTEGER NOT NULL);INSERT OR IGNORE INTO cover_state VALUES(1,1,0);UPDATE cover_state SET paused=1 WHERE singleton=1;CREATE TABLE IF NOT EXISTS cover_task(singleton INTEGER PRIMARY KEY CHECK(singleton=1),request TEXT NOT NULL);UPDATE cover_jobs SET state='pending' WHERE state='running';`)
 	if err != nil {
 		return fmt.Errorf("initialize cover preload: %w", err)
 	}
 
 	p := &coverPreload{ctx: c.ctx, config: config, wake: make(chan struct{}, 1), disks: map[string]string{}, workers: map[string]chan struct{}{}}
-	if err = c.index.db.QueryRow("SELECT paused FROM cover_state WHERE singleton=1").Scan(&c.backgroundPaused); err != nil {
+	if err = c.index.db.QueryRow("SELECT paused,replan FROM cover_state WHERE singleton=1").Scan(&c.backgroundPaused, &p.restartPlan); err != nil {
+		return err
+	}
+	db, err := sql.Open("sqlite", thumbnailURI(filepath.Join(config.InstanceRoot, "live", "catalog.sqlite"), "mode=ro"))
+	if err != nil {
+		return err
+	}
+	err = errors.Join(c.index.updateEstimate(c.ctx, db), db.Close())
+	if err != nil {
 		return err
 	}
 	for id, root := range config.Sources {
@@ -214,5 +223,9 @@ func (c *Cache) PreloadStatus(ctx context.Context) (map[string]any, error) {
 	planning := c.preload.planning
 	failure := c.preload.failure
 	c.mu.Unlock()
-	return map[string]any{"total": total, "completed": completed, "failed": failed, "paused": paused, "waitingForScan": scanning, "mode": request.Mode, "platformIds": request.Platforms, "planning": planning, "failure": failure, "running": planning || active > 0 || !paused && !scanning && completed+failed < total}, nil
+	occupancy, err := c.index.occupancy(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"total": total, "completed": completed, "failed": failed, "paused": paused, "waitingForScan": scanning, "mode": request.Mode, "platformIds": request.Platforms, "planning": planning, "failure": failure, "occupancy": occupancy, "running": planning || active > 0 || !paused && !scanning && completed+failed < total}, nil
 }

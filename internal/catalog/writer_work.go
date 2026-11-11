@@ -192,7 +192,7 @@ func (w *Writer) write(t *transaction, p PreparedWork, rev int64) error {
 	if e = t.exec("INSERT INTO live_metadata_stats VALUES (?,1) ON CONFLICT(metadata_state) DO UPDATE SET count=count+1", p.Work["metadata_state"]); e != nil {
 		return e
 	}
-	if p.Qualified {
+	if p.Qualified && p.Fingerprint != "" {
 		if e = t.exec("INSERT INTO live_scan_works VALUES (?,?,?,?,?,?) ON CONFLICT(platform_id,relative_path_key) DO UPDATE SET fingerprint=excluded.fingerprint,adapter_version=excluded.adapter_version,authority_at_ms=excluded.authority_at_ms,authority_source_id=excluded.authority_source_id", p.Platform, p.Key, p.Fingerprint, metadata.Versions[p.Platform], p.AuthorityTime, p.AuthorityID); e != nil {
 			return e
 		}

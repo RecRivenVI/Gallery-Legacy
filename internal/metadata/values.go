@@ -37,9 +37,8 @@ func ID(v any) any {
 		return nil
 	}
 	if n, ok := v.(json.Number); ok {
-		f, e := n.Float64()
-		if e == nil && math.Abs(f) <= 9007199254740991 && math.Trunc(f) == f {
-			return strconv.FormatInt(int64(f), 10)
+		if integerPattern.MatchString(string(n)) {
+			return string(n)
 		}
 	}
 	return nil
@@ -116,6 +115,10 @@ func Or(v ...any) any {
 	return nil
 }
 func Timestamp(v any) any {
+	return timestamp(v, time.UTC)
+}
+
+func timestamp(v any, defaultZone *time.Location) any {
 	if _, ok := v.(json.Number); ok {
 		return Integer(v, false)
 	}
@@ -125,9 +128,15 @@ func Timestamp(v any) any {
 	}
 	s = strings.TrimSpace(s)
 	if !timezonePattern.MatchString(s) {
-		s = strings.Replace(s, " ", "T", 1) + "Z"
+		if t, e := time.ParseInLocation("2006-01-02T15:04:05", strings.Replace(s, " ", "T", 1), defaultZone); e == nil {
+			return t.UnixMilli()
+		}
+		if t, e := time.ParseInLocation(time.DateOnly, s, defaultZone); e == nil {
+			return t.UnixMilli()
+		}
+		s += "Z"
 	}
-	for _, layout := range []string{time.RFC3339Nano, "2006-01-02T15:04:05-0700", "2006-01-02Z", "Mon Jan 02 15:04:05 -0700 2006"} {
+	for _, layout := range []string{time.RFC3339Nano, "2006-01-02T15:04:05-0700", time.RFC1123Z, "Mon Jan 02 15:04:05 -0700 2006"} {
 		if t, e := time.Parse(layout, s); e == nil {
 			return t.UnixMilli()
 		}
@@ -146,11 +155,12 @@ func New() Result {
 	return Result{Valid: true, Work: Object{}, Profile: Object{"profileLinks": []any{}}, Flags: Object{}, Access: Object{}, Metrics: Object{}, Tags: []string{}, Supplementary: []Text{}, Structured: []Object{}, Relations: []Relation{}, Evidence: []Evidence{}}
 }
 func (r *Result) field(m Object, group Object, key, field string, decode func(any) any, paths ...string) {
+	var rejected []string
 	for i, p := range paths {
 		raw := Get(m, p)
 		v := decode(raw)
 		if raw != nil && raw != "" && v == nil {
-			r.InvalidFields++
+			rejected = append(rejected, p)
 		}
 		if v != nil && v != "" {
 			group[key] = v
@@ -158,6 +168,14 @@ func (r *Result) field(m Object, group Object, key, field string, decode func(an
 			return
 		}
 	}
+	for _, p := range rejected {
+		r.reject(p, "unsupported_value")
+	}
+}
+
+func (r *Result) reject(path, reason string) {
+	r.InvalidFields++
+	r.Issues = append(r.Issues, FieldIssue{Path: "$." + path, Reason: reason})
 }
 func (r *Result) body(m Object, paths, formats []string) {
 	for i, p := range paths {
@@ -180,14 +198,8 @@ func (r *Result) tags(values []any) {
 }
 func (r *Result) metric(m Object, key, path string) { r.Metrics[key] = Integer(Get(m, path), true) }
 func (r *Result) identity(m Object, author, work string, workPaths, authorPaths []string) {
-	invalidBefore := r.InvalidFields
 	r.field(m, r.Work, "sourceWorkId", "work.sourceWorkId", ID, workPaths...)
 	r.field(m, r.Profile, "sourceAuthorId", "authorProfile.sourceAuthorId", ID, authorPaths...)
-	// X validates every raw candidate below, including lower-priority IDs.
-	// Selection must not count the same rejected ID a second time.
-	if r.platform == "X" {
-		r.InvalidFields = invalidBefore
-	}
 	if r.Work["sourceWorkId"] == nil {
 		if x := DirectoryWorkID(work); x != nil {
 			r.Work["sourceWorkId"] = x

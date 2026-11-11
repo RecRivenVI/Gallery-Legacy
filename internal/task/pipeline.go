@@ -41,7 +41,11 @@ func runPipeline(ctx context.Context, c instance.Config, in ScanInput, ids []str
 		scanFile := filepath.Join(c.StateRoot, "scanner.json")
 		if err == nil {
 			scanFile = filepath.Join(workingRoot, "state/scanner.json")
-			err = instance.WriteJSON(scanFile, library.Config{InstanceRoot: workingRoot, Database: filepath.Join(workingRoot, "live/catalog.sqlite"), Sources: c.Sources, TestOnly: true, ListingSource: "auto", AllowNative: in.AllowNative})
+			source := "auto"
+			if in.AllowNative {
+				source = "filesystem"
+			}
+			err = instance.WriteJSON(scanFile, library.Config{InstanceRoot: workingRoot, Database: filepath.Join(workingRoot, "live/catalog.sqlite"), Sources: c.Sources, TestOnly: true, ListingSource: source})
 		}
 		if err == nil {
 			var config library.Config

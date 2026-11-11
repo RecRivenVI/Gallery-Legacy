@@ -15,7 +15,7 @@
 | ThumbHash | 占位图编解码使用 go.n16f.net/thumbhash，版本在 go.mod；ISC 许可，原项目推荐的 Go 实现 |
 | FFmpeg | 可配置的视频首帧提取；缺失时提示工具不可用，不丢弃作品。ImageMagick 仅用于合成夹具与开发截图 |
 | MiSans、Noto Color Emoji | 原样内置官方 CSS/190 子集，按 Unicode 范围从本地加载；九种小语种可变字体和可见表情按需加载 |
-| Everything HTTP 与 IPC | 本机 54321 的完整清单加速增量；HTTP 不可用、未加载或不合格时要求用户确认后才原生遍历 |
+| Windows NTFS 文件表与 USN | 卷级清单、日志重放和物理位置提示；完整清单不可用时要求用户确认后遍历目录 |
 | Fluent System Icons | 矢量图标，MIT 原文随浏览器资源保留 |
 
 MiSans 加载实现和来源见 [上游记录](upstream-miuix_webfont.md)，分发决定见 [adr-11](../design/adr-11-bundled_misans.md)。不发行完整中文 TTF 和 L3，不使用第三方拉丁子集。原文件校验值唯一保存在 tools/fonts/misans.lock.json，副本随资源分发。九个小语种文件均保留官方 VF 原文件及命名实例，官方 MiSans 协议随字体提供；Emoji 的 OFL、Miuix 加载代码的 Apache-2.0、Fluent 的 MIT 和 Skia 的 BSD 通知分别随包保留。逐语言排版仍需实际使用验收。

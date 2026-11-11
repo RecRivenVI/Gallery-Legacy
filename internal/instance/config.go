@@ -50,7 +50,6 @@ type Config struct {
 	ShortLinks           map[string]string `json:"shortLinks"`
 	Retention            Retention         `json:"retention"`
 	FFmpegPath           string            `json:"ffmpegPath"`
-	ThumbnailCacheBytes  int64             `json:"thumbnailCacheBytes"`
 	GenerationsRoot      string            `json:"generationsRoot"`
 	CacheRoot            string            `json:"cacheRoot"`
 	LogsRoot             string            `json:"logsRoot"`

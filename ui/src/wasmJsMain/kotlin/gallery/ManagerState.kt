@@ -254,10 +254,10 @@ class ManagerState(val scope: CoroutineScope) {
                 )
                 refreshStatus()
             } catch (e: Exception) {
-                if (e.message.orEmpty().contains("EVERYTHING_CONFIRMATION_REQUIRED")) {
+                if (e.message.orEmpty().contains("FILE_TABLE_CONFIRMATION_REQUIRED")) {
                     confirmation =
                         ManagerConfirmation(
-                            "文件清单服务不可用，是否改为遍历目录？",
+                            "文件表清单不可用，是否改为遍历目录？",
                             "继续",
                             execute = {
                                 admin(
@@ -285,7 +285,7 @@ class ManagerState(val scope: CoroutineScope) {
             )
     }
 
-    fun startCovers(full: Boolean = false, native: Boolean = false) {
+    fun startCovers(full: Boolean = false) {
         val ids = selected.toList()
         val authors =
             coverAuthors
@@ -298,28 +298,10 @@ class ManagerState(val scope: CoroutineScope) {
                 "mode" to if (full) "full" else "incremental",
                 "platformIds" to ids,
                 "authors" to authors,
-                "allowNative" to native,
             )
         action("covers", "生成封面") {
-            try {
-                admin("thumbnails.start", request)
-                refreshStatus()
-            } catch (e: Exception) {
-                if (!native && e.message.orEmpty().contains("EVERYTHING_CONFIRMATION_REQUIRED"))
-                    confirmation =
-                        ManagerConfirmation(
-                            "文件清单服务不可用，是否改为遍历目录？",
-                            "继续",
-                            execute = {
-                                admin(
-                                    "thumbnails.start",
-                                    JsonObject(request + ("allowNative" to JsonPrimitive(true))),
-                                )
-                                refreshStatus()
-                            },
-                        )
-                else throw e
-            }
+            admin("thumbnails.start", request)
+            refreshStatus()
         }
     }
 

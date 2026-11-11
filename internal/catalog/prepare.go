@@ -131,16 +131,16 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 	if s := text(r.Work["title"]); s != "" {
 		title = s
 		titleSource = "metadata"
+	} else if platform == "X" || platform == "微博" {
+		// Catalog v4 requires nonempty text. Blank denotes an absent title;
+		// readers use the separate time facts for display.
+		title = " "
 	} else if platform == "Venera" {
 		title = author
 		titleSource = "directory_parsed"
 	} else if s := metadata.DirectoryWorkID(work); s != nil {
 		title = text(s)
 		titleSource = "directory_parsed"
-		if platform == "X" || platform == "微博" {
-			title = strings.Replace(work[:19], "_", " ", 1)
-			title = title[:11] + strings.ReplaceAll(title[11:], "-", ":")
-		}
 	}
 	sortAt, sortSource := mtime/1000000, "directory_mtime"
 	if v, ok := r.Work["publishedAtMs"].(int64); ok {
@@ -165,7 +165,7 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 	for _, pair := range [][2]string{{"adult", "is_adult"}, {"aiGenerated", "is_ai_generated"}, {"paid", "is_paid"}, {"restricted", "is_restricted"}, {"sensitive", "is_sensitive"}, {"hasFull", "has_full"}, {"advertisement", "is_advertisement"}} {
 		w[pair[1]] = boolean(r.Flags[pair[0]])
 	}
-	p := PreparedWork{Platform: platform, AuthorKey: aKey, Key: key, Fingerprint: fingerprint, Work: w, Author: a, Normalized: r, Children: map[string][]Row{}, Qualified: metadataState == "valid" || metadataState == "missing", AuthorityTime: -9007199254740991, AuthorityID: text(sourceWork), AuthorityName: work}
+	p := PreparedWork{Platform: platform, AuthorKey: aKey, Key: key, Fingerprint: fingerprint, Work: w, Author: a, Normalized: r, Children: map[string][]Row{}, Qualified: metadataState == "valid" || metadataState == "missing" || metadataState == "partial", AuthorityTime: -9007199254740991, AuthorityID: text(sourceWork), AuthorityName: work}
 	// The filesystem preparation adapter receives the observed directory mtime
 	// as its comparison context; the display sort separately prefers filename time.
 	p.AuthorityTime = mtime / 1000000
@@ -221,6 +221,9 @@ func Fill(platform, author, work, relative string, mtime int64, metadataState st
 		p.Children["field_sources"] = append(p.Children["field_sources"], Row{"field": e.Field, "source_kind": e.Kind, "source_path": e.Path, "priority": e.Priority})
 	}
 	for _, e := range []struct{ field, source, path string }{{"work.title", titleSource, "workDirectoryName"}, {"work.sortAtMs", sortSource, "workDirMtimeNs"}, {"author.displayName", nameSource, "authorDirectoryName"}} {
+		if e.field == "work.title" && title == " " {
+			continue
+		}
 		kind := "filesystem"
 		sourcePath := e.path
 		if strings.HasPrefix(e.source, "metadata") {

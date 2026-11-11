@@ -8,7 +8,7 @@ import (
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/physical"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/task"
 )
 
@@ -22,8 +22,8 @@ func (r *Runtime) startScan(input Row) (any, error) {
 		return nil, err
 	}
 	if !in.AllowNative {
-		if err := library.LocalEverything().Available(r.ctx); err != nil {
-			return nil, fmt.Errorf("EVERYTHING_CONFIRMATION_REQUIRED: %w", err)
+		if err := physical.Preflight(c.Sources, ids); err != nil {
+			return nil, fmt.Errorf("FILE_TABLE_CONFIRMATION_REQUIRED: %w", err)
 		}
 	}
 	r.mu.Lock()
@@ -62,6 +62,11 @@ func (r *Runtime) startScan(input Row) (any, error) {
 		err := task.Run(ctx, c, in, ids, 0, func(value Row) { started <- value })
 		if err != nil {
 			slog.Error("更新没有完成", "event", "scan.task_error", "code", control.Code(err, "SCAN_NOT_COMPLETE"), "error", err)
+		}
+		if err == nil && c.LiveUpdates {
+			if coverErr := r.server.QueueScannedCovers(ctx, ids, in.Author); coverErr != nil {
+				slog.Warn("扫描后的封面任务未能安排", "error", coverErr)
+			}
 		}
 		if err == nil && !c.LiveUpdates {
 			if _, cleanup := manageRecovery(context.WithoutCancel(ctx), c, "retention.apply", Row{"confirm": true}); cleanup != nil {

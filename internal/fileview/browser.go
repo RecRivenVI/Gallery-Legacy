@@ -106,11 +106,8 @@ func fileDTO(root, relative, name string, st os.FileInfo) (reading.Row, error) {
 		return nil, media.Failure("FILE_SIZE_UNSUPPORTED", 422)
 	}
 	q := "?root=" + protocol.FormComponent(root) + "&path=" + protocol.FormComponent(relative)
-	thumbnails := reading.Row{}
-	for _, tier := range []string{"s", "m", "l"} {
-		thumbnails[tier] = "/api/v1/file-thumbnails" + q + "&tier=" + tier + "&v=" + imaging.Key("file:"+root, relative, st.Size(), st.ModTime().UnixNano(), tier)
-	}
-	return reading.Row{"name": name, "relativePath": relative, "type": library.MediaKind(filepath.Ext(name)), "size": st.Size(), "url": "/api/v1/file-media" + q, "thumbnailUrl": thumbnails["s"], "thumbnails": thumbnails}, nil
+	thumbnail := "/api/v1/file-thumbnails" + q + "&v=" + imaging.Key("file:"+root, relative, st.Size(), st.ModTime().UnixNano())
+	return reading.Row{"name": name, "relativePath": relative, "type": library.MediaKind(filepath.Ext(name)), "size": st.Size(), "url": "/api/v1/file-media" + q, "thumbnailUrl": thumbnail}, nil
 }
 func (b *Browser) Media(root, path string) (media.File, error) {
 	l, err := b.Resolve(root, path)

@@ -58,56 +58,56 @@
       "id": "pixiv",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "pixivFANBOX",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "Gank",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 5,
+      "adapterVersion": 6,
       "shapePolicyVersion": 1
     },
     {
       "id": "Fantia",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "Patreon",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "Pawchive",
       "family": "art_distribution",
       "enabled": true,
-      "adapterVersion": 5,
+      "adapterVersion": 6,
       "shapePolicyVersion": 1
     },
     {
       "id": "X",
       "family": "social_feed",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {
       "id": "微博",
       "family": "social_feed",
       "enabled": true,
-      "adapterVersion": 4,
+      "adapterVersion": 5,
       "shapePolicyVersion": 1
     },
     {

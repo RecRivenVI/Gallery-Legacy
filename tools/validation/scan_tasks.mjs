@@ -47,7 +47,7 @@ async function confirmScan() {
     60000,
   );
   let s = (await status()).scan;
-  if (s.failure?.code === "EVERYTHING_CONFIRMATION_REQUIRED") {
+  if (s.failure?.code === "FILE_TABLE_CONFIRMATION_REQUIRED") {
     await tap(
       manager.getByRole("button", { name: "遍历目录并继续", exact: true }),
     );
@@ -129,30 +129,16 @@ try {
   checks.push("native string errors are visible and leave controls usable");
 
   await tap(manager.getByRole("button", { name: "封面生成", exact: true }));
+  await wait(
+    async () => !(await status()).thumbnails.running,
+    "automatic cover completion",
+    60000,
+  );
   await replaceText(manager.getByRole("textbox").first(), "pixiv/700");
   await tap(
     manager.getByRole("button", { name: "生成新增或变化的封面", exact: true }),
   );
-  let acceptedCoverFallback = false;
-  await wait(
-    async () => {
-      const dialog = manager.getByRole("dialog");
-      if (!acceptedCoverFallback && (await dialog.count())) {
-        acceptedCoverFallback = true;
-        await tap(dialog.getByRole("button", { name: "继续", exact: true }));
-      }
-      const current = await status();
-      return current.thumbnails.total > 0 || current.thumbnails.failure;
-    },
-    "manual cover task",
-    60000,
-  );
-  let covers = (await status()).thumbnails;
-  if (covers.failure?.includes("EVERYTHING_CONFIRMATION_REQUIRED")) {
-    await tap(
-      manager.getByRole("button", { name: "遍历目录并继续", exact: true }),
-    );
-  }
+  let covers;
   await wait(
     async () => {
       covers = (await status()).thumbnails;

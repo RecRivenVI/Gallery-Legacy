@@ -17,6 +17,7 @@ type platformBatch struct {
 	authorities                                                                               []catalog.PreparedWork
 	bytes                                                                                     int64
 	added, updated, deleted, writeNanos, catalogNanos, searchNanos, commitNanos, transactions int64
+	firstCommitAt                                                                             time.Time
 }
 
 func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc, listing *library.Listing, read *sql.DB, writer *catalog.Writer, queue <-chan message) (result error) {
@@ -58,6 +59,9 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 		p.c.Committed.Add(int64(len(b.works)))
 		if len(b.works) > 0 {
 			p.c.Batches.Add(1)
+			if b.firstCommitAt.IsZero() {
+				b.firstCommitAt = time.Now()
+			}
 		}
 		p.c.Added.Add(writer.LastAdded)
 		p.c.Updated.Add(writer.LastUpdated)
@@ -91,12 +95,13 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 	for {
 		select {
 		case <-tick.C:
-			if ctx.Err() == nil {
-				for _, id := range p.selected {
-					if err := flush(id); err != nil {
-						fail(err)
-						break
-					}
+			if writerFailed {
+				continue
+			}
+			for _, id := range p.selected {
+				if err := flush(id); err != nil {
+					fail(err)
+					break
 				}
 			}
 		case m, open := <-queue:
@@ -124,6 +129,7 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 
 			b := batches[m.platform]
 			if m.finished != nil {
+				var reconcile time.Duration
 				err := flush(m.platform)
 				if err != nil {
 					fail(err)
@@ -135,7 +141,8 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 					p.setState(m.platform, "RECONCILING")
 					at := time.Now()
 					b.deleted, err = p.removeMissing(ctx, listing, read, writer, m.platform)
-					p.c.ReconcileNanos.Add(time.Since(at).Nanoseconds())
+					reconcile = time.Since(at)
+					p.c.ReconcileNanos.Add(reconcile.Nanoseconds())
 					p.c.Deleted.Add(b.deleted)
 				}
 				state := "COMPLETE"
@@ -153,7 +160,11 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 				p.setState(m.platform, state)
 				row["status"] = state
 				row["platformChanges"] = map[string]int64{"worksAdded": b.added, "worksUpdated": b.updated, "worksDeleted": b.deleted}
-				row["writeTimings"] = map[string]int64{"totalMs": b.writeNanos / 1e6, "catalogMs": b.catalogNanos / 1e6, "searchMs": b.searchNanos / 1e6, "commitMs": b.commitNanos / 1e6, "transactions": b.transactions}
+				timings := map[string]int64{"totalMs": b.writeNanos / 1e6, "catalogMs": b.catalogNanos / 1e6, "searchMs": b.searchNanos / 1e6, "commitMs": b.commitNanos / 1e6, "transactions": b.transactions, "reconcileMs": reconcile.Milliseconds(), "platformWallMs": time.Since(m.finished.started).Milliseconds()}
+				if !b.firstCommitAt.IsZero() {
+					timings["firstCommitFromScanMs"] = b.firstCommitAt.Sub(p.started).Milliseconds()
+				}
+				row["writeTimings"] = timings
 				row["prepareTimings"] = p.preparation[m.platform].snapshot()
 				p.mu.Lock()
 				p.done = append(p.done, row)

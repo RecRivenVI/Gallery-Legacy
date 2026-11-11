@@ -62,14 +62,14 @@ func TestCoverPreloadYieldsToScanAndResumesWithoutRepeatingCompleted(t *testing.
 			release := make(chan struct{}, 16)
 			c.mu.Lock()
 			c.scanning = true
-			c.render = func(ctx context.Context, _ File, _, _ string) (imaging.Preview, error) {
+			c.render = func(ctx context.Context, _ File, target, _ string) (imaging.Preview, error) {
 				calls.Add(1)
 				entered <- struct{}{}
 				select {
 				case <-ctx.Done():
 					return imaging.Preview{}, ctx.Err()
 				case <-release:
-					return imaging.Preview{Width: 1, Height: 1, Hash: []byte{1}, Original: true}, nil
+					return imaging.Preview{Width: 1, Height: 1, Hash: []byte{1}}, os.WriteFile(target, []byte("synthetic WebP"), 0600)
 				}
 			}
 			c.mu.Unlock()
@@ -85,7 +85,7 @@ func TestCoverPreloadYieldsToScanAndResumesWithoutRepeatingCompleted(t *testing.
 			if calls.Load() != 0 {
 				t.Fatal("scan completion started a cover task")
 			}
-			if err = c.StartPreloadTask(context.Background(), PreloadRequest{Mode: "incremental", Platforms: []string{platform}, AllowNative: true}); err != nil {
+			if err = c.StartPreloadTask(context.Background(), PreloadRequest{Mode: "incremental", Platforms: []string{platform}}); err != nil {
 				t.Fatal(err)
 			}
 			for range 2 {

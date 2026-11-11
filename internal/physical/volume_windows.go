@@ -13,11 +13,37 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var errRecordReplaced = errors.New("NTFS_RECORD_REPLACED")
+
+func Preflight(roots map[string]string, platforms []string) error {
+	volumes := map[string]bool{}
+	for _, id := range platforms {
+		volume := filepath.VolumeName(roots[id])
+		if volumes[volume] {
+			continue
+		}
+		if len(volume) != 2 || volume[1] != ':' {
+			return errors.New("NTFS_VOLUME_REQUIRED")
+		}
+		path, _ := windows.UTF16PtrFromString(volume + `\`)
+		var fileSystem [16]uint16
+		if err := windows.GetVolumeInformation(path, nil, 0, nil, nil, nil, &fileSystem[0], uint32(len(fileSystem))); err != nil {
+			return fmt.Errorf("NTFS_VOLUME_QUERY: %w", err)
+		}
+		if windows.UTF16ToString(fileSystem[:]) != "NTFS" {
+			return errors.New("NTFS_VOLUME_REQUIRED")
+		}
+		volumes[volume] = true
+	}
+	return nil
+}
+
 type ntfsVolume struct {
-	handle         windows.Handle
-	sector, record int
-	cluster        int64
-	mft            []extent
+	handle          windows.Handle
+	sector, record  int
+	cluster         int64
+	serial, mftSize uint64
+	mft             []extent
 }
 
 func openVolume(root string) (*ntfsVolume, error) {
@@ -47,6 +73,8 @@ func openVolume(root string) (*ntfsVolume, error) {
 	v.sector = int(binary.LittleEndian.Uint32(b[40:44]))
 	v.cluster = int64(binary.LittleEndian.Uint32(b[44:48]))
 	v.record = int(binary.LittleEndian.Uint32(b[48:52]))
+	v.serial = binary.LittleEndian.Uint64(b[:8])
+	v.mftSize = binary.LittleEndian.Uint64(b[56:64])
 	if v.sector == 0 || v.cluster == 0 || v.record < 48 || v.record > 1<<20 {
 		windows.CloseHandle(h)
 		return nil, errors.New("NTFS_GEOMETRY_INVALID")
@@ -72,7 +100,7 @@ func (v *ntfsVolume) readRecord(ref uint64) (fileRecord, error) {
 		return fileRecord{}, fmt.Errorf("NTFS_RECORD_READ: %w", err)
 	}
 	if n < 12 || binary.LittleEndian.Uint64(out[:8])&referenceMask != ref&referenceMask {
-		return fileRecord{}, errors.New("NTFS_RECORD_REPLACED")
+		return fileRecord{}, errRecordReplaced
 	}
 	size := int(binary.LittleEndian.Uint32(out[8:12]))
 	if size > v.record || 12+size > int(n) {
@@ -83,7 +111,7 @@ func (v *ntfsVolume) readRecord(ref uint64) (fileRecord, error) {
 		return r, err
 	}
 	if ref>>48 != 0 && r.Sequence != uint16(ref>>48) {
-		return r, errors.New("NTFS_RECORD_REPLACED")
+		return r, errRecordReplaced
 	}
 	return r, nil
 }

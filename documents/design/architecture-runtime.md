@@ -18,7 +18,7 @@ flowchart LR
 | --- | --- |
 | cmd/gallery-runtime、internal/host | 管理器拥有的会话、HTTP、任务、配置、恢复与正常关闭 |
 | internal/control、task、inspection | 原生身份、排他、任务取消、只读检查和报告 |
-| internal/library、metadata、indexing、catalog | Everything 清单/原生遍历、九平台解析、有界准备和单 writer |
+| internal/physical、library、metadata、indexing、catalog | 文件表/原生清单、九平台解析、有界准备和单 writer |
 | internal/httpservice、reading、fileview、media、recovery | 公共读取协议、文件浏览、缩略图、媒体和恢复 |
 | internal/searchquery、personal | 搜索语法与账号、收藏、阅读记录；个人库独立于目录单写者 |
 | internal/physical | 短生命周期提权 NTFS 位置提取，不承载 HTTP，不保留范围外记录 |

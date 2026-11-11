@@ -446,12 +446,6 @@
           "default": "true"
         },
         {
-          "name": "thumbnails",
-          "go": "Thumbnails",
-          "type": "nullable:ThumbnailUrls",
-          "goType": "any"
-        },
-        {
           "name": "width",
           "go": "Width",
           "type": "int"
@@ -666,26 +660,6 @@
       ]
     },
     {
-      "name": "ThumbnailUrls",
-      "fields": [
-        {
-          "name": "s",
-          "go": "S",
-          "type": "string"
-        },
-        {
-          "name": "m",
-          "go": "M",
-          "type": "string"
-        },
-        {
-          "name": "l",
-          "go": "L",
-          "type": "string"
-        }
-      ]
-    },
-    {
       "name": "WorkMetrics",
       "fields": [
         {
@@ -859,11 +833,6 @@
           "name": "thumbnailUrl",
           "go": "ThumbnailURL",
           "type": "string"
-        },
-        {
-          "name": "thumbnails",
-          "go": "Thumbnails",
-          "type": "nullable:ThumbnailUrls"
         },
         {
           "name": "width",
@@ -2098,6 +2067,11 @@
         {
           "name": "code",
           "go": "Code",
+          "type": "string"
+        },
+        {
+          "name": "details",
+          "go": "Details",
           "type": "string"
         }
       ]

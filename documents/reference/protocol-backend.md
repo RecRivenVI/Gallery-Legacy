@@ -38,7 +38,7 @@ JSON 返回 protocolVersion、generationId，工作库增加 revision；成功�
 ## 媒体与文件
 
 - 原图、字幕与封面均支持单段 bytes= 起止／后缀 Range；多段、非法、越界为 INVALID_RANGE／416。返回 Accept-Ranges、Content-Length、Content-Range；HEAD 不发送正文。零字节非 Range 响应长度为零。
-- 源文件只读；路径、重解析点、物理身份与变化检查不取消。缩略图缓存与临时文件仅写实例；命中状态用 X-Gallery-Thumbnail，失败不回假图。图片由进程内 libvips 生成分档缩略图；视频 FFmpeg 有界队列与取消语义保留。
+- 源文件只读，校验路径、重解析点和物理身份。缩略图响应提供 `thumbnailUrl`，按 `purpose=display|strip` 取多用途图或底栏图。命中状态见 `X-Gallery-Thumbnail`，实际封面使用封面库；阅读器主图使用原始媒体地址。FFmpeg 从视频取帧并返回实际时长。
 - SVG 使用 sandbox CSP；字幕仅 zh-CN／en-US 的同名 VTT、最多 4MiB。媒体 MIME、私有缓存头与失败码与 Node 对照，不直接用 Go 默认 ServeFile 替代合同。
 - cover／preview／content 及 defaultVisible 按文件名和已提取预览标志决定；声明不增加实际媒体，封面停用字段不能丢失作品。
 

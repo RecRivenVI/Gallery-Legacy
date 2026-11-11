@@ -15,9 +15,11 @@ import (
 )
 
 type helperRequest struct {
-	Config     string   `json:"config"`
-	Platforms  []string `json:"platforms"`
-	CoverIndex string   `json:"coverIndex,omitempty"`
+	Config      string   `json:"config"`
+	Platforms   []string `json:"platforms"`
+	Table       bool     `json:"table,omitempty"`
+	Author      string   `json:"author,omitempty"`
+	Incremental bool     `json:"incremental,omitempty"`
 }
 type OrderRecord struct {
 	MetadataFile
@@ -43,14 +45,18 @@ func SeekOrder(ctx context.Context, c library.Config, platforms []string) (strin
 // Order starts only a short-lived allocation helper with elevation. The
 // manager, HTTP server and normal scan workers retain their original token.
 func Order(ctx context.Context, c library.Config, platforms []string) (path string, cleanup func(), err error) {
-	return order(ctx, c, platforms, "")
+	return order(ctx, c, helperRequest{Platforms: platforms})
 }
 
-func CoverOrder(ctx context.Context, c library.Config, platforms []string, index string) (string, func(), error) {
-	return order(ctx, c, platforms, index)
+func Inventory(ctx context.Context, c library.Config, platforms []string, author string, incremental bool) error {
+	_, cleanup, err := order(ctx, c, helperRequest{Platforms: platforms, Table: true, Author: author, Incremental: incremental})
+	if cleanup != nil {
+		cleanup()
+	}
+	return err
 }
 
-func order(ctx context.Context, c library.Config, platforms []string, coverIndex string) (path string, cleanup func(), err error) {
+func order(ctx context.Context, c library.Config, value helperRequest) (path string, cleanup func(), err error) {
 	root := filepath.Join(c.InstanceRoot, "temp")
 	if err = library.NoLinks(root); err != nil {
 		return "", nil, err
@@ -83,7 +89,7 @@ func order(ctx context.Context, c library.Config, platforms []string, coverIndex
 		cleanup()
 		return "", nil, createErr
 	}
-	value := helperRequest{Config: request + ".config.json", Platforms: platforms, CoverIndex: coverIndex}
+	value.Config = request + ".config.json"
 	err = json.NewEncoder(f).Encode(value)
 	err = errors.Join(err, f.Close())
 	if err == nil {
@@ -142,6 +148,16 @@ func RunHelper(ctx context.Context, request string) (result error) {
 		}
 		roots[id] = root
 	}
+	if req.Table {
+		if req.Author != "" && (len(roots) != 1 || strings.ContainsAny(req.Author, `\/:`+"\x00") || req.Author == "." || req.Author == "..") {
+			return errors.New("NTFS_AUTHOR_SCOPE_INVALID")
+		}
+		scopes := make([]TableScope, 0, len(roots))
+		for id, root := range roots {
+			scopes = append(scopes, TableScope{id, root, req.Author})
+		}
+		return RefreshTable(ctx, c.InstanceRoot, scopes, req.Incremental)
+	}
 	output := request + "l"
 	f, err := os.OpenFile(output, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
@@ -150,14 +166,7 @@ func RunHelper(ctx context.Context, request string) (result error) {
 	defer f.Close()
 	encoder := json.NewEncoder(f)
 	var files, unknown int64
-	var selected map[string]bool
-	if req.CoverIndex != "" {
-		selected, err = coverSelection(ctx, c.InstanceRoot, req.CoverIndex, roots)
-		if err != nil {
-			return err
-		}
-	}
-	err = collect(ctx, roots, selected, func(file MetadataFile) error {
+	err = Collect(ctx, roots, func(file MetadataFile) error {
 		files++
 		if file.Offset < 0 {
 			unknown++

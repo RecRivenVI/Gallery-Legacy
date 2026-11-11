@@ -136,14 +136,12 @@ func (e *Engine) imageInfo(path string) (int, int, int, error) {
 func Target(width, height int, tier string) (int, int) {
 	scale := 1.0
 	switch tier {
-	case "s", "m":
-		short, long := 360.0, 1080.0
-		if tier == "m" {
-			short, long = 720, 2160
+	case "display", "strip":
+		short, long := 540.0, 1620.0
+		if tier == "strip" {
+			short, long = 144, 432
 		}
 		scale = math.Min(short/float64(min(width, height)), long/float64(max(width, height)))
-	case "l":
-		scale = 2048 / float64(max(width, height))
 	}
 	scale = math.Min(1, scale)
 	return max(1, int(math.Round(float64(width)*scale))), max(1, int(math.Round(float64(height)*scale)))

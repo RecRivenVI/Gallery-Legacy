@@ -1,6 +1,7 @@
 package media
 
 import (
+	"bytes"
 	"io"
 	"math/big"
 	"net/http"
@@ -65,28 +66,38 @@ func Range(value string, size int64) (int64, int64, int, error) {
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, f File, contentType string, headers map[string]string) error {
-	if f.Info.Size() > 9007199254740991 {
+	size := f.Info.Size()
+	if f.preview != nil {
+		size = int64(len(f.preview.Data))
+	}
+	if size > 9007199254740991 {
 		return Failure("MEDIA_SIZE_UNSUPPORTED", 422)
 	}
-	start, end, status, err := Range(r.Header.Get("Range"), f.Info.Size())
+	start, end, status, err := Range(r.Header.Get("Range"), size)
 	if err != nil {
 		return err
 	}
-	if err = library.NoLinks(f.Path); err != nil {
-		return err
+	var input io.ReaderAt
+	if f.preview != nil {
+		input = bytes.NewReader(f.preview.Data)
+	} else {
+		if err = library.NoLinks(f.Path); err != nil {
+			return err
+		}
+		file, err := os.Open(f.Path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		input = file
 	}
-	input, err := os.Open(f.Path)
-	if err != nil {
-		return err
-	}
-	defer input.Close()
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(max(0, end-start+1), 10))
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if status == 206 {
-		w.Header().Set("Content-Range", "bytes "+strconv.FormatInt(start, 10)+"-"+strconv.FormatInt(end, 10)+"/"+strconv.FormatInt(f.Info.Size(), 10))
+		w.Header().Set("Content-Range", "bytes "+strconv.FormatInt(start, 10)+"-"+strconv.FormatInt(end, 10)+"/"+strconv.FormatInt(size, 10))
 	}
 	if contentType == "image/svg+xml" {
 		w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:")
@@ -95,7 +106,7 @@ func Stream(w http.ResponseWriter, r *http.Request, f File, contentType string, 
 		w.Header().Set(key, value)
 	}
 	w.WriteHeader(status)
-	if r.Method == "HEAD" || f.Info.Size() == 0 {
+	if r.Method == "HEAD" || size == 0 {
 		return nil
 	}
 	_, err = io.Copy(w, io.NewSectionReader(input, start, end-start+1))

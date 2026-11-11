@@ -114,13 +114,16 @@ func (w *Writer) reparseAuthor(ctx context.Context, platform, author, key string
 				metaMtime, metaSize = info.ModTime().UnixNano(), info.Size()
 			}
 			if e == nil {
-				r, _ = metadata.Parse(platform, author, filepath.Base(strings.ReplaceAll(f.relative, `\`, string(filepath.Separator))), raw)
+				var object metadata.Object
+				r, object = metadata.Parse(platform, author, filepath.Base(strings.ReplaceAll(f.relative, `\`, string(filepath.Separator))), raw)
 				state = "valid"
-				if !r.Valid {
+				if object == nil {
 					state = "malformed"
 					if r.Reason == "metadata_not_object" {
 						state = "non_object"
 					}
+				} else if !r.Valid || r.InvalidFields > 0 {
+					state = "partial"
 				}
 			}
 			signature := ""

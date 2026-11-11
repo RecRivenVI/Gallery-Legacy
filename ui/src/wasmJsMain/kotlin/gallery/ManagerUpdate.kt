@@ -181,7 +181,7 @@ internal fun UpdatePage(state: ManagerState) {
                 }
             }
         }
-        if (state.scan.failure?.code == "EVERYTHING_CONFIRMATION_REQUIRED")
+        if (state.scan.failure?.code == "FILE_TABLE_CONFIRMATION_REQUIRED")
             Action("遍历目录并继续") { state.update(full = state.scan.mode == "full", native = true) }
         ManagerError(state, "scan") { state.refreshStatus() }
     }

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
 
 func TestPersistentFileInventoryIgnoresDirectoryTimesAndRetriesParseFailure(t *testing.T) {
@@ -51,14 +53,24 @@ func TestPersistentFileInventoryIgnoresDirectoryTimesAndRetriesParseFailure(t *t
 	if p.c.MetadataReads.Load() != 1 || p.reused.Load() != 1 {
 		t.Fatal("parse failure recorded as complete")
 	}
+	if err = os.WriteFile(meta, []byte(`{"id":1000,"title":false,"user":{"id":1}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	scan("incremental")
+	p = scan("incremental")
+	if p.c.MetadataReads.Load() != 0 || p.reused.Load() != 2 || p.c.Warnings.Load() != 1 || len(p.issues) != 1 || p.issues[0]["details"] != "$.title (unsupported_value)" {
+		t.Fatal("committed partial work lost its warning or was read again", p.issues)
+	}
 }
 
-func TestEverythingFallbackRequiresExplicitConsent(t *testing.T) {
+func TestFileTableFallbackRequiresExplicitConsent(t *testing.T) {
 	config, provider := syntheticPipeline(t, 1)
 	config.AllowNative = false
-	provider.Ready = func(context.Context) error { return errors.New("EVERYTHING_NOT_READY") }
+	provider = func(context.Context, *library.Listing, library.Config, []string, string, bool) error {
+		return errors.New("NTFS_VOLUME_REQUIRED")
+	}
 	p := &Pipeline{Config: config, Inventory: provider}
-	if err := p.Run(context.Background(), []string{"pixiv"}); err == nil || code(err) != "EVERYTHING_CONFIRMATION_REQUIRED" {
+	if err := p.Run(context.Background(), []string{"pixiv"}); err == nil || code(err) != "FILE_TABLE_CONFIRMATION_REQUIRED" {
 		t.Fatal("silent fallback", err)
 	}
 	if p.c.Committed.Load() != 0 {

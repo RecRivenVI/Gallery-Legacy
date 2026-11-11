@@ -22,14 +22,3 @@ fun thumbHashAverage(value: String): FloatArray? {
         if (header and 0x800000 != 0 && bytes.size > 5) (bytes[5].toInt() and 15) / 15f else 1f
     return floatArrayOf(r.coerceIn(0f, 1f), (r - q).coerceIn(0f, 1f), b.coerceIn(0f, 1f), alpha)
 }
-
-fun viewerImage(media: MediaSummaryWire, zoom: Float, area: Float, density: Float): String {
-    if (
-        media.type == "video" ||
-            media.animated ||
-            media.fileName.substringAfterLast('.').lowercase() in listOf("gif", "apng")
-    )
-        return media.url
-    val needsOriginal = zoom > 1.01f && (media.width == 0 || area * zoom * density > 2048)
-    return if (needsOriginal) media.url else media.thumbnails?.l ?: media.url
-}

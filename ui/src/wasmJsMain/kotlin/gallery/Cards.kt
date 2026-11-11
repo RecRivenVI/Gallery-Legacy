@@ -170,13 +170,9 @@ fun ContentCard(
             if (!item.isAuthor && !item.isFolder && !item.isFile && previews.isEmpty())
                 try {
                     previews =
-                        visibleMedia(resolveWork(item.stableId))
-                            .let { media ->
-                                if (media.firstOrNull()?.relativePath == item.cover?.relativePath)
-                                    media.drop(1)
-                                else media
-                            }
-                            .take(3)
+                        resolveWork(item.stableId).let { work ->
+                            visibleMedia(work).filter { it.id != work.cover?.id }.take(3)
+                        }
                 } catch (_: Exception) {
                     previews = emptyList()
                 }

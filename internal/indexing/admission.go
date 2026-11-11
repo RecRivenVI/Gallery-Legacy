@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-type preparationMetrics struct{ Works, Admission, Total, Enumeration, Native, Read, Parse, Mapping, DirectoryOpen, DirectoryRead, DirectoryMap, DirectoryVerify atomic.Int64 }
+type preparationMetrics struct{ Works, Admission, AuthorSlot, Reuse, Spool, Replay, DeliveryWait, Total, Enumeration, Native, Read, Parse, Mapping, DirectoryOpen, DirectoryRead, DirectoryMap, DirectoryVerify atomic.Int64 }
 
 func (m *preparationMetrics) snapshot() map[string]int64 {
-	return map[string]int64{"works": m.Works.Load(), "admissionWaitMs": m.Admission.Load() / 1000000, "totalMs": m.Total.Load() / 1000000, "enumerationMs": m.Enumeration.Load() / 1000000, "nativeVerifyMs": m.Native.Load() / 1000000, "metadataReadMs": m.Read.Load() / 1000000, "metadataParseMs": m.Parse.Load() / 1000000, "mappingMs": m.Mapping.Load() / 1000000, "directoryOpenMs": m.DirectoryOpen.Load() / 1000000, "directoryReadMs": m.DirectoryRead.Load() / 1000000, "directoryMapMs": m.DirectoryMap.Load() / 1000000, "directoryVerifyMs": m.DirectoryVerify.Load() / 1000000}
+	return map[string]int64{"works": m.Works.Load(), "admissionWaitMs": m.Admission.Load() / 1000000, "authorSlotWaitMs": m.AuthorSlot.Load() / 1000000, "reuseQueryMs": m.Reuse.Load() / 1000000, "spoolMs": m.Spool.Load() / 1000000, "replayReadMs": m.Replay.Load() / 1000000, "deliveryWaitMs": m.DeliveryWait.Load() / 1000000, "totalMs": m.Total.Load() / 1000000, "enumerationMs": m.Enumeration.Load() / 1000000, "nativeVerifyMs": m.Native.Load() / 1000000, "metadataReadMs": m.Read.Load() / 1000000, "metadataParseMs": m.Parse.Load() / 1000000, "mappingMs": m.Mapping.Load() / 1000000, "directoryOpenMs": m.DirectoryOpen.Load() / 1000000, "directoryReadMs": m.DirectoryRead.Load() / 1000000, "directoryMapMs": m.DirectoryMap.Load() / 1000000, "directoryVerifyMs": m.DirectoryVerify.Load() / 1000000}
 }
 
 type preparationRequest struct {

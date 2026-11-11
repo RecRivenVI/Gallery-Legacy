@@ -36,6 +36,15 @@ func (s *Server) ReplaceDataset(next *dataset.Dataset) error {
 }
 
 func (s *Server) SetScanning(scanning bool) { s.media.Cache.SetScanning(scanning) }
+
+func (s *Server) QueueScannedCovers(ctx context.Context, platforms []string, author *string) error {
+	s.media.Cache.SetScanning(false)
+	request := media.PreloadRequest{Mode: "incremental", Platforms: platforms}
+	if author != nil && len(platforms) == 1 {
+		request.Authors = map[string][]string{platforms[0]: {*author}}
+	}
+	return s.media.Cache.QueueScannedCovers(ctx, request)
+}
 func (s *Server) Thumbnails(ctx context.Context, operation string, input reading.Row) (any, error) {
 	if operation == "thumbnails.cancel" {
 		if err := s.media.Cache.CancelPreload(); err != nil {

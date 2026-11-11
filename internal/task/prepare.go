@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/catalog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
@@ -65,6 +67,10 @@ func Prepare(ctx context.Context, c instance.Config) (resultErr error) {
 	if err != nil {
 		return err
 	}
-	_, err = w.ReparseMetadata(ctx, c.Sources)
+	started := time.Now()
+	count, err := w.ReparseMetadata(ctx, c.Sources)
+	if count > 0 {
+		slog.InfoContext(ctx, "作品信息升级", "works", count, "elapsedMs", time.Since(started).Milliseconds(), "complete", err == nil)
+	}
 	return err
 }

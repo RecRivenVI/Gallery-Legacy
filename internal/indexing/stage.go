@@ -3,19 +3,21 @@ package indexing
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 // Work messages share one bounded writer queue. An author completion follows
 // its works; platform completion follows every author and the root check.
 type platformStage struct {
-	id     string
-	ctx    context.Context
-	output chan<- message
-	budget *Budget
-	mu     sync.Mutex
-	jobs   sync.WaitGroup
-	ends   chan *authorSession
-	err    error
+	id      string
+	ctx     context.Context
+	output  chan<- message
+	budget  *Budget
+	mu      sync.Mutex
+	jobs    sync.WaitGroup
+	ends    chan *authorSession
+	err     error
+	started time.Time
 }
 
 func (s *platformStage) fail(err error) {

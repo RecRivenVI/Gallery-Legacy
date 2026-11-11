@@ -4,6 +4,16 @@ import (
 	"strings"
 )
 
+func pawchiveService(m Object, author string) string {
+	if service := String(m["service"]); service != "" {
+		return service
+	}
+	if service, _, ok := strings.Cut(author, "_"); ok {
+		return service
+	}
+	return ""
+}
+
 func pawchive(r *Result, m Object, author, work string) {
 	parts := strings.SplitN(author, "_", 2)
 	service := String(m["service"])

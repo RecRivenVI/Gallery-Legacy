@@ -88,7 +88,7 @@ func TestVisibleSearchFieldsSyntaxFiltersAndCrossPlatform(t *testing.T) {
 		n int64
 	}{
 		{"q=hiddenbody", 0}, {"q=90001", 0}, {"q=正文:hiddenbody", 1}, {"q=ID:90001", 1}, {"q=作者ID:700", 3},
-		{"q=雨+风景", 3}, {"q=初音+风景", 1}, {"q=雨+-标签:AI", 2}, {"q=%22初音+未来%22", 1},
+		{"q=雨+风景", 2}, {"q=初音+风景", 1}, {"q=雨+-标签:AI", 1}, {"q=%22初音+未来%22", 1},
 		{"q=标签:风景+标签:AI", 1}, {"q=title:风景+platform:p,f", 2},
 		{"includeTags=%5B%22风景%22%5D&excludeTags=%5B%22AI%22%5D", 1}, {"ratings=2", 1}, {"types=manga", 2}, {"pages=single", 0}, {"includeTags=%5B%22a%2Cb%22%5D", 1},
 		{"q=title:初音&platforms=pixiv,微博", 1}, {"from=2026-01-02&to=2026-01-02", 1},

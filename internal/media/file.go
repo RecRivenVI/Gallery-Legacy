@@ -17,14 +17,22 @@ import (
 type File struct {
 	Path, Root, Platform, WorkID, MediaID, RelativeKey, Kind string
 	Info                                                     os.FileInfo
-	release                                                  func()
+	Cover                                                    bool
+	preview                                                  *thumbnailEntry
 }
 
-// Release ends a derived-file response lease after streaming (also on error).
-func (f File) Release() {
-	if f.release != nil {
-		f.release()
+func (f File) ContentType() string {
+	if f.preview != nil {
+		return "image/webp"
 	}
+	return MIME(f.Path)
+}
+
+func (f File) PreviewSummary() map[string]any {
+	if f.preview != nil {
+		return f.preview.summary()
+	}
+	return nil
 }
 
 func Failure(code string, status int) error { return &protocol.Error{Code: code, Status: status} }
@@ -51,6 +59,7 @@ func Resolve(config instance.Config, m reading.Row) (File, error) {
 		return File{}, Failure("MEDIA_NOT_FOUND", 404)
 	}
 	f := File{Platform: m["platform_id"].(string), WorkID: fmt.Sprint(m["work_id"]), MediaID: fmt.Sprint(m["media_id"]), RelativeKey: m["relative_path_key"].(string), Kind: m["filesystem_media_type"].(string)}
+	f.Cover = m["cover_media_id"] == m["media_id"]
 	f.Root = config.Sources[f.Platform]
 	work, err := Relative(m["work_relative_path"].(string))
 	if err != nil {

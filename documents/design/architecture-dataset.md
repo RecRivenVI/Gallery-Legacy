@@ -19,7 +19,7 @@
 
 API 目录定义配置 schema。Go 与冻结 Node 对照路径隔离、九平台绑定、网络 authority／origin、短链、保留参数与失败码；不宣称完整 WHATWG URL 实现或已覆盖所有畸形类型组合。
 
-扫描按 [adr-10](adr-10-portable_inventory.md) 使用固定本机 Everything HTTP 清单与原生回退，不接受配置文件里的第二套旧 provider/endpoint 定义。公开读取仍由事务快照提供，不直接访问 Everything。
+扫描按 [adr-15](adr-15-file_table_and_thumbnails.md) 使用 NTFS 文件表、变化日志和经确认的原生回退。公开读取仍由目录事务快照提供。
 
 ## 独立验收
 

@@ -1,8 +1,6 @@
 package httpservice
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"net"
@@ -36,10 +34,8 @@ type access struct {
 	done           chan struct{}
 }
 
-func clientID(instance, ip string) string {
-	h := sha256.Sum256([]byte(instance + "\x00" + ip))
-	return hex.EncodeToString(h[:])[:16]
-}
+var clientID = instance.AccessClientID
+
 func local(ip string) bool {
 	if ip == "127.0.0.1" || ip == "::1" || ip == "::ffff:127.0.0.1" {
 		return true

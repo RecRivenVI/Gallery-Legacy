@@ -29,8 +29,13 @@ type Result struct {
 	Evidence                              []Evidence
 	Warnings                              int
 	InvalidFields                         int
+	Issues                                []FieldIssue
 	Details                               Details
 	AuthorLinks                           []AuthorLink
+}
+
+type FieldIssue struct {
+	Path, Reason string
 }
 
 var Versions = func() map[string]int {
@@ -71,16 +76,12 @@ func Parse(platform, author, work string, raw []byte) (Result, Object) {
 		return r, nil
 	}
 	if platform != "Venera" {
-		idPaths := map[string][]string{"pixiv": {"id", "user.id"}, "pixivFANBOX": {"id", "user.userId", "user.creatorId", "creatorId"}, "Gank": {"id", "post_id", "user.id", "author", "authorUser.id"}, "Fantia": {"post_id", "content_id", "file_id", "fanclub_user_id"}, "Patreon": {"id", "creator.id"}, "X": {"tweet_id", "id", "user.id", "author.id", "reply_id", "retweet_id", "quoted_id", "conversation_id"}, "微博": {"id", "idstr", "user.id", "user.idstr"}}[platform]
+		// Identity aliases are validated together by field selection.
+		idPaths := map[string][]string{"X": {"reply_id", "retweet_id", "quoted_id", "conversation_id"}}[platform]
 		for _, path := range idPaths {
 			v := Get(m, path)
 			if v != nil && v != "" && ID(v) == nil {
-				r.InvalidFields++
-				if platform == "X" {
-					if _, numeric := v.(json.Number); numeric {
-						r.Warnings++
-					}
-				}
+				r.reject(path, "invalid_id")
 			}
 		}
 		for _, p := range []string{"postUrl", "post_url", "url", "sourceUrl", "source_url", "permalink", "link", "source.url"} {

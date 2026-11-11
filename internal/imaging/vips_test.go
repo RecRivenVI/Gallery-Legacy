@@ -16,7 +16,7 @@ func TestTierGeometry(t *testing.T) {
 		w, h         int
 		tier         string
 		wantW, wantH int
-	}{{1600, 1200, "s", 480, 360}, {1200, 6000, "s", 216, 1080}, {1600, 1200, "m", 960, 720}, {4000, 3000, "l", 2048, 1536}, {320, 240, "m", 320, 240}} {
+	}{{1600, 1200, "strip", 192, 144}, {1200, 6000, "strip", 86, 432}, {1600, 1200, "display", 720, 540}, {320, 240, "display", 320, 240}} {
 		w, h := Target(test.w, test.h, test.tier)
 		if w != test.wantW || h != test.wantH {
 			t.Fatalf("%+v: %d %d", test, w, h)
@@ -51,7 +51,7 @@ func TestSmallAnimationProducesFirstFrame(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := e.Render(source, target, "s", false)
+	preview, err := e.Render(source, target, "display", true)
 	if err != nil || preview.Original || !preview.Animated {
 		t.Fatalf("first frame: %+v %v", preview, err)
 	}
@@ -87,7 +87,7 @@ func TestNativeVipsThumbnailAndPlaceholder(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.Close()
-	p, err := e.Render(source, target, "s", false)
+	p, err := e.Render(source, target, "display", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,10 +95,10 @@ func TestNativeVipsThumbnailAndPlaceholder(t *testing.T) {
 		t.Fatalf("preview %+v", p)
 	}
 	w, h, err := e.dimensions(target)
-	if err != nil || w != 480 || h != 360 {
+	if err != nil || w != 720 || h != 540 {
 		t.Fatal(w, h, err)
 	}
-	if _, err = e.Render(source+".missing", target, "s", false); err == nil || !strings.Contains(err.Error(), "libvips") {
+	if _, err = e.Render(source+".missing", target, "display", true); err == nil || !strings.Contains(err.Error(), "libvips") {
 		t.Fatal("native error buffer was not copied", err)
 	}
 }

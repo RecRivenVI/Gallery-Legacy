@@ -1,16 +1,15 @@
 package indexing
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/gob"
 	"errors"
-	"os"
-	"path/filepath"
+	"log/slog"
 	"time"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/catalog"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/derived"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
 
@@ -38,10 +37,11 @@ type deliveryQueue struct {
 }
 
 func newDeliveryQueue(ctx context.Context, p *Pipeline, l *library.Listing, output chan<- message) (*deliveryQueue, error) {
-	ctx = context.WithoutCancel(ctx)
-	_, err := l.DB.ExecContext(ctx, `CREATE TABLE pending_delivery(ordinal INTEGER PRIMARY KEY,platform TEXT,author TEXT,file TEXT);
+	_, err := l.DB.ExecContext(ctx, `CREATE TABLE pending_delivery(ordinal INTEGER PRIMARY KEY,platform TEXT,author TEXT,payload BLOB);
 CREATE INDEX pending_author ON pending_delivery(platform,author,ordinal);
-CREATE TABLE author_delivery(platform TEXT,key TEXT,rank INTEGER,done INTEGER DEFAULT 0,PRIMARY KEY(platform,key));`)
+CREATE INDEX pending_platform ON pending_delivery(platform,ordinal);
+CREATE TABLE author_delivery(platform TEXT,key TEXT,rank INTEGER,done INTEGER DEFAULT 0,PRIMARY KEY(platform,key));
+CREATE INDEX author_delivery_head ON author_delivery(platform,done,rank);`)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +49,18 @@ CREATE TABLE author_delivery(platform TEXT,key TEXT,rank INTEGER,done INTEGER DE
 		if cap(p.disks[p.Config.Sources[id]]) != 1 {
 			continue
 		}
-		if _, err = l.DB.ExecContext(ctx, `INSERT INTO author_delivery(platform,key,rank) SELECT platform,key,row_number() OVER(ORDER BY (SELECT count(*) FROM entries w WHERE w.platform=e.platform AND w.parent=e.key AND w.kind='folder'),key) FROM entries e WHERE platform=? AND parent='.' AND kind='folder' AND (?='' OR key=lower(?))`, id, p.AuthorDirectoryName, p.AuthorDirectoryName); err != nil {
+		started := time.Now()
+		if _, err = l.DB.ExecContext(ctx, `INSERT INTO author_delivery(platform,key,rank)
+SELECT e.platform,e.key,row_number() OVER(ORDER BY (
+ SELECT count(*) FROM entries w INDEXED BY entries_parent WHERE w.platform=e.platform AND w.parent=e.key AND w.kind='folder'
+),e.key)
+FROM entries e INDEXED BY entries_parent
+WHERE e.platform=? AND e.parent='.' AND e.kind='folder' AND (?='' OR e.key=lower(?))`, id, p.AuthorDirectoryName, p.AuthorDirectoryName); err != nil {
 			return nil, err
 		}
+		slog.InfoContext(ctx, "作者入库顺序已安排", "platform", id, "elapsedMs", time.Since(started).Milliseconds())
 	}
-	return &deliveryQueue{p, ctx, l, output}, nil
+	return &deliveryQueue{p, context.WithoutCancel(ctx), l, output}, nil
 }
 
 func (d *deliveryQueue) head(id string) (string, error) {
@@ -74,7 +81,9 @@ func (d *deliveryQueue) forward(m message) error {
 			return err
 		}
 	}
+	wait := time.Now()
 	d.output <- m
+	d.p.preparation[m.platform].DeliveryWait.Add(time.Since(wait).Nanoseconds())
 	return nil
 }
 
@@ -85,30 +94,27 @@ func (d *deliveryQueue) drain(id string, all bool) error {
 		if err != nil {
 			return err
 		}
-		query := "SELECT ordinal,file FROM pending_delivery WHERE platform=?"
+		query := "SELECT ordinal,payload FROM pending_delivery WHERE platform=?"
 		args := []any{id}
 		if !all {
 			query += " AND author=?"
 			args = append(args, key)
 		}
 		var ordinal int64
-		var file string
-		err = l.DB.QueryRowContext(ctx, query+" ORDER BY ordinal LIMIT 1", args...).Scan(&ordinal, &file)
+		var payload []byte
+		at := time.Now()
+		err = l.DB.QueryRowContext(ctx, query+" ORDER BY ordinal LIMIT 1", args...).Scan(&ordinal, &payload)
 		if err == sql.ErrNoRows {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-		f, err := os.Open(file)
-		if err != nil {
-			return err
-		}
 		var stored pendingDelivery
-		err = errors.Join(gob.NewDecoder(f).Decode(&stored), f.Close())
-		if err != nil {
+		if err = gob.NewDecoder(bytes.NewReader(payload)).Decode(&stored); err != nil {
 			return err
 		}
+		p.preparation[id].Replay.Add(time.Since(at).Nanoseconds())
 		if err = p.queueBudget.Acquire(ctx, stored.Bytes); err != nil {
 			return err
 		}
@@ -119,37 +125,26 @@ func (d *deliveryQueue) drain(id string, all bool) error {
 		if _, err = l.DB.ExecContext(ctx, "DELETE FROM pending_delivery WHERE ordinal=?", ordinal); err != nil {
 			return err
 		}
-		if err = derived.Remove(file); err != nil {
-			return err
-		}
 	}
 }
 
-func (d *deliveryQueue) store(m message) (result error) {
+func (d *deliveryQueue) store(m message) error {
 	author := m.key
 	if m.work != nil {
 		author = m.work.AuthorKey
 	}
 	ctx, l, p := d.ctx, d.listing, d.p
 	at := time.Now()
-	f, err := os.CreateTemp(filepath.Join(p.Config.InstanceRoot, "temp"), "pending-delivery-*.gob")
-	if err != nil {
+	var encoded bytes.Buffer
+	if err := gob.NewEncoder(&encoded).Encode(storedMessage(m)); err != nil {
 		return err
 	}
-	defer func() {
-		if result != nil {
-			result = errors.Join(result, derived.Remove(f.Name()))
-		}
-	}()
-	err = errors.Join(gob.NewEncoder(f).Encode(storedMessage(m)), f.Close())
-	if err != nil {
-		return err
-	}
-	if _, err = l.DB.ExecContext(ctx, "INSERT INTO pending_delivery(platform,author,file) VALUES (?,?,?)", m.platform, author, f.Name()); err != nil {
+	if _, err := l.DB.ExecContext(ctx, "INSERT INTO pending_delivery(platform,author,payload) VALUES (?,?,?)", m.platform, author, encoded.Bytes()); err != nil {
 		return err
 	}
 	p.queueBudget.Release(m.bytes)
 	p.c.SpoolNanos.Add(time.Since(at).Nanoseconds())
+	p.preparation[m.platform].Spool.Add(time.Since(at).Nanoseconds())
 	return nil
 }
 
@@ -167,8 +162,7 @@ func (d *deliveryQueue) accept(m message) (result error) {
 		}
 	}()
 	if cap(d.p.disks[d.p.Config.Sources[m.platform]]) != 1 {
-		d.output <- m
-		return nil
+		return d.forward(m)
 	}
 	if m.finished != nil {
 		if err := d.drain(m.platform, true); err != nil {

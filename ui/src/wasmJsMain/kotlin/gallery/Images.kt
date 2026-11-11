@@ -107,12 +107,8 @@ suspend fun prefetchImage(url: String) {
 @Composable
 fun Thumbnail(media: MediaSummaryWire?, modifier: Modifier = Modifier, fit: Boolean = false) {
     if (media == null) return
-    BoxWithConstraints(modifier) {
-        val density = androidx.compose.ui.platform.LocalDensity.current.density
-        val shortest = minOf(maxWidth.value, maxHeight.value) * density
-        val url =
-            if (shortest > 360f) media.thumbnails?.m ?: media.thumbnailUrl
-            else media.thumbnails?.s ?: media.thumbnailUrl
+    Box(modifier) {
+        val url = media.thumbnailUrl
         val tone = remember(media.thumbHash) { thumbHashAverage(media.thumbHash) }
         Box(
             Modifier.fillMaxSize()

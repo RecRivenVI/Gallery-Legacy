@@ -9,11 +9,42 @@ import (
 	_ "modernc.org/sqlite"
 	"net/url"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+var listingArtifact = regexp.MustCompile(`^go-listing-[0-9]+\.sqlite(?:-(?:wal|shm))?$`)
+
+// The scan owner holds the instance scan lease. A listing is disposable;
+// only the separately committed source and work ledgers are restart inputs.
+func RecoverListings(root string) error {
+	if err := NoLinks(root); err != nil {
+		return err
+	}
+	items, err := os.ReadDir(root)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		if !listingArtifact.MatchString(item.Name()) {
+			continue
+		}
+		path := filepath.Join(root, item.Name())
+		if item.Type().IsRegular() && NoLinks(path) == nil {
+			if err = derived.Remove(path); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("recover scan listing: %w", err)
+			}
+		}
+	}
+	return nil
+}
 
 type Entry struct {
 	Platform, Key, Relative, Parent, Kind, Author, Work, Name string
@@ -56,7 +87,7 @@ func NewListing(root string) (*Listing, error) {
 	u.RawQuery = q.Encode()
 	db, e := sql.Open("sqlite", u.String())
 	if e != nil {
-		return nil, e
+		return nil, errors.Join(e, derived.Remove(f.Name()))
 	}
 	db.SetMaxOpenConns(4)
 	// This disposable listing is never recovered or used as a committed checkpoint.
@@ -64,19 +95,27 @@ func NewListing(root string) (*Listing, error) {
 	if _, e = db.Exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=OFF;PRAGMA cache_size=-8192;PRAGMA temp_store=FILE;
  CREATE TABLE entries(platform TEXT NOT NULL,key TEXT NOT NULL,relative TEXT NOT NULL,parent TEXT NOT NULL,kind TEXT NOT NULL,size INTEGER NOT NULL,mtime INTEGER NOT NULL,author TEXT NOT NULL,work TEXT NOT NULL,name TEXT NOT NULL,PRIMARY KEY(platform,key)) WITHOUT ROWID;
  CREATE INDEX entries_parent ON entries(platform,parent,key);`); e != nil {
-		db.Close()
-		return nil, e
+		return nil, errors.Join(e, (&Listing{DB: db, file: f.Name()}).Close())
 	}
 	return &Listing{DB: db, file: f.Name()}, nil
 }
 func (l *Listing) Close() error {
+	if l.file == "" {
+		return nil
+	}
 	e := l.DB.Close()
 	for _, suffix := range []string{"", "-wal", "-shm"} {
 		if err := derived.Remove(l.file + suffix); err != nil && !os.IsNotExist(err) {
 			e = errors.Join(e, err)
 		}
 	}
+	l.file = ""
 	return e
+}
+
+func (l *Listing) ReadOnlyURI() string {
+	u := url.URL{Scheme: "file", Path: "/" + strings.ReplaceAll(l.file, "\\", "/"), RawQuery: "mode=ro"}
+	return u.String()
 }
 func (l *Listing) put(ctx context.Context, entries []Entry) error {
 	if len(entries) == 0 {

@@ -258,7 +258,6 @@ class GalleryState(val scope: CoroutineScope) {
                                 size = f.size,
                                 url = f.url,
                                 thumbnailUrl = f.thumbnailUrl,
-                                thumbnails = f.thumbnails,
                                 width = f.width,
                                 height = f.height,
                                 thumbHash = f.thumbHash,

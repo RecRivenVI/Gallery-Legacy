@@ -5,12 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +17,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/physical"
 )
 
-func syntheticPipeline(t *testing.T, works int) (library.Config, *library.Everything) {
+func syntheticPipeline(t *testing.T, works int) (library.Config, inventoryProvider) {
 	t.Helper()
 	base := t.TempDir()
 	root := filepath.Join(base, "Instance")
@@ -47,36 +43,16 @@ func syntheticPipeline(t *testing.T, works int) (library.Config, *library.Everyt
 	if err := catalog.CreateLive(context.Background(), root, config.Sources); err != nil {
 		t.Fatal(err)
 	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		root := config.Sources["pixiv"]
-		var rows []map[string]string
-		err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
+	provider := func(ctx context.Context, l *library.Listing, c library.Config, ids []string, author string, _ bool) error {
+		for _, id := range ids {
+			if err := l.LoadNativeScope(ctx, id, c.Sources[id], author); err != nil {
 				return err
 			}
-			if path == root {
-				return nil
-			}
-			st, err := d.Info()
-			if err != nil {
-				return err
-			}
-			kind := "file"
-			if st.IsDir() {
-				kind = "folder"
-			}
-			rows = append(rows, map[string]string{"type": kind, "name": d.Name(), "path": filepath.Dir(path), "size": strconv.FormatInt(st.Size(), 10), "date_modified": strconv.FormatInt(st.ModTime().UnixNano()/100+116444736000000000, 10)})
-			return nil
-		})
-		if err != nil {
-			http.Error(w, err.Error(), 500)
-			return
+			l.MarkIndexed(id)
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"totalResults": len(rows), "results": rows})
-	}))
-	t.Cleanup(server.Close)
-	return config, &library.Everything{Endpoint: server.URL, Ready: func(context.Context) error { return nil }, Client: server.Client()}
+		return nil
+	}
+	return config, provider
 }
 
 func TestStreamingHugeAuthorVisibleBeforeCompletionAndIncrementalReuses(t *testing.T) {
@@ -132,9 +108,11 @@ func TestStreamingHugeAuthorVisibleBeforeCompletionAndIncrementalReuses(t *testi
 	}
 }
 
-func TestEverythingUnavailableFallsBackToNativeCompleteWorks(t *testing.T) {
+func TestFileTableUnavailableFallsBackToNativeCompleteWorks(t *testing.T) {
 	config, provider := syntheticPipeline(t, 3)
-	provider.Ready = func(context.Context) error { return fmt.Errorf("EVERYTHING_NOT_READY") }
+	provider = func(context.Context, *library.Listing, library.Config, []string, string, bool) error {
+		return errors.New("NTFS_VOLUME_REQUIRED")
+	}
 	p := &Pipeline{Config: config, Inventory: provider}
 	if err := p.Run(context.Background(), []string{"pixiv"}); err != nil {
 		t.Fatal(err)
@@ -151,29 +129,14 @@ func TestIncompleteInventoryCannotSilentlyRemoveMedia(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Excluding a descendant leaves the verified native signature unmatched.
-	transport := provider.Client.Transport
-	provider.Client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		response, err := transport.RoundTrip(req)
-		if err != nil {
-			return nil, err
+	original := provider
+	provider = func(ctx context.Context, l *library.Listing, c library.Config, ids []string, author string, incremental bool) error {
+		if err := original(ctx, l, c, ids, author, incremental); err != nil {
+			return err
 		}
-		var value map[string]json.RawMessage
-		if err = json.NewDecoder(response.Body).Decode(&value); err != nil {
-			return nil, err
-		}
-		response.Body.Close()
-		var rows []map[string]string
-		json.Unmarshal(value["results"], &rows)
-		kept := rows[:0]
-		for _, r := range rows {
-			if r["name"] != "1.png" {
-				kept = append(kept, r)
-			}
-		}
-		b, _ := json.Marshal(map[string]any{"totalResults": len(kept), "results": kept})
-		response.Body = io.NopCloser(strings.NewReader(string(b)))
-		return response, nil
-	})}
+		_, err := l.DB.ExecContext(ctx, "DELETE FROM entries WHERE name='1.png'")
+		return err
+	}
 	inc := &Pipeline{Config: config, Inventory: provider, Mode: "incremental"}
 	if err := inc.Run(context.Background(), []string{"pixiv"}); err != nil {
 		t.Fatal(err)
@@ -188,10 +151,6 @@ func TestIncompleteInventoryCannotSilentlyRemoveMedia(t *testing.T) {
 		t.Fatal("excluded existing media removed", n, err)
 	}
 }
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestPhysicalMetadataOrderPreservesNativeResult(t *testing.T) {
 	config, _ := syntheticPipeline(t, 4)

@@ -57,7 +57,7 @@ internal fun AuthorScanPage(state: ManagerState) {
         ) {
             state.update(state.scanFull, true)
         }
-        if (state.scan.failure?.code == "EVERYTHING_CONFIRMATION_REQUIRED")
+        if (state.scan.failure?.code == "FILE_TABLE_CONFIRMATION_REQUIRED")
             Action("遍历目录并继续") { state.update(state.scanFull, true, true) }
         ManagerError(state, "scan")
     }
@@ -88,7 +88,7 @@ internal fun CoverTaskPage(state: ManagerState) {
                 state.startCovers()
             }
             Action(
-                "全部重新生成",
+                "核对全部封面",
                 enabled =
                     state.active &&
                         !state.busy &&
@@ -107,8 +107,6 @@ internal fun CoverTaskPage(state: ManagerState) {
             }
         if (state.scan.running) Label("扫描期间暂停生成封面")
         if (state.thumbnails.failure.isNotEmpty()) ErrorNotice(humanError(state.thumbnails.failure))
-        if (state.thumbnails.failure.contains("EVERYTHING_CONFIRMATION_REQUIRED"))
-            Action("遍历目录并继续") { state.startCovers(native = true) }
         ManagerError(state, "covers")
     }
     ThumbnailProgress(state)
@@ -135,7 +133,9 @@ internal fun ScanDetails(state: ManagerState) {
         Section("失败和警告") {
             issues.forEach { i ->
                 Label(
-                    "${i.platformId} ${i.work} · ${humanError(i.code)}",
+                    listOf(i.platformId, i.work, humanError(i.code), i.details)
+                        .filter { it.isNotEmpty() }
+                        .joinToString(" · "),
                     color = if (i.severity == "error") p.error else p.warn,
                 )
             }

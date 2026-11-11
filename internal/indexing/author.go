@@ -26,8 +26,33 @@ type authorSession struct {
 	slots      chan struct{}
 	mu         sync.Mutex
 	candidate  catalog.PreparedWork
+	reuseRank  catalog.PreparedWork
 	qualified  bool
 	incomplete bool
+}
+
+func (a *authorSession) acceptIndexedReuse(ctx context.Context, work library.Entry, match reuseMatch) error {
+	p := a.p
+	if match.state == "partial" {
+		cached, err := reuseProjection(ctx, a.read, match.rank)
+		if err != nil {
+			return err
+		}
+		p.reportMetadataIssue(a.stage.id, work, cached)
+	}
+	p.mu.Lock()
+	p.metadataStates[match.state]++
+	p.mu.Unlock()
+	// Only this coordinator writes the rank. The completion channel
+	// publishes it after the final work has finished.
+	a.mu.Lock()
+	if a.reuseRank.Key == "" || catalog.Later(match.rank, a.reuseRank) {
+		a.reuseRank = match.rank
+	}
+	a.mu.Unlock()
+	p.reused.Add(1)
+	a.reused.Add(1)
+	return nil
 }
 
 func (p *Pipeline) newAuthor(ctx context.Context, l *library.Listing, read *sql.DB, stage *platformStage, entry library.Entry) (*authorSession, error) {
@@ -83,10 +108,17 @@ func (a *authorSession) accept(ctx context.Context, work library.Entry, prepared
 func (a *authorSession) finish(ctx context.Context) error {
 	p := a.p
 	a.mu.Lock()
-	candidate, qualified, incomplete := a.candidate, a.qualified, a.incomplete
+	candidate, reused, qualified, incomplete := a.candidate, a.reuseRank, a.qualified, a.incomplete
 	a.mu.Unlock()
 	if incomplete {
 		return nil
+	}
+	if reused.Key != "" && (candidate.Key == "" || catalog.Later(reused, candidate)) {
+		var err error
+		candidate, err = reuseProjection(ctx, a.read, reused)
+		if err != nil {
+			return err
+		}
 	}
 	if err := p.verifyDirectory(ctx, a.stage.id, a.directory); err != nil {
 		return err

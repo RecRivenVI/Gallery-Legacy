@@ -18,13 +18,19 @@ type fileName struct {
 	Namespace byte
 }
 type fileRecord struct {
-	Sequence    uint16
-	Names       []fileName
-	Directory   bool
-	Reparse     bool
-	Size, Mtime int64
-	Resident    bool
-	Runs        []extent
+	Sequence      uint16
+	Base          uint64
+	Names         []fileName
+	Directory     bool
+	Reparse       bool
+	Size, Mtime   int64
+	Resident      bool
+	Runs          []extent
+	DataStart     bool
+	Standard      bool
+	AttributeList []byte
+	AttributeRuns []extent
+	AttributeSize int64
 }
 
 // Layout follows Microsoft's NTFS v3 FILE_RECORD_SEGMENT_HEADER,
@@ -40,6 +46,7 @@ func parseRecord(data []byte) (fileRecord, error) {
 	// can differ from the last on-disk update sequence array; repairing that
 	// array here would corrupt already-fixed attribute bytes.
 	record.Sequence = binary.LittleEndian.Uint16(data[16:18])
+	record.Base = binary.LittleEndian.Uint64(data[32:40])
 	flags := binary.LittleEndian.Uint16(data[22:24])
 	if flags&1 == 0 {
 		return record, bad("not_in_use")
@@ -75,6 +82,9 @@ func parseRecord(data []byte) (fileRecord, error) {
 				}
 				record.Mtime = (int64(binary.LittleEndian.Uint64(value[8:16])) - 116444736000000000) * 100
 				record.Reparse = binary.LittleEndian.Uint32(value[32:36])&0x400 != 0
+				record.Standard = true
+			case 0x20:
+				record.AttributeList = append([]byte(nil), value...)
 			case 0x30:
 				if len(value) < 66 {
 					return record, bad("file_name_header")
@@ -89,9 +99,10 @@ func parseRecord(data []byte) (fileRecord, error) {
 				if attr[9] == 0 {
 					record.Resident = true
 					record.Size = int64(length)
+					record.DataStart = true
 				}
 			}
-		} else if kind == 0x80 && attr[9] == 0 {
+		} else if (kind == 0x80 || kind == 0x20) && attr[9] == 0 {
 			if len(attr) < 64 {
 				return record, bad("nonresident_header")
 			}
@@ -104,9 +115,17 @@ func parseRecord(data []byte) (fileRecord, error) {
 			if err != nil {
 				return record, err
 			}
-			record.Runs = append(record.Runs, runs...)
-			if start == 0 {
-				record.Size = int64(binary.LittleEndian.Uint64(attr[48:56]))
+			if kind == 0x20 {
+				record.AttributeRuns = append(record.AttributeRuns, runs...)
+				if start == 0 {
+					record.AttributeSize = int64(binary.LittleEndian.Uint64(attr[48:56]))
+				}
+			} else {
+				record.Runs = append(record.Runs, runs...)
+				if start == 0 {
+					record.Size = int64(binary.LittleEndian.Uint64(attr[48:56]))
+					record.DataStart = true
+				}
 			}
 		}
 		at += size

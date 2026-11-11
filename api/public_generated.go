@@ -103,7 +103,6 @@ type MediaSummary struct {
 	ThumbnailURL   string `json:"thumbnailUrl"`
 	Role           string `json:"role"`
 	DefaultVisible bool   `json:"defaultVisible"`
-	Thumbnails     any    `json:"thumbnails"`
 	Width          int    `json:"width"`
 	Height         int    `json:"height"`
 	ThumbHash      string `json:"thumbHash"`
@@ -112,7 +111,7 @@ type MediaSummary struct {
 }
 
 func (value MediaSummary) Row() map[string]any {
-	return map[string]any{"id": value.ID, "fileName": value.FileName, "relativePath": value.RelativePath, "type": value.Type, "size": value.Size, "durationMs": value.DurationMs, "url": value.URL, "thumbnailUrl": value.ThumbnailURL, "role": value.Role, "defaultVisible": value.DefaultVisible, "thumbnails": value.Thumbnails, "width": value.Width, "height": value.Height, "thumbHash": value.ThumbHash, "animated": value.Animated, "subtitles": value.Subtitles}
+	return map[string]any{"id": value.ID, "fileName": value.FileName, "relativePath": value.RelativePath, "type": value.Type, "size": value.Size, "durationMs": value.DurationMs, "url": value.URL, "thumbnailUrl": value.ThumbnailURL, "role": value.Role, "defaultVisible": value.DefaultVisible, "width": value.Width, "height": value.Height, "thumbHash": value.ThumbHash, "animated": value.Animated, "subtitles": value.Subtitles}
 }
 
 type TextSource struct {
@@ -170,12 +169,6 @@ type Tag struct {
 	WorkCount int64  `json:"workCount"`
 }
 
-type ThumbnailUrls struct {
-	S string `json:"s"`
-	M string `json:"m"`
-	L string `json:"l"`
-}
-
 type WorkMetrics struct {
 	Likes     *int64 `json:"likes"`
 	Replies   *int64 `json:"replies"`
@@ -217,17 +210,16 @@ type FileRoot struct {
 }
 
 type FileEntry struct {
-	Name         string         `json:"name"`
-	Type         string         `json:"type"`
-	RelativePath string         `json:"relativePath"`
-	Size         int64          `json:"size"`
-	URL          string         `json:"url"`
-	ThumbnailURL string         `json:"thumbnailUrl"`
-	Thumbnails   *ThumbnailUrls `json:"thumbnails"`
-	Width        int            `json:"width"`
-	Height       int            `json:"height"`
-	ThumbHash    string         `json:"thumbHash"`
-	Animated     bool           `json:"animated"`
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	RelativePath string `json:"relativePath"`
+	Size         int64  `json:"size"`
+	URL          string `json:"url"`
+	ThumbnailURL string `json:"thumbnailUrl"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	ThumbHash    string `json:"thumbHash"`
+	Animated     bool   `json:"animated"`
 }
 
 type GenerationSummary struct {
@@ -562,6 +554,7 @@ type ScanIssue struct {
 	Work       string `json:"work"`
 	Severity   string `json:"severity"`
 	Code       string `json:"code"`
+	Details    string `json:"details"`
 }
 
 type AutoBanRule struct {
@@ -584,27 +577,26 @@ type RuntimeConfigurationRetention struct {
 }
 
 type RuntimeConfiguration struct {
-	AllowedHosts        []string                                    `json:"allowedHosts"`
-	AllowedOrigins      []string                                    `json:"allowedOrigins"`
-	CacheRoot           string                                      `json:"cacheRoot"`
-	Deployment          string                                      `json:"deployment"`
-	DesktopDataRoot     string                                      `json:"desktopDataRoot"`
-	FfmpegPath          string                                      `json:"ffmpegPath"`
-	FileBrowserRoots    []RuntimeConfigurationFileBrowserRootsEntry `json:"fileBrowserRoots"`
-	GenerationsRoot     string                                      `json:"generationsRoot"`
-	Host                string                                      `json:"host"`
-	InstanceRoot        string                                      `json:"instanceRoot"`
-	ListenAddress       string                                      `json:"listenAddress"`
-	LiveUpdates         bool                                        `json:"liveUpdates"`
-	LogsRoot            string                                      `json:"logsRoot"`
-	Mode                string                                      `json:"mode"`
-	Port                int64                                       `json:"port"`
-	PublicUrl           string                                      `json:"publicUrl"`
-	ReportsRoot         string                                      `json:"reportsRoot"`
-	Retention           RuntimeConfigurationRetention               `json:"retention"`
-	ShortLinks          map[string]string                           `json:"shortLinks"`
-	Sources             map[string]string                           `json:"sources"`
-	StateRoot           string                                      `json:"stateRoot"`
-	TempRoot            string                                      `json:"tempRoot"`
-	ThumbnailCacheBytes int64                                       `json:"thumbnailCacheBytes"`
+	AllowedHosts     []string                                    `json:"allowedHosts"`
+	AllowedOrigins   []string                                    `json:"allowedOrigins"`
+	CacheRoot        string                                      `json:"cacheRoot"`
+	Deployment       string                                      `json:"deployment"`
+	DesktopDataRoot  string                                      `json:"desktopDataRoot"`
+	FfmpegPath       string                                      `json:"ffmpegPath"`
+	FileBrowserRoots []RuntimeConfigurationFileBrowserRootsEntry `json:"fileBrowserRoots"`
+	GenerationsRoot  string                                      `json:"generationsRoot"`
+	Host             string                                      `json:"host"`
+	InstanceRoot     string                                      `json:"instanceRoot"`
+	ListenAddress    string                                      `json:"listenAddress"`
+	LiveUpdates      bool                                        `json:"liveUpdates"`
+	LogsRoot         string                                      `json:"logsRoot"`
+	Mode             string                                      `json:"mode"`
+	Port             int64                                       `json:"port"`
+	PublicUrl        string                                      `json:"publicUrl"`
+	ReportsRoot      string                                      `json:"reportsRoot"`
+	Retention        RuntimeConfigurationRetention               `json:"retention"`
+	ShortLinks       map[string]string                           `json:"shortLinks"`
+	Sources          map[string]string                           `json:"sources"`
+	StateRoot        string                                      `json:"stateRoot"`
+	TempRoot         string                                      `json:"tempRoot"`
 }

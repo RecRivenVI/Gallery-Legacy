@@ -91,9 +91,9 @@ fun humanError(code: String): String =
         "PATH_REPARSE" -> "目录包含链接，请检查平台目录后重试"
         "AUTHOR_DIRECTORY_INVALID" -> "作者目录名不正确，请重新填写"
         "SCAN_ISSUES_WRITE_FAILED" -> "扫描记录无法保存，请检查实例目录空间后重试"
-        "EVERYTHING_CONFIRMATION_REQUIRED" -> "文件清单不可用，请选择是否遍历目录"
+        "FILE_TABLE_CONFIRMATION_REQUIRED" -> "文件清单不可用，请选择是否遍历目录"
         "PHYSICAL_ORDER_UNAVAILABLE" -> "无法取得文件物理位置，已按目录顺序读取"
-        "EVERYTHING_NATIVE_FALLBACK" -> "文件清单不可用，已按确认遍历目录"
+        "FILE_TABLE_NATIVE_FALLBACK" -> "文件清单不可用，已按确认遍历目录"
         "METADATA_MALFORMED",
         "METADATA_NON_OBJECT" -> "作品信息格式不正确，修正后重新扫描"
         "METADATA_PARTIAL" -> "部分作品信息无法识别，请检查作品信息文件"

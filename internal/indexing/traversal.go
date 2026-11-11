@@ -18,6 +18,22 @@ func (p *Pipeline) enumerate(ctx context.Context, l *library.Listing, platform, 
 		return library.Directory{}, e
 	}
 	defer release()
+	if l.Indexed(platform) {
+		path := p.Config.Sources[platform]
+		if relative != "." {
+			path, e = library.Join(path, relative)
+			if e != nil {
+				return library.Directory{}, e
+			}
+		}
+		info, err := library.ObserveDirectory(path)
+		if err != nil {
+			return library.Directory{}, err
+		}
+		d := library.Directory{Path: path, Info: info}
+		l.RememberDirectory(platform, relative, d)
+		return d, nil
+	}
 	return p.enumerateHeld(ctx, l, platform, relative, nil)
 }
 

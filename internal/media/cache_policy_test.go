@@ -15,7 +15,7 @@ import (
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 )
 
-func TestPreviewKeySurvivesMovingInstanceAndSeparatesTiers(t *testing.T) {
+func TestPreviewKeySurvivesMovingInstanceAndUnifiesRenditions(t *testing.T) {
 	root := t.TempDir()
 	file := filepath.Join(root, "source.jpg")
 	if err := os.WriteFile(file, []byte("synthetic"), 0600); err != nil {
@@ -23,7 +23,7 @@ func TestPreviewKeySurvivesMovingInstanceAndSeparatesTiers(t *testing.T) {
 	}
 	info, _ := os.Stat(file)
 	f := File{Root: root, Path: file, Info: info, Platform: "pixiv", WorkID: "1", MediaID: "1"}
-	a, err := PreviewKey(f, "s")
+	a, err := PreviewKey(f, Display)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,13 +31,13 @@ func TestPreviewKeySurvivesMovingInstanceAndSeparatesTiers(t *testing.T) {
 	f.Path = filepath.Join(f.Root, "source.jpg")
 	f.WorkID = "99"
 	f.MediaID = "99"
-	b, err := PreviewKey(f, "s")
+	b, err := PreviewKey(f, Display)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, _ := PreviewKey(f, "m")
-	if a != b || b == c {
-		t.Fatal("key depends on absolute paths/row IDs, or misses tier")
+	c, _ := PreviewKey(f, Strip)
+	if a != b || b != c {
+		t.Fatal("key depends on absolute paths, row IDs or rendition")
 	}
 }
 
@@ -54,20 +54,20 @@ func TestQueuedVisiblePreviewPrecedesBackgroundAndCancellationRemovesWaiter(t *t
 	entered := make(chan string, 8)
 	release := make(chan struct{}, 8)
 	c.mu.Lock()
-	c.render = func(ctx context.Context, f File, _, _ string) (imaging.Preview, error) {
+	c.render = func(ctx context.Context, f File, target, _ string) (imaging.Preview, error) {
 		entered <- filepath.Base(f.Path)
 		select {
 		case <-ctx.Done():
 			return imaging.Preview{}, ctx.Err()
 		case <-release:
-			return imaging.Preview{Original: true, Width: 1, Height: 1, Hash: []byte{1}}, nil
+			return imaging.Preview{Width: 1, Height: 1, Hash: []byte{1}}, os.WriteFile(target, []byte("synthetic WebP"), 0600)
 		}
 	}
 	c.mu.Unlock()
 	request := func(ctx context.Context, name string, priority Priority) <-chan error {
 		done := make(chan error, 1)
 		go func() {
-			_, _, err := c.Request(ctx, File{Root: root, Path: filepath.Join(root, name), Info: info, Platform: "pixiv"}, "s", priority)
+			_, _, err := c.Request(ctx, File{Root: root, Path: filepath.Join(root, name), Info: info, Platform: "pixiv"}, Display, priority)
 			done <- err
 		}()
 		return done
@@ -135,7 +135,7 @@ func TestQueuedVisiblePreviewPrecedesBackgroundAndCancellationRemovesWaiter(t *t
 	}
 }
 
-func TestCacheNativeTiersAndDatabasePlaceholder(t *testing.T) {
+func TestCacheNativeRenditionsAndDatabasePlaceholder(t *testing.T) {
 	dir := os.Getenv("GALLERY_VIPS_DIR")
 	if dir == "" {
 		t.Skip("set GALLERY_VIPS_DIR to pinned DLL directory")
@@ -161,7 +161,7 @@ func TestCacheNativeTiersAndDatabasePlaceholder(t *testing.T) {
 	}
 	out.Close()
 	info, _ := os.Stat(file)
-	c, err := NewCache(instance.Config{InstanceRoot: root, CacheRoot: filepath.Join(root, "cache"), TempRoot: filepath.Join(root, "temp"), ThumbnailCacheBytes: 20 << 30}, "")
+	c, err := NewCache(instance.Config{InstanceRoot: root, CacheRoot: filepath.Join(root, "cache"), TempRoot: filepath.Join(root, "temp")}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,21 +172,22 @@ func TestCacheNativeTiersAndDatabasePlaceholder(t *testing.T) {
 	}
 	c.mu.Unlock()
 	f := File{Path: file, Root: root, Info: info, Platform: "pixiv", Kind: "image"}
-	for _, tier := range []string{"s", "m", "l"} {
-		result, state, err := c.Request(context.Background(), f, tier, Visible)
-		if err != nil {
-			t.Fatal(tier, err)
+	c.index.estimate.Store(1 << 20)
+	for _, tier := range []string{Strip, Display, Strip} {
+		result, _, err := c.Request(context.Background(), f, tier, Visible)
+		if err != nil || result.ContentType() != "image/webp" || result.preview.Short < targetShort(tier) || len(result.preview.Data) == 0 {
+			t.Fatalf("%s rendition failed: %v", tier, err)
 		}
-		if tier == "l" {
-			if state != "original" || result.Path != file {
-				t.Fatal("upscaled a small original")
-			}
-		} else if MIME(result.Path) != "image/webp" {
-			t.Fatal("not WebP", result.Path)
-		}
-		result.Release()
 	}
-	key, _ := PreviewKey(f, "s")
+	f.Cover = true
+	if _, state, err := c.Request(context.Background(), f, Strip, Visible); state != "hit" || err != nil {
+		t.Fatalf("promote an existing display image: %s %v", state, err)
+	}
+	var covers, previews int
+	if err := c.index.db.QueryRow("SELECT (SELECT count(*) FROM main.thumbnails),(SELECT count(*) FROM preview.thumbnails)").Scan(&covers, &previews); err != nil || covers != 1 || previews != 0 {
+		t.Fatal("a source left more than one rendition", covers, previews, err)
+	}
+	key, _ := PreviewKey(f, Display)
 	summary, err := c.LookupSummary(context.Background(), key)
 	if err != nil {
 		t.Fatal(err)
@@ -199,13 +200,15 @@ func TestCacheNativeTiersAndDatabasePlaceholder(t *testing.T) {
 	}
 }
 
-func TestEvictionRetainsResponsesUntilStreamingEnds(t *testing.T) {
+func TestEvictionUsesBlobBytesAndKeepsInFlightResponse(t *testing.T) {
+	ctx := context.Background()
 	root := t.TempDir()
-	c, err := NewCache(instance.Config{InstanceRoot: root, CacheRoot: filepath.Join(root, "cache"), TempRoot: filepath.Join(root, "temp"), ThumbnailCacheBytes: 1}, "")
+	c, err := NewCache(instance.Config{InstanceRoot: root, CacheRoot: filepath.Join(root, "cache"), TempRoot: filepath.Join(root, "temp")}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer c.Close()
+	c.index.estimate.Store(17)
 	c.mu.Lock()
 	c.render = func(_ context.Context, _ File, target, tier string) (imaging.Preview, error) {
 		if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
@@ -222,31 +225,24 @@ func TestEvictionRetainsResponsesUntilStreamingEnds(t *testing.T) {
 			t.Fatal(err)
 		}
 		info, _ := os.Stat(source)
-		file, _, err := c.Request(context.Background(), File{Path: source, Root: root, RelativeKey: name, Platform: "pixiv", Info: info}, "m", Visible)
+		file, _, err := c.Request(ctx, File{Path: source, Root: root, RelativeKey: name, Platform: "pixiv", Info: info}, Display, Visible)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return file
 	}
 	first := request("one.jpg")
-	defer first.Release()
-	second := request("two.jpg")
-	defer second.Release()
-	if err = c.evict(""); err != nil {
+	for _, name := range []string{"two.jpg", "three.jpg", "four.jpg"} {
+		request(name)
+	}
+	if err = c.index.evict(ctx); err != nil {
 		t.Fatal(err)
 	}
-	for _, file := range []File{first, second} {
-		if _, err = os.Stat(file.Path); err != nil {
-			t.Fatal("active response evicted", err)
-		}
+	if string(first.preview.Data) != "synthetic-preview" {
+		t.Fatal("eviction changed the in-flight response")
 	}
-	first.Release()
-	if _, err = os.Stat(second.Path); err != nil {
-		t.Fatal("other active response evicted", err)
-	}
-	second.Release()
-	var bytes int64
-	if err = c.index.db.QueryRow("SELECT coalesce(sum(bytes),0) FROM thumbnails WHERE tier!='s'").Scan(&bytes); err != nil || bytes > 1 {
-		t.Fatal("released responses exceed cache limit", bytes, err)
+	stats, err := c.index.occupancy(ctx)
+	if err != nil || stats["previewImageBytes"] != int64(17) || stats["previewLimitBytes"] != int64(17) {
+		t.Fatal(stats, err)
 	}
 }

@@ -40,6 +40,18 @@ func TestPublicCorpusParity(t *testing.T) {
 					if k == "flags" || k == "access" {
 						continue
 					}
+					// The corpus records the original adapter. These fields now
+					// follow the newer identity, title and publication policy.
+					switch {
+					case i == 0 && c.Platform == "Fantia" && k == "publishedAtMs":
+						want = int64(1767225600000)
+					case i == 0 && (c.Platform == "X" || c.Platform == "微博") && k == "title":
+						want = nil
+					case i == 0 && c.Platform == "X" && k == "sourceWorkId":
+						want = "9007199254740992"
+					case i == 1 && c.Platform == "X" && k == "sourceAuthorId" && (c.Name == "complex" || c.Name == "current"):
+						want = "9007199254740992"
+					}
 					got := p[0][k]
 					a, _ := json.Marshal(got)
 					b, _ := json.Marshal(want)
@@ -100,7 +112,7 @@ func TestMalformedAndUnsafeIDs(t *testing.T) {
 		}
 	}
 	r, _ := Parse("pixiv", "author", "work", []byte(`{"id":9007199254740993,"user":{"id":"9007199254740993123"}}`))
-	if r.Work["sourceWorkId"] != nil || r.Profile["sourceAuthorId"] != "9007199254740993123" {
+	if r.Work["sourceWorkId"] != "9007199254740993" || r.Profile["sourceAuthorId"] != "9007199254740993123" {
 		t.Fatal("unsafe ID conversion")
 	}
 }

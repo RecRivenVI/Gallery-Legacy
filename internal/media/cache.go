@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
@@ -28,7 +29,7 @@ type job struct {
 	priority                Priority
 	done                    chan struct{}
 	err                     error
-	result                  imaging.Preview
+	entry                   thumbnailEntry
 	waiters                 int
 	running                 bool
 	backgroundLease         bool
@@ -41,8 +42,8 @@ type Cache struct {
 	ready                      *sync.Cond
 	queue                      []*job
 	pending                    map[string]*job
+	writes                     chan thumbnailWrite
 	disks                      map[string]int
-	retained                   map[string]int
 	workers                    sync.WaitGroup
 	index                      *thumbnailIndex
 	render                     func(context.Context, File, string, string) (imaging.Preview, error)
@@ -52,7 +53,7 @@ type Cache struct {
 }
 
 func NewCache(config instance.Config, resources string) (*Cache, error) {
-	root := filepath.Join(config.CacheRoot, "thumbnails")
+	root := config.CacheRoot
 	for _, p := range []string{root, config.TempRoot} {
 		if !library.Inside(config.InstanceRoot, p) {
 			return nil, fmt.Errorf("RUNTIME_THUMBNAIL_PATH_OUTSIDE_ROOT")
@@ -64,13 +65,12 @@ func NewCache(config instance.Config, resources string) (*Cache, error) {
 			return nil, err
 		}
 	}
-	index, err := openThumbnailIndex(filepath.Join(config.CacheRoot, "thumbs.db"))
+	index, err := openThumbnailIndex(root)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &Cache{root: root, temp: config.TempRoot, ffmpeg: config.FFmpegPath, ctx: ctx, cancel: cancel, index: index, pending: map[string]*job{}, disks: map[string]int{}, retained: map[string]int{}}
-	c.index.limit = config.ThumbnailCacheBytes
+	c := &Cache{root: root, temp: config.TempRoot, ffmpeg: config.FFmpegPath, ctx: ctx, cancel: cancel, index: index, pending: map[string]*job{}, disks: map[string]int{}, writes: make(chan thumbnailWrite, 8)}
 	c.ready = sync.NewCond(&c.mu)
 	engine := sync.OnceValues(func() (*imaging.Engine, error) { return imaging.Load(filepath.Join(resources, "libvips")) })
 	c.render = func(ctx context.Context, f File, target, tier string) (imaging.Preview, error) {
@@ -79,10 +79,15 @@ func NewCache(config instance.Config, resources string) (*Cache, error) {
 	for range max(1, min(8, runtime.NumCPU()/2)) {
 		c.workers.Go(c.work)
 	}
+	c.workers.Go(c.writeThumbnails)
 	return c, nil
 }
-func CacheKey(f File) (string, error) { return PreviewKey(f, "s") }
+func CacheKey(f File) (string, error) { return PreviewKey(f, Display) }
+
 func PreviewKey(f File, tier string) (string, error) {
+	if tier != Display && tier != Strip {
+		return "", Failure("INVALID_INPUT", 400)
+	}
 	relative, err := filepath.Rel(f.Root, f.Path)
 	if err != nil {
 		return "", err
@@ -90,59 +95,56 @@ func PreviewKey(f File, tier string) (string, error) {
 	if !library.Inside(f.Root, f.Path) {
 		return "", fmt.Errorf("RUNTIME_THUMBNAIL_SOURCE_OUTSIDE_ROOT")
 	}
-	return imaging.Key(f.Platform, relative, f.Info.Size(), f.Info.ModTime().UnixNano(), tier), nil
+	return imaging.Key(f.Platform, relative, f.Info.Size(), f.Info.ModTime().UnixNano()), nil
 }
+
 func (c *Cache) Thumbnail(ctx context.Context, f File) (File, string, error) {
-	return c.Request(ctx, f, "s", Visible)
+	return c.Request(ctx, f, Display, Visible)
 }
-func (c *Cache) Request(ctx context.Context, f File, tier string, priority Priority) (output File, state string, resultErr error) {
+
+func (c *Cache) Request(ctx context.Context, f File, tier string, priority Priority) (File, string, error) {
 	if err := ctx.Err(); err != nil {
 		return File{}, "", err
 	}
-	if tier != "s" && tier != "m" && tier != "l" {
-		return File{}, "", Failure("INVALID_INPUT", 400)
+	if f.Cover {
+		tier = Display
 	}
 	key, err := PreviewKey(f, tier)
 	if err != nil {
 		return File{}, "", err
 	}
-	if tier != "s" {
-		release := c.retain(key)
-		defer func() {
-			if resultErr != nil {
-				release()
-			} else {
-				output.release = release
-			}
-		}()
+	for {
+		entry, state, err := c.request(ctx, f, key, tier, priority)
+		if err != nil {
+			return File{}, "", err
+		}
+		if state != "" {
+			f.preview = &entry
+			return f, state, nil
+		}
 	}
-	// Lookup and pending registration share one lock with job completion.
-	// Otherwise a request can miss the index just before completion, then
-	// enqueue a second render after that job has left pending.
+}
+
+func (c *Cache) request(ctx context.Context, f File, key, tier string, priority Priority) (thumbnailEntry, string, error) {
+	var zero thumbnailEntry
 	c.mu.Lock()
 	if c.ctx.Err() != nil {
 		c.mu.Unlock()
-		return File{}, "", c.ctx.Err()
+		return zero, "", c.ctx.Err()
 	}
-	if cached, ok, err := c.index.lookup(ctx, key); err != nil {
-		c.mu.Unlock()
-		return File{}, "", err
-	} else if ok {
-		result, err := c.cachedFile(f, key, cached)
-		if err == nil {
-			c.mu.Unlock()
-			return result, "hit", nil
-		}
-		if !os.IsNotExist(err) {
-			c.mu.Unlock()
-			return File{}, "", err
-		}
-	}
-	target := filepath.Join(c.root, key[:2], key[2:4], key+".webp")
-	disk, _ := library.Disk(f.Root)
 	j := c.pending[key]
 	if j == nil {
-		j = &job{file: f, key: key, target: target, tier: tier, disk: disk, priority: priority, done: make(chan struct{})}
+		entry, err := c.cached(ctx, f, key, targetShort(tier))
+		if err != nil {
+			c.mu.Unlock()
+			return zero, "", err
+		}
+		if entry.Data != nil {
+			c.mu.Unlock()
+			return entry, "hit", nil
+		}
+		disk, _ := library.Disk(f.Root)
+		j = &job{file: f, key: key, target: filepath.Join(c.temp, "thumbnail-"+key+".webp"), tier: tier, disk: disk, priority: priority, done: make(chan struct{})}
 		c.pending[key] = j
 		c.queue = append(c.queue, j)
 	}
@@ -155,29 +157,54 @@ func (c *Cache) Request(ctx context.Context, f File, tier string, priority Prior
 	defer c.release(j)
 	select {
 	case <-ctx.Done():
-		return File{}, "", ctx.Err()
+		return zero, "", ctx.Err()
 	case <-j.done:
 	}
 	if j.err != nil {
-		return File{}, "", j.err
+		return zero, "", j.err
 	}
-	if j.result.Original {
-		return f, "original", nil
+	if j.file.Cover != f.Cover || j.entry.Short < targetShort(tier) {
+		return zero, "", nil
 	}
-	st, err := os.Stat(j.target)
-	return File{Path: j.target, Info: st}, "generated", err
+	return j.entry, "generated", nil
 }
-func (c *Cache) cachedFile(source File, key string, entry thumbnailEntry) (File, error) {
-	if entry.Original {
-		return source, nil
+
+func (c *Cache) cached(ctx context.Context, f File, key string, minimum int) (thumbnailEntry, error) {
+	entry, ok, err := c.index.lookup(ctx, key, f.Cover, true)
+	if err != nil {
+		return entry, err
 	}
-	target := filepath.Join(c.root, key[:2], key[2:4], key+".webp")
-	if err := library.NoLinks(target); err != nil {
-		return File{}, err
+	if !ok || entry.Short < minimum {
+		other, found, err := c.index.lookup(ctx, key, !f.Cover, true)
+		if err != nil {
+			return other, err
+		}
+		if !found || other.Short < minimum {
+			return thumbnailEntry{}, nil
+		}
+		if err = c.index.move(ctx, key, f.Cover); err != nil {
+			return other, err
+		}
+		if !f.Cover {
+			if err = c.index.evict(ctx); err != nil {
+				return other, err
+			}
+		}
+		entry = other
 	}
-	st, err := os.Stat(target)
-	return File{Path: target, Info: st}, err
+	relative, err := filepath.Rel(f.Root, f.Path)
+	if err != nil {
+		return entry, err
+	}
+	if err = c.index.retire(ctx, key, f.Platform, strings.ToLower(filepath.ToSlash(relative)), f.Cover); err != nil {
+		return entry, err
+	}
+	if !f.Cover {
+		err = c.index.touch(ctx, key)
+	}
+	return entry, err
 }
+
 func (c *Cache) release(j *job) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -235,11 +262,21 @@ func (c *Cache) work() {
 		render := c.render
 		c.mu.Unlock()
 		result, err := render(c.ctx, j.file, j.target, j.tier)
+		entry := thumbnailEntry{DurationMs: result.DurationMs, Width: result.Width, Height: result.Height, Hash: result.Hash, Animated: result.Animated, Short: targetShort(j.tier)}
 		if err == nil {
-			err = c.index.store(c.ctx, j, result)
+			entry.Data, err = os.ReadFile(j.target)
+		}
+		removeTemporary(j.target)
+		if err == nil {
+			err = c.persistThumbnail(j, result, entry.Data)
+		}
+		if err == nil && !j.file.Cover {
+			if evictErr := c.index.evict(c.ctx); evictErr != nil && c.ctx.Err() == nil {
+				slog.Warn("缩略图缓存清理失败", "error", evictErr)
+			}
 		}
 		c.mu.Lock()
-		j.result, j.err = result, err
+		j.entry, j.err = entry, err
 		delete(c.pending, j.key)
 		c.disks[j.disk]--
 		if j.backgroundLease {
@@ -248,11 +285,6 @@ func (c *Cache) work() {
 		close(j.done)
 		c.ready.Broadcast()
 		c.mu.Unlock()
-		if err == nil && j.tier != "s" {
-			if err = c.evict(j.key); err != nil {
-				slog.Warn("缩略图缓存清理失败", "error", err)
-			}
-		}
 	}
 }
 func (c *Cache) Close() error {

@@ -22,22 +22,6 @@ func (p *Pipeline) prepare(ctx context.Context, l *library.Listing, read *sql.DB
 	if ctx.Err() != nil {
 		return zero, ctx.Err()
 	}
-	if l.Indexed(platform) && p.Mode == "incremental" {
-		identical, err := sameFiles(ctx, read, platform, work.Key, func(accept func(library.Entry) error) error { return l.EachWorkFile(ctx, platform, work.Key, accept) })
-		if err != nil {
-			return zero, err
-		}
-		signature := "file-list-v1"
-
-		cached, reusable, err := committedWork(ctx, read, platform, work, signature)
-		if err != nil {
-			return zero, err
-		}
-		if reusable && identical {
-			cached.Work["work_dir_mtime_ns"] = work.Mtime
-			return cached, nil
-		}
-	}
 	tree, e := p.nativeWork(ctx, l, platform, work)
 	if e != nil {
 		return zero, e
@@ -53,7 +37,7 @@ func (p *Pipeline) prepare(ctx context.Context, l *library.Listing, read *sql.DB
 	}
 	fingerprint := "file-list-v1"
 
-	if p.Mode == "incremental" {
+	if p.Mode == "incremental" && !l.Indexed(platform) {
 		identical, err := sameFiles(ctx, read, platform, work.Key, func(accept func(library.Entry) error) error { return tree.Each(ctx, accept) })
 		if err != nil {
 			return zero, err

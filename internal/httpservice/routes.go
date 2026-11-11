@@ -241,7 +241,7 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, f media.File
 	if thumbnail {
 		var err error
 		var status string
-		tier := value(r.URL.Query(), "tier", "s")
+		tier := value(r.URL.Query(), "purpose", media.Display)
 		fingerprint, err := media.PreviewKey(f, tier)
 		if err != nil {
 			return err
@@ -257,18 +257,14 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, f media.File
 		if err != nil {
 			return err
 		}
-		defer f.Release()
-		info, err := s.media.Cache.LookupSummary(r.Context(), fingerprint)
-		if err != nil {
-			return err
-		}
+		info := f.PreviewSummary()
 		for name, key := range map[string]string{"X-Gallery-Width": "width", "X-Gallery-Height": "height", "X-Gallery-Animated": "animated", "X-Gallery-Duration": "durationMs"} {
 			if info[key] != nil {
 				headers[name] = fmt.Sprint(info[key])
 			}
 		}
 		headers["X-Gallery-Thumbnail"] = status
-		kind = media.MIME(f.Path)
+		kind = f.ContentType()
 		if r.URL.Query().Get("v") != "" {
 			headers["Cache-Control"] = "public, max-age=31536000, immutable"
 		}

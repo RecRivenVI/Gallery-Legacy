@@ -118,17 +118,6 @@ internal fun ManagerSettings(state: ManagerState) {
             "FFmpeg 路径",
             Modifier.fillMaxWidth(),
         )
-        Label("中、大缩略图缓存上限（GB）")
-        Field(
-            (c.thumbnailCacheBytes / 1073741824L).toString(),
-            { value ->
-                state.edit {
-                    it.copy(thumbnailCacheBytes = (value.toLongOrNull() ?: 0L) * 1073741824L)
-                }
-            },
-            "缓存上限",
-            Modifier.width(140.dp),
-        )
     }
     Section("网络") {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -2,26 +2,30 @@ package media
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/mediaorder"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
 
 type PreloadRequest struct {
-	Mode        string              `json:"mode"`
-	Platforms   []string            `json:"platformIds"`
-	Authors     map[string][]string `json:"authors"`
-	AllowNative bool                `json:"allowNative"`
+	Mode      string              `json:"mode"`
+	Platforms []string            `json:"platformIds"`
+	Authors   map[string][]string `json:"authors"`
 }
 
 func (c *Cache) StartPreloadTask(ctx context.Context, request PreloadRequest) error {
+	return c.startPreloadTask(ctx, request, false)
+}
+
+func (c *Cache) startPreloadTask(ctx context.Context, request PreloadRequest, paused bool) error {
 	if request.Mode != "full" && request.Mode != "incremental" {
 		return fmt.Errorf("SCAN_MODE_INVALID")
 	}
@@ -48,11 +52,6 @@ func (c *Cache) StartPreloadTask(ctx context.Context, request PreloadRequest) er
 			return fmt.Errorf("SCAN_PLATFORM_INVALID")
 		}
 	}
-	if !request.AllowNative {
-		if err := library.LocalEverything().Available(ctx); err != nil {
-			return fmt.Errorf("EVERYTHING_CONFIRMATION_REQUIRED: %w", err)
-		}
-	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.scanning {
@@ -61,166 +60,202 @@ func (c *Cache) StartPreloadTask(ctx context.Context, request PreloadRequest) er
 	if c.preload.planning || c.backgroundActive > 0 {
 		return fmt.Errorf("THUMBNAILS_IN_USE")
 	}
-	if c.preload.cancel != nil {
-		c.preload.cancel()
-	}
-	c.preload.ctx, c.preload.cancel = context.WithCancel(c.ctx)
-	c.backgroundPaused = false
-	c.ready.Broadcast()
 	encoded, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
-	if _, err = c.index.db.ExecContext(c.ctx, "INSERT OR REPLACE INTO cover_task VALUES (1,?);", string(encoded)); err != nil {
+	tx, err := c.index.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	if _, err = c.index.db.ExecContext(c.ctx, "UPDATE cover_state SET paused=0 WHERE singleton=1"); err != nil {
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, "INSERT OR REPLACE INTO cover_task VALUES (1,?);", string(encoded)); err != nil {
 		return err
 	}
+	if _, err = tx.ExecContext(ctx, "UPDATE cover_state SET paused=?,replan=1 WHERE singleton=1", paused); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	if c.preload.cancel != nil {
+		c.preload.cancel()
+	}
+	c.preload.ctx, c.preload.cancel = context.WithCancel(c.ctx)
+	c.backgroundPaused = paused
 	c.preload.failure = ""
 	c.preload.request = request
-	c.preload.planning = true
-	select {
-	case c.preload.wake <- struct{}{}:
-	default:
+	c.preload.planning = !paused
+	c.preload.restartPlan = paused
+	c.ready.Broadcast()
+	if !paused {
+		select {
+		case c.preload.wake <- struct{}{}:
+		default:
+		}
 	}
 	return nil
 }
 
-func (c *Cache) planInventoryCovers(ctx context.Context, p *coverPreload, request PreloadRequest) error {
-	if _, err := c.index.db.ExecContext(ctx, "DELETE FROM cover_jobs"); err != nil {
+func (c *Cache) QueueScannedCovers(ctx context.Context, request PreloadRequest) error {
+	c.mu.Lock()
+	if c.preload == nil {
+		c.mu.Unlock()
+		return nil
+	}
+	previous, paused, restart := c.preload.request, c.backgroundPaused, c.preload.restartPlan
+	c.mu.Unlock()
+	var pending bool
+	if err := c.index.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM cover_jobs WHERE state IN ('pending','running'))").Scan(&pending); err != nil {
 		return err
 	}
-	listing, err := library.NewListing(p.config.TempRoot)
+	keepPaused := paused && (pending || restart)
+	if keepPaused {
+		selection := map[string]map[string]string{}
+		for _, task := range []PreloadRequest{previous, request} {
+			for _, id := range task.Platforms {
+				authors := task.Authors[id]
+				current, exists := selection[id]
+				if len(authors) == 0 || exists && current == nil {
+					selection[id] = nil
+					continue
+				}
+				if current == nil {
+					current = map[string]string{}
+					selection[id] = current
+				}
+				for _, author := range authors {
+					current[strings.ToLower(author)] = author
+				}
+			}
+		}
+		request.Platforms, request.Authors = nil, map[string][]string{}
+		for id, authors := range selection {
+			request.Platforms = append(request.Platforms, id)
+			for _, author := range authors {
+				request.Authors[id] = append(request.Authors[id], author)
+			}
+		}
+	}
+	return c.startPreloadTask(ctx, request, keepPaused)
+}
+
+func (c *Cache) planInventoryCovers(ctx context.Context, p *coverPreload, request PreloadRequest) error {
+	catalogPath := filepath.Join(p.config.InstanceRoot, "live", "catalog.sqlite")
+	if err := library.NoLinks(catalogPath); err != nil {
+		return err
+	}
+	db, err := sql.Open("sqlite", thumbnailURI(catalogPath, "mode=ro&_pragma=busy_timeout(3000)"))
 	if err != nil {
 		return err
 	}
-	defer listing.Close()
+	defer db.Close()
+	db.SetMaxOpenConns(1)
+	position := "-1"
+	facts := filepath.Join(p.config.InstanceRoot, "state", "ntfs-inventory.sqlite")
+	if err = library.NoLinks(facts); err != nil {
+		return err
+	}
+	if _, err = os.Stat(facts); err == nil {
+		if _, err = db.ExecContext(ctx, "ATTACH DATABASE ? AS inventory", thumbnailURI(facts, "mode=ro")); err != nil {
+			return err
+		}
+		position = `coalesce((SELECT f.position FROM inventory.facts f WHERE f.platform=w.platform_id AND f.author IN ('',CASE WHEN instr(w.relative_path_key,char(92))>0 THEN substr(w.relative_path_key,1,instr(w.relative_path_key,char(92))-1) ELSE w.relative_path_key END) AND f.key=w.relative_path_key||char(92)||m.relative_path_key AND f.size=m.filesystem_size AND f.mtime=m.filesystem_mtime_ns AND f.position>=0 LIMIT 1),-1)`
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err = c.index.updateEstimate(ctx, db); err != nil {
+		return err
+	}
+	if _, err = c.index.prune(ctx, p.config, true); err != nil {
+		return err
+	}
+	if err = c.index.evict(ctx); err != nil {
+		return err
+	}
+	if _, err = c.index.db.ExecContext(ctx, "DELETE FROM cover_next"); err != nil {
+		return err
+	}
 	for _, id := range request.Platforms {
-		if _, err = listing.LoadEverything(ctx, library.LocalEverything(), id, p.config.Sources[id]); err != nil {
-			if !request.AllowNative {
-				return fmt.Errorf("EVERYTHING_CONFIRMATION_REQUIRED: %w", err)
-			}
-			if err = listing.Reset(ctx, id); err != nil {
-				return err
-			}
-			if err = listing.LoadNative(ctx, id, p.config.Sources[id]); err != nil {
-				return err
-			}
-		}
-		rows, err := listing.DB.QueryContext(ctx, `SELECT key,relative,name,size,mtime,author,work,parent FROM entries WHERE platform=? AND kind='file' AND work<>'' ORDER BY work,key`, id)
-		if err != nil {
-			return err
-		}
-		selected := map[string]bool{}
-		for _, author := range request.Authors[id] {
-			selected[strings.ToLower(author)] = true
-		}
-		if err = c.saveCoverInventory(ctx, listing, id, selected, time.Now().UnixNano()); err != nil {
-			return err
-		}
-		current := ""
-		disabled, previews := false, false
-		var chosen mediaorder.Cover
-		var job coverJob
-		save := func() error {
-			if job.relative == "" || disabled {
-				return nil
-			}
-			job.key = imaging.Key(id, job.relative, job.size, job.mtime, "s")
-			job.disk = p.disks[id]
-			state := "pending"
-			if request.Mode == "incremental" {
-				var exists int
-				if err := c.index.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM thumbnails WHERE key=?)", job.key).Scan(&exists); err != nil {
-					return err
-				}
-				if exists == 1 {
-					state = "done"
-				}
-			}
-			if request.Mode == "full" {
-				if err := c.discardCover(ctx, job.key); err != nil {
-					return err
-				}
-			}
-			_, err := c.index.db.ExecContext(ctx, `INSERT INTO cover_jobs(key,platform,relative,work_id,media_id,kind,size,mtime,disk,state,plan,media_relative) VALUES(?,?,?,0,0,?,?,?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET state=excluded.state,plan=excluded.plan`, job.key, id, job.relative, job.kind, job.size, job.mtime, job.disk, state, time.Now().UnixNano(), job.mediaRelative)
-			return err
-		}
-		for rows.Next() {
-			var key, relative, name, author, work, parent string
-			var size, mtime int64
-			if err = rows.Scan(&key, &relative, &name, &size, &mtime, &author, &work, &parent); err != nil {
-				break
-			}
-			if work == key {
-				work = parent
-			}
-			if len(selected) > 0 && !selected[author] {
-				continue
-			}
-			if current != work {
-				if err = save(); err != nil {
-					break
-				}
-				current = work
-				disabled = false
-				previews = false
-				if id == "Gank" {
-					var archive int
-					patterns := []string{}
-					args := []any{id, work + `\`, work + `]`}
-					for _, ext := range library.ArchiveExtensions() {
-						patterns = append(patterns, "lower(name) GLOB ?")
-						args = append(args, "*."+ext)
-					}
-					query := "SELECT EXISTS(SELECT 1 FROM entries WHERE platform=? AND key>? AND key<? AND (" + strings.Join(patterns, " OR ") + "))"
-					if err = listing.DB.QueryRowContext(ctx, query, args...).Scan(&archive); err != nil {
-						break
-					}
-					previews = archive == 1
-				}
-				chosen = mediaorder.Cover{}
-				job = coverJob{}
-			}
-			if strings.EqualFold(relative, work+`\.nocover`) {
-				disabled = true
-			}
-			kind := library.MediaKind(filepath.Ext(name))
-			if kind == "" {
-				continue
-			}
-			candidate := mediaorder.Cover{ID: 1, Kind: kind, Name: name, Relative: relative}
-			if mediaorder.Better(candidate, chosen, previews) {
-				chosen = candidate
-				job = coverJob{platform: id, relative: relative, kind: kind, size: size, mtime: mtime, mediaRelative: relative[len(work)+1:]}
-			}
-		}
-		err = errors.Join(err, rows.Err(), rows.Close())
-		if err != nil {
-			return err
-		}
-		if err = save(); err != nil {
+		if err = c.planCoverPlatform(ctx, db, p, request, id, position); err != nil {
 			return err
 		}
 	}
-	return c.orderCovers(ctx, p)
+	tx, err := c.index.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, `DELETE FROM cover_jobs;
+INSERT INTO cover_jobs SELECT * FROM cover_next;
+DELETE FROM cover_next;
+UPDATE cover_state SET replan=0 WHERE singleton=1;`); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
-func (c *Cache) discardCover(ctx context.Context, key string) error {
-	c.mu.Lock()
-	for c.retained[key] > 0 && ctx.Err() == nil {
-		c.ready.Wait()
+func (c *Cache) planCoverPlatform(ctx context.Context, db *sql.DB, p *coverPreload, request PreloadRequest, id, position string) error {
+	query := `SELECT w.work_id,m.media_id,w.relative_path,m.relative_path,m.filesystem_media_type,m.filesystem_size,m.filesystem_mtime_ns,` + position + `
+FROM works w JOIN media m ON m.work_id=w.work_id AND m.media_id=w.cover_media_id
+WHERE w.platform_id=?`
+	args := []any{id}
+	if authors := request.Authors[id]; len(authors) > 0 {
+		marks := make([]string, len(authors))
+		for i, author := range authors {
+			args = append(args, strings.ToLower(author))
+			marks[i] = "?"
+		}
+		query += " AND substr(w.relative_path_key,1,instr(w.relative_path_key,char(92))-1) IN (" + strings.Join(marks, ",") + ")"
 	}
-	if err := ctx.Err(); err != nil {
-		c.mu.Unlock()
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
 		return err
 	}
-	defer c.mu.Unlock()
+	defer rows.Close()
+	batch := make([]coverJob, 0, 256)
+	for rows.Next() {
+		j := coverJob{platform: id, disk: p.disks[id]}
+		var work string
+		if err = rows.Scan(&j.work, &j.media, &work, &j.mediaRelative, &j.kind, &j.size, &j.mtime, &j.position); err != nil {
+			return err
+		}
+		j.relative = work + `\` + j.mediaRelative
+		j.key = imaging.Key(id, j.relative, j.size, j.mtime)
+		batch = append(batch, j)
+		if len(batch) == cap(batch) {
+			if err = c.saveCoverJobs(ctx, batch, request.Mode == "full"); err != nil {
+				return err
+			}
+			batch = batch[:0]
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	return c.saveCoverJobs(ctx, batch, request.Mode == "full")
+}
 
-	if err := os.RemoveAll(filepath.Join(c.root, key[:2], key[2:4], key+".webp")); err != nil {
+func (c *Cache) saveCoverJobs(ctx context.Context, jobs []coverJob, full bool) error {
+	if len(jobs) == 0 {
+		return nil
+	}
+	tx, err := c.index.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	_, err := c.index.db.ExecContext(ctx, "DELETE FROM thumbnails WHERE key=?", key)
-	return err
+	defer tx.Rollback()
+	stmt, err := tx.PrepareContext(ctx, `INSERT INTO cover_next(key,platform,relative,work_id,media_id,kind,size,mtime,disk,position,state,failure,plan,media_relative)
+VALUES(?,?,?,?,?,?,?,?,?,?,CASE WHEN ? OR NOT EXISTS(SELECT 1 FROM main.thumbnails WHERE key=? AND short=540) THEN 'pending' ELSE 'done' END,'',?,?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	planned := time.Now().UnixMilli()
+	for _, j := range jobs {
+		if _, err = stmt.ExecContext(ctx, j.key, j.platform, j.relative, j.work, j.media, j.kind, j.size, j.mtime, j.disk, j.position, full, j.key, planned, j.mediaRelative); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

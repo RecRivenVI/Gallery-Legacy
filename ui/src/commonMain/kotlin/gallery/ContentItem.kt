@@ -68,10 +68,6 @@ fun authorItem(value: AuthorSummaryWire, collage: List<MediaSummaryWire> = empty
         collage = collage,
     )
 
-fun title(item: ContentItem) = title(item.work)
-
-fun title(work: WorkSummaryWire) = work.title
-
 fun author(item: ContentItem) = author(item.work)
 
 fun author(work: WorkSummaryWire) = work.authorName

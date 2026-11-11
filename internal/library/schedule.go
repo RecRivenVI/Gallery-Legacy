@@ -56,14 +56,24 @@ func (l *Listing) ClearPositions(ctx context.Context, platform string) error {
 func (l *Listing) BuildSchedule(ctx context.Context, platform, author string, physical ...bool) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	query := `INSERT INTO work_schedule SELECT e.platform,row_number() OVER(ORDER BY CASE WHEN p.position>=0 THEN 0 ELSE 1 END,p.position,e.key),e.key FROM entries e LEFT JOIN physical_metadata p ON p.platform=e.platform AND p.work_key=e.key WHERE e.platform=? AND e.kind='folder' AND e.work=e.key`
-	if len(physical) > 0 && !physical[0] {
-		query = `INSERT INTO work_schedule SELECT e.platform,row_number() OVER(ORDER BY (SELECT count(*) FROM entries a WHERE a.platform=e.platform AND a.parent=e.parent AND a.kind='folder'),e.parent,e.key),e.key FROM entries e WHERE e.platform=? AND e.kind='folder' AND e.work=e.key`
-	}
+	scope := `e.platform=? AND e.kind='folder'`
 	args := []any{platform}
 	if author != "" {
-		query += " AND e.parent=?"
+		scope += " AND e.parent=?"
 		args = append(args, strings.ToLower(author))
+	}
+	query := `INSERT INTO work_schedule
+SELECT e.platform,row_number() OVER(ORDER BY CASE WHEN p.position>=0 THEN 0 ELSE 1 END,p.position,e.key),e.key
+FROM entries e LEFT JOIN physical_metadata p ON p.platform=e.platform AND p.work_key=e.key
+WHERE e.work=e.key AND ` + scope
+	if len(physical) > 0 && !physical[0] {
+		// Count each author's folders before selecting the scheduled work roots.
+		query = `WITH folders AS (
+ SELECT e.platform,e.key,e.parent,e.work,count(*) OVER(PARTITION BY e.parent) AS sibling_count
+ FROM entries e WHERE ` + scope + `
+)
+INSERT INTO work_schedule
+SELECT platform,row_number() OVER(ORDER BY sibling_count,parent,key),key FROM folders WHERE work=key`
 	}
 	_, err := l.DB.ExecContext(ctx, query, args...)
 	return err
@@ -71,7 +81,8 @@ func (l *Listing) BuildSchedule(ctx context.Context, platform, author string, ph
 
 func (l *Listing) AuthorWorkCount(ctx context.Context, platform, key string) (int64, error) {
 	var count int64
-	err := l.DB.QueryRowContext(ctx, "SELECT count(*) FROM entries WHERE platform=? AND parent=? AND kind='folder'", platform, key).Scan(&count)
+	// Without the parent index SQLite can scan the full platform for each author.
+	err := l.DB.QueryRowContext(ctx, "SELECT count(*) FROM entries INDEXED BY entries_parent WHERE platform=? AND parent=? AND kind='folder'", platform, key).Scan(&count)
 	return count, err
 }
 

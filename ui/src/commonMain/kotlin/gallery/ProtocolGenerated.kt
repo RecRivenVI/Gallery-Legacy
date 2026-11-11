@@ -119,7 +119,6 @@ data class MediaSummaryWire(
     val thumbnailUrl: String = "",
     val role: String = "",
     val defaultVisible: Boolean = true,
-    val thumbnails: ThumbnailUrlsWire? = null,
     val width: Int = 0,
     val height: Int = 0,
     val thumbHash: String = "",
@@ -208,16 +207,6 @@ data class TagWire(
 fun TagWire(raw: JsonElement?): TagWire = json.decodeFromJsonElement(raw ?: emptyDocument)
 
 @Serializable
-data class ThumbnailUrlsWire(
-    val s: String = "",
-    val m: String = "",
-    val l: String = "",
-)
-
-fun ThumbnailUrlsWire(raw: JsonElement?): ThumbnailUrlsWire =
-    json.decodeFromJsonElement(raw ?: emptyDocument)
-
-@Serializable
 data class WorkMetricsWire(
     val likes: Long? = null,
     val replies: Long? = null,
@@ -275,7 +264,6 @@ data class FileEntryWire(
     val size: Long = 0L,
     val url: String = "",
     val thumbnailUrl: String = "",
-    val thumbnails: ThumbnailUrlsWire? = null,
     val width: Int = 0,
     val height: Int = 0,
     val thumbHash: String = "",
@@ -771,6 +759,7 @@ data class ScanIssueWire(
     val work: String = "",
     val severity: String = "",
     val code: String = "",
+    val details: String = "",
 )
 
 fun ScanIssueWire(raw: JsonElement?): ScanIssueWire =
@@ -832,7 +821,6 @@ data class RuntimeConfigurationWire(
     val sources: Map<String, String> = emptyMap(),
     val stateRoot: String = "",
     val tempRoot: String = "",
-    val thumbnailCacheBytes: Long = 21474836480L,
 )
 
 fun RuntimeConfigurationWire(raw: JsonElement?): RuntimeConfigurationWire =
