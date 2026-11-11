@@ -130,6 +130,12 @@ fun humanError(code: String): String =
         "CURSOR_CONTEXT_MISMATCH" -> "网址里的筛选条件无法识别"
         "GENERATION_CHANGED",
         "CONTENT_CHANGED" -> "图库已更新，请重试"
+        "THUMBNAIL_CACHE_UNAVAILABLE" -> "无法读写缩略图库，请检查实例目录。"
+        "THUMBNAIL_DISK_FULL" -> "缩略图存储空间不足，任务已暂停。腾出空间后可以继续。"
+        "THUMBNAIL_ENGINE_UNAVAILABLE" -> "无法启动缩略图组件，任务已暂停。"
+        "THUMBNAIL_PLAN_FAILED" -> "无法准备封面任务，请在日志里查看原因后重试。"
+        "METADATA_REFRESH_FAILED" -> "作品信息升级中断，请查看日志后继续。"
+        "METADATA_REFRESH_SOURCE_FAILED" -> "有作品信息读取失败，请检查源目录后继续。"
         "THUMBNAIL_FAILED",
         "MEDIA_UNREADABLE" -> "文件无法读取，请检查文件后重试"
         else -> "服务没有响应，请重试"

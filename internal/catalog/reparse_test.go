@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,10 @@ func TestMetadataUpgradePreservesUnopenedMediaAndResumes(t *testing.T) {
 		}
 		return library.ReadSource(root, path, limit)
 	}
-	n, err := w.reparseMetadata(ctx, sources, read)
+	if err := w.PlanMetadataRefresh(ctx, sources, "", false); err != nil {
+		t.Fatal(err)
+	}
+	n, err := w.runMetadataRefresh(ctx, sources, read, func(MetadataProgress) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,11 +77,93 @@ func TestMetadataUpgradePreservesUnopenedMediaAndResumes(t *testing.T) {
 		t.Fatal("lost physical facts or enrichment", gotID, count, title, rating)
 	}
 	reads = 0
-	n, err = w.reparseMetadata(ctx, sources, read)
+	n, err = w.runMetadataRefresh(ctx, sources, read, func(MetadataProgress) {})
 	if err != nil || n != 0 || reads != 0 {
 		t.Fatal("upgrade reread completed works", n, reads, err)
 	}
 	if err = w.Verify(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWeiboTitleRepairOnlyReadsDiagnosedWork(t *testing.T) {
+	w := testWriter(t)
+	ctx := context.Background()
+	var root string
+	if err := w.DB.QueryRow("SELECT physical_root FROM platforms WHERE platform_id='微博'").Scan(&root); err != nil {
+		t.Fatal(err)
+	}
+	sources := map[string]string{"微博": root}
+	for _, work := range []string{"affected", "other"} {
+		relative := "700\\" + work
+		folder := filepath.Join(root, "700", work)
+		if err := os.MkdirAll(folder, 0700); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(folder, "metadata.json")
+		raw := []byte(`{"idstr":"12","user":{"idstr":"700","screen_name":"合成作者"},"date":"2026-01-01","title":{"text":"badge"}}`)
+		if err := os.WriteFile(path, raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+		st, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, _ := metadata.Parse("微博", "700", work, raw)
+		if r.InvalidFields != 0 {
+			t.Fatalf("object title reported invalid: %+v", r.Issues)
+		}
+		state := "valid"
+		if work == "affected" {
+			state = "partial"
+			r.Issues = []metadata.FieldIssue{{Path: "$.title", Reason: "unsupported_value"}}
+			r.InvalidFields = 1
+		}
+		p := Fill("微博", "700", work, relative, 1, state, st.ModTime().UnixNano(), st.Size(), r, "", "go1-a5:file-list-v1", nil)
+		if _, err = w.Batch(ctx, []PreparedWork{p}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.PlanMetadataRefresh(ctx, sources, "", false); err != nil {
+		t.Fatal(err)
+	}
+	interrupted, cancel := context.WithCancel(ctx)
+	reads := 0
+	read := func(root, path string, limit int64) ([]byte, os.FileInfo, error) {
+		reads++
+		if filepath.Base(filepath.Dir(path)) != "affected" {
+			t.Fatal("unaffected work was opened")
+		}
+		if reads == 1 {
+			cancel()
+		}
+		return library.ReadSource(root, path, limit)
+	}
+	notify := func(MetadataProgress) {}
+	if n, err := w.runMetadataRefresh(interrupted, sources, read, notify); n != 0 || !errors.Is(err, context.Canceled) {
+		t.Fatalf("unexpected interruption: %d %v", n, err)
+	}
+	if n, err := w.runMetadataRefresh(ctx, sources, read, notify); n != 1 || err != nil {
+		t.Fatalf("repair did not resume: %d %v", n, err)
+	}
+	if err := w.PlanMetadataRefresh(ctx, sources, "", false); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := w.runMetadataRefresh(ctx, sources, read, notify); n != 0 || reads != 2 || err != nil {
+		t.Fatalf("repair repeated: %d reads=%d %v", n, reads, err)
+	}
+	p, err := w.MetadataProgress(ctx)
+	if err != nil || p.TitleTotal != 1 || p.TitleRead != 1 || p.Completed != 1 {
+		t.Fatalf("unexpected report: %+v %v", p, err)
+	}
+	var invalid, reuse int
+	if err := w.DB.QueryRow("SELECT count(*) FILTER(WHERE w.metadata_state='partial'),count(s.platform_id) FROM works w LEFT JOIN live_scan_works s ON s.platform_id=w.platform_id AND s.relative_path_key=w.relative_path_key").Scan(&invalid, &reuse); err != nil {
+		t.Fatal(err)
+	}
+	if invalid != 0 || reuse != 2 {
+		t.Fatalf("partial=%d reusable=%d", invalid, reuse)
+	}
+	if err := VerifyContract(ctx, w.DB, ContractOptions{Live: true}); err != nil {
 		t.Fatal(err)
 	}
 }

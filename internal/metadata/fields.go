@@ -45,6 +45,11 @@ func applyFields(r *Result, m Object, platform, author, work string) {
 	if platform == "Pawchive" && pawchiveService(m, author) == "fanbox" {
 		postTime = func(v any) any { return timestamp(v, japanTime) }
 	}
+	if platform == "微博" {
+		if _, object := Get(m, "title").(map[string]any); object {
+			f.title = ""
+		}
+	}
 	for _, item := range []struct {
 		target            Object
 		key, field, paths string

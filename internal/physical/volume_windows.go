@@ -173,21 +173,26 @@ func (v *ntfsVolume) fileReferences(ctx context.Context, names map[string]bool, 
 }
 
 func directoryReference(path string) (uint64, error) {
+	ref, _, err := directoryAttributes(path)
+	return ref, err
+}
+
+func directoryAttributes(path string) (uint64, int64, error) {
 	p, err := windows.UTF16PtrFromString(path)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	h, err := windows.CreateFile(p, 0, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE, nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS|windows.FILE_FLAG_OPEN_REPARSE_POINT, 0)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer windows.CloseHandle(h)
 	var info windows.ByHandleFileInformation
 	if err = windows.GetFileInformationByHandle(h, &info); err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	if info.FileAttributes&windows.FILE_ATTRIBUTE_DIRECTORY == 0 || info.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-		return 0, errors.New("NTFS_SCOPE_INVALID")
+		return 0, 0, errors.New("NTFS_SCOPE_INVALID")
 	}
-	return uint64(info.FileIndexHigh)<<32 | uint64(info.FileIndexLow), nil
+	return uint64(info.FileIndexHigh)<<32 | uint64(info.FileIndexLow), info.LastWriteTime.Nanoseconds(), nil
 }

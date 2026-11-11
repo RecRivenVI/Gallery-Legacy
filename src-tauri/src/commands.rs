@@ -48,6 +48,7 @@ const OPERATIONS: &[&str] = &[
     "access.configure",
     "access.autoban",
     "thumbnails.status",
+    "metadata.refresh",
     "thumbnails.pause",
     "thumbnails.start",
     "thumbnails.cancel",

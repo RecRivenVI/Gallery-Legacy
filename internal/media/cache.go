@@ -49,6 +49,7 @@ type Cache struct {
 	render                     func(context.Context, File, string, string) (imaging.Preview, error)
 	preload                    *coverPreload
 	backgroundPaused, scanning bool
+	refreshing                 bool
 	backgroundActive           int
 }
 
@@ -137,7 +138,7 @@ func (c *Cache) request(ctx context.Context, f File, key, tier string, priority 
 		entry, err := c.cached(ctx, f, key, targetShort(tier))
 		if err != nil {
 			c.mu.Unlock()
-			return zero, "", err
+			return zero, "", thumbnailDBError{err}
 		}
 		if entry.Data != nil {
 			c.mu.Unlock()
@@ -224,7 +225,7 @@ func (c *Cache) release(j *job) {
 func (c *Cache) next() *job {
 	best := -1
 	for i, j := range c.queue {
-		if j.priority == Background && (c.backgroundPaused || c.scanning) {
+		if j.priority == Background && (c.backgroundPaused || c.scanning || c.refreshing) {
 			continue
 		}
 		if c.disks[j.disk] < 2 && (best < 0 || j.priority < c.queue[best].priority) {
@@ -268,7 +269,9 @@ func (c *Cache) work() {
 		}
 		removeTemporary(j.target)
 		if err == nil {
-			err = c.persistThumbnail(j, result, entry.Data)
+			if err = c.persistThumbnail(j, result, entry.Data); err != nil {
+				err = thumbnailDBError{err}
+			}
 		}
 		if err == nil && !j.file.Cover {
 			if evictErr := c.index.evict(c.ctx); evictErr != nil && c.ctx.Err() == nil {

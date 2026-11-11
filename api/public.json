@@ -970,6 +970,11 @@
           "type": "bool"
         },
         {
+          "name": "waitingForMetadata",
+          "go": "WaitingForMetadata",
+          "type": "bool"
+        },
+        {
           "name": "planning",
           "go": "Planning",
           "type": "bool"
@@ -979,6 +984,19 @@
           "go": "Failure",
           "type": "string"
         }
+      ]
+    },
+    {
+      "name": "MetadataRefresh",
+      "fields": [
+        {"name": "state", "go": "State", "type": "string"},
+        {"name": "total", "go": "Total", "type": "long"},
+        {"name": "completed", "go": "Completed", "type": "long"},
+        {"name": "skipped", "go": "Skipped", "type": "long"},
+        {"name": "failed", "go": "Failed", "type": "long"},
+        {"name": "titleTotal", "go": "TitleTotal", "type": "long"},
+        {"name": "titleRead", "go": "TitleRead", "type": "long"},
+        {"name": "failure", "go": "Failure", "type": "string"}
       ]
     },
     {
@@ -1033,6 +1051,11 @@
           "name": "thumbnails",
           "go": "Thumbnails",
           "type": "ThumbnailProgress"
+        },
+        {
+          "name": "metadataRefresh",
+          "go": "MetadataRefresh",
+          "type": "MetadataRefresh"
         }
       ]
     },

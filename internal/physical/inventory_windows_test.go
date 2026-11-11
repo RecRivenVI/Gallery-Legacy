@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -23,6 +24,83 @@ func TestRawRecordRestoresUpdateSequence(t *testing.T) {
 	}
 	if err := repairRecord(record); err == nil {
 		t.Fatal("logical or torn record was accepted as raw")
+	}
+}
+
+func TestNTFSReplayNewWorkDirectories(t *testing.T) {
+	base := os.Getenv("GALLERY_NTFS_SYNTHETIC_ROOT")
+	if base == "" {
+		t.Skip("requires an isolated SSD NTFS directory")
+	}
+	ctx := context.Background()
+	dir, err := os.MkdirTemp(base, "ntfs-create-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(dir, "source")
+	for _, name := range []string{"state", "source/author"} {
+		if err := os.MkdirAll(filepath.Join(dir, name), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	scope := []TableScope{{Platform: "pixiv", Root: root}}
+	if err := RefreshTable(ctx, dir, scope, false); err != nil {
+		t.Fatal(err)
+	}
+	read := func() map[string]TableRow {
+		t.Helper()
+		db, err := tableStore(ctx, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+		resolved, err := resolveScopes(scope)
+		if err != nil {
+			t.Fatal(err)
+		}
+		snapshot, err := loadSnapshot(ctx, db, resolved[0], false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return snapshot.rows
+	}
+	for _, step := range []struct {
+		name  string
+		files []string
+	}{
+		{"author/work", nil},
+		{"new-author/work/deep", nil},
+		{"new-author/another/deep", []string{"metadata.json", "page.png"}},
+	} {
+		location := filepath.Join(root, step.name)
+		if err := os.MkdirAll(location, 0700); err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range step.files {
+			if err := os.WriteFile(filepath.Join(location, name), []byte("synthetic"), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var notes []tableRefresh
+		if err := refreshTable(ctx, dir, scope, true, func(note tableRefresh) { notes = append(notes, note) }); err != nil {
+			t.Fatal(err)
+		}
+		if len(notes) != 1 || notes[0].Method != "replay" {
+			t.Fatalf("creation %s rebuilt the baseline: %+v", step.name, notes)
+		}
+		incremental := read()
+		if err := RefreshTable(ctx, dir, scope, false); err != nil {
+			t.Fatal(err)
+		}
+		full := read()
+		if !reflect.DeepEqual(incremental, full) {
+			for key, row := range full {
+				if incremental[key] != row {
+					t.Errorf("%s: replay %+v, full %+v", key, incremental[key], row)
+				}
+			}
+			t.Fatalf("creation %s differs from full listing: %d and %d rows", step.name, len(incremental), len(full))
+		}
 	}
 }
 

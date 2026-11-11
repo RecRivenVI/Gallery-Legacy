@@ -27,9 +27,9 @@ type coverPreload struct {
 }
 
 type coverJob struct {
-	key, platform, relative, kind, disk string
-	mediaRelative                       string
-	work, media, size, mtime, position  int64
+	key, platform, relative, kind, disk      string
+	mediaRelative                            string
+	work, media, size, mtime, position, plan int64
 }
 
 func (c *Cache) InitializePreload(config instance.Config) error {
@@ -101,14 +101,12 @@ func (c *Cache) InitializePreload(config instance.Config) error {
 			if p.ctx == taskCtx {
 				p.planning = false
 				p.failure = ""
-				if err != nil && !errors.Is(err, context.Canceled) {
-					p.failure = err.Error()
-				}
 			}
 			c.mu.Unlock()
 			c.finishBackground()
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
+					c.pauseCoverFailure(p, taskCtx, "THUMBNAIL_PLAN_FAILED", true)
 					slog.Error("封面预生成准备失败", "error", err)
 				}
 				continue
@@ -129,7 +127,7 @@ func (c *Cache) InitializePreload(config instance.Config) error {
 func (c *Cache) beginBackground(ctx context.Context) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for ctx.Err() == nil && c.ctx.Err() == nil && (c.backgroundPaused || c.scanning) {
+	for ctx.Err() == nil && c.ctx.Err() == nil && (c.backgroundPaused || c.scanning || c.refreshing) {
 		c.ready.Wait()
 	}
 	if c.ctx.Err() != nil || ctx.Err() != nil {
@@ -137,6 +135,28 @@ func (c *Cache) beginBackground(ctx context.Context) bool {
 	}
 	c.backgroundActive++
 	return true
+}
+
+func (c *Cache) PauseForMetadata(ctx context.Context) func() {
+	stop := context.AfterFunc(ctx, func() {
+		c.mu.Lock()
+		c.ready.Broadcast()
+		c.mu.Unlock()
+	})
+	c.mu.Lock()
+	c.refreshing = true
+	c.ready.Broadcast()
+	for c.backgroundActive > 0 && ctx.Err() == nil {
+		c.ready.Wait()
+	}
+	c.mu.Unlock()
+	stop()
+	return func() {
+		c.mu.Lock()
+		c.refreshing = false
+		c.ready.Broadcast()
+		c.mu.Unlock()
+	}
 }
 func (c *Cache) finishBackground() {
 	c.mu.Lock()
@@ -180,12 +200,20 @@ func (c *Cache) PausePreload(paused bool) error {
 		return err
 	}
 	c.backgroundPaused = paused
+	if !paused {
+		if c.preload.failure != "" || c.preload.restartPlan {
+			if c.preload.cancel != nil {
+				c.preload.cancel()
+			}
+			c.preload.ctx, c.preload.cancel = context.WithCancel(c.ctx)
+		}
+		c.preload.failure = ""
+	}
 	if paused && c.preload.planning && c.preload.cancel != nil {
 		c.preload.restartPlan = true
 		c.preload.cancel()
 	}
 	if !paused && c.preload.restartPlan {
-		c.preload.ctx, c.preload.cancel = context.WithCancel(c.ctx)
 		c.preload.restartPlan = false
 		c.preload.planning = true
 		select {
@@ -212,20 +240,18 @@ func (c *Cache) PreloadStatus(ctx context.Context) (map[string]any, error) {
 	}
 	var total, completed, failed int64
 	err := c.index.db.QueryRowContext(ctx, "SELECT count(*),coalesce(sum(state='done'),0),coalesce(sum(state='failed'),0) FROM cover_jobs").Scan(&total, &completed, &failed)
-	if err != nil {
-		return nil, fmt.Errorf("read cover preload progress: %w", err)
-	}
 	c.mu.Lock()
 	paused := c.backgroundPaused
 	scanning := c.scanning
+	refreshing := c.refreshing
 	active := c.backgroundActive
 	request := c.preload.request
 	planning := c.preload.planning
 	failure := c.preload.failure
 	c.mu.Unlock()
-	occupancy, err := c.index.occupancy(ctx)
-	if err != nil {
-		return nil, err
+	occupancy, occupancyErr := c.index.occupancy(ctx)
+	if failure == "" && (err != nil || occupancyErr != nil) {
+		failure = "THUMBNAIL_CACHE_UNAVAILABLE"
 	}
-	return map[string]any{"total": total, "completed": completed, "failed": failed, "paused": paused, "waitingForScan": scanning, "mode": request.Mode, "platformIds": request.Platforms, "planning": planning, "failure": failure, "occupancy": occupancy, "running": planning || active > 0 || !paused && !scanning && completed+failed < total}, nil
+	return map[string]any{"total": total, "completed": completed, "failed": failed, "paused": paused, "waitingForScan": scanning, "waitingForMetadata": refreshing && (planning || !paused && completed+failed < total), "mode": request.Mode, "platformIds": request.Platforms, "planning": planning, "failure": failure, "occupancy": occupancy, "running": planning || active > 0 || !paused && !scanning && !refreshing && completed+failed < total}, nil
 }

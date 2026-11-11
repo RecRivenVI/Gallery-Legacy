@@ -29,16 +29,11 @@ async function confirmScan() {
   await tap(manager.getByRole("button", { name: "开始扫描", exact: true }));
   await wait(
     async () => {
-      const buttons = await manager.getByRole("button").allTextContents();
-      if (
-        buttons.includes("继续") &&
-        (await manager.getByRole("dialog").count())
-      ) {
-        await tap(
-          manager
-            .getByRole("dialog")
-            .getByRole("button", { name: "继续", exact: true }),
-        );
+      const continueScan = manager
+        .getByRole("dialog")
+        .getByRole("button", { name: "继续", exact: true });
+      if (await continueScan.isVisible()) {
+        await tap(continueScan);
       }
       const s = (await status()).scan;
       return !s.running && (s.finishedAtMs || 0) > before;

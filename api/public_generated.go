@@ -247,14 +247,26 @@ type ConfigSnapshot struct {
 }
 
 type ThumbnailProgress struct {
-	Total          int64  `json:"total"`
-	Completed      int64  `json:"completed"`
-	Failed         int64  `json:"failed"`
-	Paused         bool   `json:"paused"`
-	Running        bool   `json:"running"`
-	WaitingForScan bool   `json:"waitingForScan"`
-	Planning       bool   `json:"planning"`
-	Failure        string `json:"failure"`
+	Total              int64  `json:"total"`
+	Completed          int64  `json:"completed"`
+	Failed             int64  `json:"failed"`
+	Paused             bool   `json:"paused"`
+	Running            bool   `json:"running"`
+	WaitingForScan     bool   `json:"waitingForScan"`
+	WaitingForMetadata bool   `json:"waitingForMetadata"`
+	Planning           bool   `json:"planning"`
+	Failure            string `json:"failure"`
+}
+
+type MetadataRefresh struct {
+	State      string `json:"state"`
+	Total      int64  `json:"total"`
+	Completed  int64  `json:"completed"`
+	Skipped    int64  `json:"skipped"`
+	Failed     int64  `json:"failed"`
+	TitleTotal int64  `json:"titleTotal"`
+	TitleRead  int64  `json:"titleRead"`
+	Failure    string `json:"failure"`
 }
 
 type LibraryCounts struct {
@@ -264,12 +276,13 @@ type LibraryCounts struct {
 }
 
 type ManagerStatus struct {
-	State       string            `json:"state"`
-	HostFailure string            `json:"hostFailure"`
-	Counts      LibraryCounts     `json:"counts"`
-	Platforms   []PlatformSummary `json:"platforms"`
-	Scan        ScanStatus        `json:"scan"`
-	Thumbnails  ThumbnailProgress `json:"thumbnails"`
+	State           string            `json:"state"`
+	HostFailure     string            `json:"hostFailure"`
+	Counts          LibraryCounts     `json:"counts"`
+	Platforms       []PlatformSummary `json:"platforms"`
+	Scan            ScanStatus        `json:"scan"`
+	Thumbnails      ThumbnailProgress `json:"thumbnails"`
+	MetadataRefresh MetadataRefresh   `json:"metadataRefresh"`
 }
 
 type ClientAccess struct {

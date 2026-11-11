@@ -35,13 +35,14 @@ type Runtime struct {
 	stopOnce   sync.Once
 	ctx        context.Context
 	scanDone   chan struct{}
+	metadata   *task.MetadataRefresh
 	tasks      sync.WaitGroup
 	applyID    any
 	applyRetry time.Time
 }
 
 func New(c instance.Config, o Options) *Runtime {
-	return &Runtime{config: c, options: o, stop: make(chan struct{}), state: Row{"instanceId": c.InstanceID, "deployment": c.Deployment, "liveUpdates": c.LiveUpdates, "state": "STOPPED", "pid": os.Getpid(), "managerPid": nil, "loadedGenerationId": nil, "startedAtMs": nil}}
+	return &Runtime{config: c, options: o, stop: make(chan struct{}), metadata: task.NewMetadataRefresh(c), state: Row{"instanceId": c.InstanceID, "deployment": c.Deployment, "liveUpdates": c.LiveUpdates, "state": "STOPPED", "pid": os.Getpid(), "managerPid": nil, "loadedGenerationId": nil, "startedAtMs": nil}}
 }
 func (r *Runtime) persist() error {
 	r.mu.Lock()
@@ -110,6 +111,7 @@ func (r *Runtime) handle(ctx context.Context, request Row) (any, error) {
 			return nil, err
 		}
 		s["localControl"] = true
+		s["metadataRefresh"] = r.metadata.Status()
 		return s, err
 	case "manager", "stop", "scan":
 		return nil, fmt.Errorf("MANAGER_REQUIRED")
@@ -200,6 +202,7 @@ func (r *Runtime) Serve(ctx context.Context, ready func()) (err error) {
 	}
 	ready()
 	slog.Info("服务已启动", "event", "ready")
+	r.tasks.Go(func() { r.metadata.Run(ctx, r.server.PauseCoversForMetadata) })
 	ticker := time.NewTicker(1500 * time.Millisecond)
 	defer ticker.Stop()
 	for {

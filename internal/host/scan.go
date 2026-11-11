@@ -58,6 +58,11 @@ func (r *Runtime) startScan(input Row) (any, error) {
 		defer close(done)
 		defer r.server.SetScanning(false)
 		defer cancel()
+		if err := r.metadata.HoldForScan(ctx); err != nil {
+			failed <- err
+			return
+		}
+		defer r.metadata.ReleaseScan()
 		r.server.SetScanning(true)
 		err := task.Run(ctx, c, in, ids, 0, func(value Row) { started <- value })
 		if err != nil {

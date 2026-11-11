@@ -26,6 +26,7 @@ type PreparedWork struct {
 	Qualified                             bool
 	Reused                                bool
 	MetadataOnly                          bool
+	RefreshPending                        bool
 	Bytes                                 int64
 	StageFile                             string
 }

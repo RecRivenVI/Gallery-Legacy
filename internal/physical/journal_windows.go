@@ -31,9 +31,10 @@ func (j journalCursor) follows(old journalCursor) bool {
 }
 
 const (
+	usnCreated   = 0x100
 	usnDeleted   = 0x200
 	usnHardLink  = 0x10000
-	usnTopology  = 0x100 | usnDeleted | 0x1000 | 0x2000 | 0x100000
+	usnTopology  = usnCreated | usnDeleted | 0x1000 | 0x2000 | 0x100000
 	usnDirectory = 0x10
 )
 

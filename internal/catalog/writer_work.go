@@ -227,5 +227,11 @@ func (w *Writer) write(t *transaction, p PreparedWork, rev int64) error {
 		t.tags[tag] = true
 	}
 	t.authors[authorID] = true
+	if p.RefreshPending {
+		if e = t.exec("UPDATE metadata_refresh SET state='done' WHERE work_id=?", workID); e != nil {
+			return e
+		}
+		return rememberMetadataAuthor(t, authorID, p)
+	}
 	return nil
 }

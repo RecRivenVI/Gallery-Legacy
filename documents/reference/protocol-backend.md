@@ -50,6 +50,8 @@ Catalog、live、Search、Adapter、shape 分别使用 [catalog 契约](../../ap
 
 ## 本机控制与生命周期
 
+- 管理状态的 `metadataRefresh` 报告作品信息升级进度，包括总数、完成、跳过、失败及定点修复计数。本机管理器使用 `metadata.refresh` 的 `pause`、`resume`、`cancel` 操作。升级提交与扫描复用同一写入租约。
+
 - 命名管道路径仍为 instanceRoot 规范化小写加 /scope 的 SHA256 前 32 位。锁记录包含 kind、instanceId、identity、token；identity 必须同时核对 PID、创建时刻、exe。活进程无法核实仍拒绝，PID 重用不获授权。
 - Go 任务与宿主共享 PID，任务租约另绑定已有任务 ID（taskId），防止任务结束而宿主仍活着时误报运行中；不替代完整进程身份，也不把令牌暴露给公开状态。
 - 单请求换行 JSON，4096 字节上限、10 秒服务端空闲期限；请求含 instanceId／token／operation。成功含 ok=true、instanceId、identity、data；失败 ok=false、稳定 code。客户端继续验证回复身份，控制超时 15 秒，不放宽。

@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
+	"modernc.org/sqlite"
 )
 
 const (
@@ -41,6 +43,26 @@ func thumbnailURI(file, mode string) string {
 	return u.String()
 }
 
+type thumbnailConnector struct {
+	driver.Connector
+	preview string
+}
+
+func (c thumbnailConnector) Connect(ctx context.Context) (driver.Conn, error) {
+	conn, err := c.Connector.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+	exec := conn.(driver.ExecerContext)
+	if _, err = exec.ExecContext(ctx, "ATTACH DATABASE ? AS preview", []driver.NamedValue{{Ordinal: 1, Value: c.preview}}); err == nil {
+		_, err = exec.ExecContext(ctx, "PRAGMA preview.journal_mode=WAL; PRAGMA preview.synchronous=FULL", nil)
+	}
+	if err != nil {
+		return nil, errors.Join(fmt.Errorf("attach preview cache: %w", err), conn.Close())
+	}
+	return conn, nil
+}
+
 func openThumbnailIndex(root string) (*thumbnailIndex, error) {
 	covers, previews := filepath.Join(root, "covers.sqlite"), filepath.Join(root, "previews.sqlite")
 	for _, path := range []string{covers, previews} {
@@ -48,19 +70,12 @@ func openThumbnailIndex(root string) (*thumbnailIndex, error) {
 			return nil, err
 		}
 	}
-	db, err := sql.Open("sqlite", thumbnailURI(covers, "_pragma=busy_timeout(3000)&_pragma=synchronous(FULL)&_pragma=journal_mode(WAL)"))
+	connector, err := sqlite.NewConnector(thumbnailURI(covers, "_pragma=busy_timeout(3000)&_pragma=synchronous(FULL)&_pragma=journal_mode(WAL)"))
 	if err != nil {
 		return nil, err
 	}
+	db := sql.OpenDB(thumbnailConnector{connector, thumbnailURI(previews, "")})
 	db.SetMaxOpenConns(1)
-	if _, err = db.Exec("ATTACH DATABASE ? AS preview", thumbnailURI(previews, "")); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("open preview database: %w", err)
-	}
-	if _, err = db.Exec("PRAGMA preview.journal_mode=WAL; PRAGMA preview.synchronous=FULL"); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("configure preview database: %w", err)
-	}
 	for _, name := range []string{"main", "preview"} {
 		if err = initThumbnails(db, name); err != nil {
 			db.Close()

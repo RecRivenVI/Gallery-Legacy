@@ -59,6 +59,7 @@ internal fun UpdatePage(state: ManagerState) {
         }
         ManagerError(state, "service") { state.refreshStatus() }
     }
+    if (state.active) MetadataRefreshProgress(state)
     if (c.sources.values.all { it.isEmpty() }) {
         Section("先设置平台目录") { Action("去设置", primary = true) { state.go("settings") } }
         return
@@ -207,9 +208,62 @@ internal fun UpdatePage(state: ManagerState) {
 }
 
 @Composable
+private fun MetadataRefreshProgress(state: ManagerState) {
+    val value = state.metadataRefresh
+    if (
+        value.state.isEmpty() ||
+            value.state == "IDLE" ||
+            value.state == "COMPLETE" && value.total == 0L
+    )
+        return
+    val label =
+        when (value.state) {
+            "PREPARING" -> "正在准备"
+            "RUNNING" -> "正在更新"
+            "WAITING_FOR_SCAN" -> "等待扫描完成"
+            "PAUSED" -> "已暂停"
+            "CANCELLED" -> "已停止"
+            "FAILED" -> "有作品未能更新"
+            else -> "已完成"
+        }
+    Section("作品信息升级") {
+        Label("$label · 已更新 ${grouped(value.completed)} / ${grouped(value.total)}")
+        if (value.skipped > 0) Label("已跳过 ${grouped(value.skipped)} 件")
+        if (value.failed > 0) Label("${grouped(value.failed)} 件读取失败")
+        if (value.failure.isNotEmpty()) ErrorNotice(humanError(value.failure))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val active = value.state in listOf("PREPARING", "RUNNING", "WAITING_FOR_SCAN")
+            if (active) {
+                Action("暂停升级", enabled = !state.busy) {
+                    state.changeMetadataRefresh("pause", "暂停升级")
+                }
+            }
+            if (value.state in listOf("PAUSED", "CANCELLED", "FAILED")) {
+                Action("继续升级", enabled = !state.busy) {
+                    state.changeMetadataRefresh("resume", "继续升级")
+                }
+            }
+            if (active || value.state == "PAUSED") {
+                Action("停止升级", enabled = !state.busy) {
+                    state.changeMetadataRefresh("cancel", "停止升级")
+                }
+            }
+        }
+        ManagerError(state, "metadata") { state.refreshStatus() }
+    }
+}
+
+private fun ManagerState.changeMetadataRefresh(command: String, label: String) {
+    action("metadata", label) {
+        metadataRefresh =
+            readAdmin<MetadataRefreshWire>("metadata.refresh", document("action" to command))
+    }
+}
+
+@Composable
 internal fun ThumbnailProgress(state: ManagerState) {
     val value = state.thumbnails
-    if (value.total == 0L) return
+    if (value.total == 0L && value.failure.isEmpty()) return
     Section("封面预生成") {
         Label(
             "${grouped(value.completed)} / ${grouped(value.total)}",
@@ -217,12 +271,14 @@ internal fun ThumbnailProgress(state: ManagerState) {
         )
         if (value.failed > 0)
             Label("${grouped(value.failed)} 个封面未能生成", color = LocalPalette.current.warn)
+        if (value.failure.isNotEmpty()) ErrorNotice(humanError(value.failure))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Label(
                 if (value.waitingForScan) "扫描中，已暂停"
+                else if (value.waitingForMetadata) "等待作品信息升级"
                 else if (value.paused) "已暂停" else if (value.running) "正在生成" else "已完成",
                 Modifier.weight(1f),
             )

@@ -37,6 +37,10 @@ func (s *Server) ReplaceDataset(next *dataset.Dataset) error {
 
 func (s *Server) SetScanning(scanning bool) { s.media.Cache.SetScanning(scanning) }
 
+func (s *Server) PauseCoversForMetadata(ctx context.Context) func() {
+	return s.media.Cache.PauseForMetadata(ctx)
+}
+
 func (s *Server) QueueScannedCovers(ctx context.Context, platforms []string, author *string) error {
 	s.media.Cache.SetScanning(false)
 	request := media.PreloadRequest{Mode: "incremental", Platforms: platforms}

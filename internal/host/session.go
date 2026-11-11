@@ -135,6 +135,16 @@ func (s *Session) command(command, op string, input Row) (any, error) {
 		}
 		return r.startScan(input)
 	}
+	if op == "metadata.refresh" {
+		s.mu.Lock()
+		r := s.runtime
+		s.mu.Unlock()
+		if r == nil {
+			return nil, fmt.Errorf("RUNTIME_OFFLINE")
+		}
+		action, _ := input["action"].(string)
+		return r.metadata.Control(action)
+	}
 	return Manage(s.ctx, c, s.options, op, input)
 }
 

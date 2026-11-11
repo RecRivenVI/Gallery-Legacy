@@ -320,11 +320,27 @@ data class ThumbnailProgressWire(
     val paused: Boolean = false,
     val running: Boolean = false,
     val waitingForScan: Boolean = false,
+    val waitingForMetadata: Boolean = false,
     val planning: Boolean = false,
     val failure: String = "",
 )
 
 fun ThumbnailProgressWire(raw: JsonElement?): ThumbnailProgressWire =
+    json.decodeFromJsonElement(raw ?: emptyDocument)
+
+@Serializable
+data class MetadataRefreshWire(
+    val state: String = "",
+    val total: Long = 0L,
+    val completed: Long = 0L,
+    val skipped: Long = 0L,
+    val failed: Long = 0L,
+    val titleTotal: Long = 0L,
+    val titleRead: Long = 0L,
+    val failure: String = "",
+)
+
+fun MetadataRefreshWire(raw: JsonElement?): MetadataRefreshWire =
     json.decodeFromJsonElement(raw ?: emptyDocument)
 
 @Serializable
@@ -345,6 +361,7 @@ data class ManagerStatusWire(
     val platforms: List<PlatformSummaryWire> = emptyList(),
     val scan: ScanStatusWire = ScanStatusWire(),
     val thumbnails: ThumbnailProgressWire = ThumbnailProgressWire(),
+    val metadataRefresh: MetadataRefreshWire = MetadataRefreshWire(),
 )
 
 fun ManagerStatusWire(raw: JsonElement?): ManagerStatusWire =

@@ -61,7 +61,7 @@ func (c *Cache) generate(ctx context.Context, engine func() (*imaging.Engine, er
 	}
 	e, err := engine()
 	if err != nil {
-		return zero, fmt.Errorf("load thumbnail engine: %w", err)
+		return zero, fmt.Errorf("%w: %w", errThumbnailEngine, err)
 	}
 	preview, err := e.Render(input, temp, tier, true)
 	if err != nil {

@@ -49,11 +49,25 @@ func Order(ctx context.Context, c library.Config, platforms []string) (path stri
 }
 
 func Inventory(ctx context.Context, c library.Config, platforms []string, author string, incremental bool) error {
-	_, cleanup, err := order(ctx, c, helperRequest{Platforms: platforms, Table: true, Author: author, Incremental: incremental})
+	output, cleanup, err := order(ctx, c, helperRequest{Platforms: platforms, Table: true, Author: author, Incremental: incremental})
 	if cleanup != nil {
-		cleanup()
+		defer cleanup()
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(output)
+	if err != nil {
+		return fmt.Errorf("read file table summary: %w", err)
+	}
+	var reports []tableRefresh
+	if err = json.Unmarshal(data, &reports); err != nil {
+		return fmt.Errorf("decode file table summary: %w", err)
+	}
+	for _, r := range reports {
+		slog.InfoContext(ctx, "文件表范围已处理", "platform", r.Platform, "scope", r.Scope, "method", r.Method, "reason", r.Reason)
+	}
+	return nil
 }
 
 func order(ctx context.Context, c library.Config, value helperRequest) (path string, cleanup func(), err error) {
@@ -156,7 +170,15 @@ func RunHelper(ctx context.Context, request string) (result error) {
 		for id, root := range roots {
 			scopes = append(scopes, TableScope{id, root, req.Author})
 		}
-		return RefreshTable(ctx, c.InstanceRoot, scopes, req.Incremental)
+		var reports []tableRefresh
+		if err := refreshTable(ctx, c.InstanceRoot, scopes, req.Incremental, func(r tableRefresh) { reports = append(reports, r) }); err != nil {
+			return err
+		}
+		output, err := os.OpenFile(request+"l", os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		if err != nil {
+			return err
+		}
+		return errors.Join(json.NewEncoder(output).Encode(reports), output.Close())
 	}
 	output := request + "l"
 	f, err := os.OpenFile(output, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)

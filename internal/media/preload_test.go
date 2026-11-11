@@ -12,7 +12,99 @@ import (
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
+	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 )
+
+func TestCoverQueueRecoversConnectionsAndPausesOnSharedFailure(t *testing.T) {
+	root := t.TempDir()
+	source := filepath.Join(root, "source")
+	if err := os.MkdirAll(filepath.Join(root, "live"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(source, 0700); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", filepath.Join(root, "live", "catalog.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("CREATE TABLE works(cover_media_id INTEGER)"); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	f := filepath.Join(source, "synthetic.png")
+	if err = os.WriteFile(f, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := instance.Config{InstanceRoot: root, CacheRoot: filepath.Join(root, "cache"), TempRoot: filepath.Join(root, "temp"), Sources: map[string]string{"pixiv": source}}
+	c, err := NewCache(config, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	c.index.db.SetMaxIdleConns(0)
+	if err = c.InitializePreload(config); err != nil {
+		t.Fatal(err)
+	}
+	disk, _ := library.Disk(source)
+	for i := 1; i <= 24; i++ {
+		if _, err = c.index.db.Exec("INSERT INTO cover_jobs VALUES (?,'pixiv','synthetic.png',?,?,'image',?,?,?,-1,'pending','',1,'synthetic.png')", fmt.Sprint(i), i, i, info.Size(), info.ModTime().UnixNano(), disk); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err = c.index.db.Exec("DROP TABLE preview.thumbnails"); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.PausePreload(false); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		s, err := c.PreloadStatus(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s["paused"] == true {
+			if s["failure"] != "THUMBNAIL_CACHE_UNAVAILABLE" || s["failed"] != int64(0) || s["occupancy"] == nil {
+				t.Fatalf("invalid pause state: %+v", s)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("shared failure did not pause the queue: %+v", s)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if err = initThumbnails(c.index.db, "preview"); err != nil {
+		t.Fatal(err)
+	}
+	c.mu.Lock()
+	c.render = func(_ context.Context, _ File, target, _ string) (imaging.Preview, error) {
+		return imaging.Preview{Width: 1, Height: 1, Hash: []byte{1}}, os.WriteFile(target, []byte("rendered"), 0600)
+	}
+	c.mu.Unlock()
+	if err = c.PausePreload(false); err != nil {
+		t.Fatal(err)
+	}
+	deadline = time.Now().Add(5 * time.Second)
+	for {
+		s, err := c.PreloadStatus(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s["completed"] == int64(24) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("reopened connection could not finish: %+v", s)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
 
 func TestCoverPreloadYieldsToScanAndResumesWithoutRepeatingCompleted(t *testing.T) {
 	for _, platform := range []string{"pixiv", "Venera"} {

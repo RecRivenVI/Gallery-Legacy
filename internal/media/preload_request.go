@@ -151,20 +151,25 @@ func (c *Cache) planInventoryCovers(ctx context.Context, p *coverPreload, reques
 	}
 	defer db.Close()
 	db.SetMaxOpenConns(1)
+	if err = c.index.updateEstimate(ctx, db); err != nil {
+		return err
+	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 	position := "-1"
 	facts := filepath.Join(p.config.InstanceRoot, "state", "ntfs-inventory.sqlite")
 	if err = library.NoLinks(facts); err != nil {
 		return err
 	}
 	if _, err = os.Stat(facts); err == nil {
-		if _, err = db.ExecContext(ctx, "ATTACH DATABASE ? AS inventory", thumbnailURI(facts, "mode=ro")); err != nil {
+		if _, err = conn.ExecContext(ctx, "ATTACH DATABASE ? AS inventory", thumbnailURI(facts, "mode=ro")); err != nil {
 			return err
 		}
 		position = `coalesce((SELECT f.position FROM inventory.facts f WHERE f.platform=w.platform_id AND f.author IN ('',CASE WHEN instr(w.relative_path_key,char(92))>0 THEN substr(w.relative_path_key,1,instr(w.relative_path_key,char(92))-1) ELSE w.relative_path_key END) AND f.key=w.relative_path_key||char(92)||m.relative_path_key AND f.size=m.filesystem_size AND f.mtime=m.filesystem_mtime_ns AND f.position>=0 LIMIT 1),-1)`
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	if err = c.index.updateEstimate(ctx, db); err != nil {
 		return err
 	}
 	if _, err = c.index.prune(ctx, p.config, true); err != nil {
@@ -177,7 +182,7 @@ func (c *Cache) planInventoryCovers(ctx context.Context, p *coverPreload, reques
 		return err
 	}
 	for _, id := range request.Platforms {
-		if err = c.planCoverPlatform(ctx, db, p, request, id, position); err != nil {
+		if err = c.planCoverPlatform(ctx, conn, p, request, id, position); err != nil {
 			return err
 		}
 	}
@@ -195,7 +200,7 @@ UPDATE cover_state SET replan=0 WHERE singleton=1;`); err != nil {
 	return tx.Commit()
 }
 
-func (c *Cache) planCoverPlatform(ctx context.Context, db *sql.DB, p *coverPreload, request PreloadRequest, id, position string) error {
+func (c *Cache) planCoverPlatform(ctx context.Context, db *sql.Conn, p *coverPreload, request PreloadRequest, id, position string) error {
 	query := `SELECT w.work_id,m.media_id,w.relative_path,m.relative_path,m.filesystem_media_type,m.filesystem_size,m.filesystem_mtime_ns,` + position + `
 FROM works w JOIN media m ON m.work_id=w.work_id AND m.media_id=w.cover_media_id
 WHERE w.platform_id=?`

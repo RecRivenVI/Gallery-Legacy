@@ -49,6 +49,7 @@ class ManagerState(val scope: CoroutineScope) {
         }
 
     var thumbnails by mutableStateOf(ThumbnailProgressWire())
+    var metadataRefresh by mutableStateOf(MetadataRefreshWire())
     var accounts by mutableStateOf<List<AccountWire>>(emptyList())
 
     fun loadAccounts() =
@@ -139,7 +140,13 @@ class ManagerState(val scope: CoroutineScope) {
         scan = incoming.scan
         // Keep changing progress outside the stable page shell.
         thumbnails = incoming.thumbnails
-        status = incoming.copy(scan = ScanStatusWire(), thumbnails = ThumbnailProgressWire())
+        metadataRefresh = incoming.metadataRefresh
+        status =
+            incoming.copy(
+                scan = ScanStatusWire(),
+                thumbnails = ThumbnailProgressWire(),
+                metadataRefresh = MetadataRefreshWire(),
+            )
         errors =
             if (incoming.hostFailure.isNotEmpty())
                 errors + ("service" to "读取服务状态失败：${humanError(incoming.hostFailure)}")

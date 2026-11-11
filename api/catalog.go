@@ -57,6 +57,9 @@ var EnrichmentSQL string
 //go:embed inventory.sql
 var InventorySQL string
 
+//go:embed metadata-refresh.sql
+var MetadataRefreshSQL string
+
 var StaticSearchSQL = `CREATE TABLE index_state(singleton INTEGER PRIMARY KEY CHECK(singleton=1),version INTEGER NOT NULL,catalog_work_count INTEGER NOT NULL,catalog_sha256 TEXT NOT NULL,catalog_size INTEGER NOT NULL,catalog_mtime_ms INTEGER NOT NULL,built_at_ms INTEGER NOT NULL);` + SearchSQL("")
 
 type CatalogCheck struct {
