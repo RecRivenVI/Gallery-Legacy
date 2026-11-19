@@ -38,6 +38,7 @@ fun GalleryApp(state: GalleryState, width: Int, height: Int) {
         )
     val split = state.viewer?.split == true && width >= 1280 && !coarsePointer()
     val modal = state.panel.isNotEmpty() || state.drawer || (!split && state.viewer != null)
+    val pagerVisible = state.pagerVisible
     val mainFocus = remember { FocusRequester() }
     LaunchedEffect(modal) { if (!modal) mainFocus.requestFocus() }
     val gridShare by
@@ -84,7 +85,7 @@ fun GalleryApp(state: GalleryState, width: Int, height: Int) {
                                     (!split && state.viewer != null),
                         )
                     )
-                    .captureBackdrop(gridBackdrop)
+                    .then(if (modal) Modifier.captureBackdrop(gridBackdrop) else Modifier)
             ) {
                 Box(Modifier.fillMaxSize().captureBackdrop(backgroundBackdrop).background(p.bg)) {
                     if (state.background.isNotEmpty()) {
@@ -101,17 +102,17 @@ fun GalleryApp(state: GalleryState, width: Int, height: Int) {
                             Box(Modifier.weight(1f)) {
                                 GalleryResults(
                                     state,
-                                    Modifier.fillMaxSize().captureBackdrop(resultsBackdrop),
+                                    Modifier.fillMaxSize()
+                                        .then(
+                                            if (pagerVisible && !modal)
+                                                Modifier.captureBackdrop(resultsBackdrop)
+                                            else Modifier
+                                        ),
                                     narrow,
                                 )
-                                if (
-                                    !state.loading &&
-                                        state.error.isEmpty() &&
-                                        state.items.isNotEmpty() &&
-                                        state.totalPages > 1
-                                )
+                                if (pagerVisible)
                                     CompositionLocalProvider(
-                                        LocalBackdrop provides resultsBackdrop
+                                        LocalBackdrop provides if (modal) null else resultsBackdrop
                                     ) {
                                         Pager(
                                             state,
@@ -174,11 +175,18 @@ fun GalleryApp(state: GalleryState, width: Int, height: Int) {
             if (viewer != null && !split)
                 ModalLayer(
                     "看大图",
-                    viewer::close,
+                    viewer::dismiss,
                     active = state.panel.isEmpty(),
                     autoFocus = false,
                 ) {
-                    Viewer(viewer, width, Modifier.captureBackdrop(viewerBackdrop))
+                    CompositionLocalProvider(LocalBackdrop provides gridBackdrop) {
+                        Viewer(
+                            viewer,
+                            width,
+                            if (state.panel.isNotEmpty()) Modifier.captureBackdrop(viewerBackdrop)
+                            else Modifier,
+                        )
+                    }
                 }
             if (viewer == null && !state.drawer) SearchCompletion(state)
             if (state.panel.isNotEmpty())

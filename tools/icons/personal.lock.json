@@ -48,6 +48,30 @@
       "file": "ic_fluent_sign_out_20_regular.svg",
       "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Sign%20Out/SVG/ic_fluent_sign_out_20_regular.svg",
       "sha256": "d1f5a71d52abd196a909cfb2e1f3a75e078780fe1429d63cbf45221e3ea001a1"
+    },
+    {
+      "name": "pause",
+      "file": "ic_fluent_pause_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Pause/SVG/ic_fluent_pause_20_regular.svg",
+      "sha256": "cad333d70ced0f6f63d0c17689df6d269b6e0698bfca2fcae994aa30c677dd61"
+    },
+    {
+      "name": "volume",
+      "file": "ic_fluent_speaker_2_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Speaker%202/SVG/ic_fluent_speaker_2_20_regular.svg",
+      "sha256": "42e7c3f32201be44f3252e263fedc2abf8c43da81c8b95ab7878795e3f3d53da"
+    },
+    {
+      "name": "mute",
+      "file": "ic_fluent_speaker_mute_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Speaker%20Mute/SVG/ic_fluent_speaker_mute_20_regular.svg",
+      "sha256": "c2734788021ec460bf579cbc6acdd87ea25f71e6aaecf15184a09a5025df082c"
+    },
+    {
+      "name": "picture-in-picture",
+      "file": "ic_fluent_picture_in_picture_20_regular.svg",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/9eb184e96268d3293462f9d9d19225b4c7b07774/assets/Picture%20In%20Picture/SVG/ic_fluent_picture_in_picture_20_regular.svg",
+      "sha256": "3a96d3c9915906160f462794ff4568ec810faaafc27c5b9a000e59334be5054c"
     }
   ]
 }

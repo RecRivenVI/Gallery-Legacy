@@ -13,7 +13,7 @@ License: resources/licenses/miuix-webfont-Apache-2.0.txt.
 Go 依赖版本与来源见 go.mod/go.sum；Rust 见 src-tauri/Cargo.toml 与 Cargo.lock；Kotlin/Compose 见 Gradle 声明。
 Compose Multiplatform、Kotlin、Skiko：JetBrains，Apache-2.0；Skia：Google，BSD-style，分发时保留上游许可。
 Tauri：MIT 或 Apache-2.0；Rust 依赖按各自许可分发。
-Fluent System Icons 新增个人阅读图标来源与固定摘要：tools/icons/personal.lock.json（源码）；随应用使用相同 MIT 许可。
+Fluent System Icons 的个人阅读和播放器图标来源及固定摘要见 tools/icons/personal.lock.json，随应用以 MIT 许可分发。
 Fluent System Icons：Copyright (c) 2020 Microsoft Corporation，MIT。
 许可原文：resources/licenses/Fluent-System-Icons-MIT.txt。
 Gorilla WebSocket：BSD-2-Clause，https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE。

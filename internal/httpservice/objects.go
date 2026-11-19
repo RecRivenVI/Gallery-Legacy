@@ -112,5 +112,11 @@ func (s *Server) libraryMedia(w http.ResponseWriter, r *http.Request, kind, rawI
 	if err != nil {
 		return err
 	}
+	if kind == "media" && r.Method == http.MethodGet && q.Get("playback") == "compatible" {
+		// The catalog supplied a complete source identity. Encoding needs no dataset access.
+		s.dataGate.RUnlock()
+		defer s.dataGate.RLock()
+		return s.media.ServeCompatibleVideo(w, r, f)
+	}
 	return s.serveMedia(w, r, f, kind == "thumbnails", kind == "subtitles", q.Get("lang"))
 }

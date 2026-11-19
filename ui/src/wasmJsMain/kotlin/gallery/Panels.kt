@@ -19,6 +19,18 @@ fun GalleryPanel(state: GalleryState, width: Int, height: Int) {
     val phone = width < 700
     val density = LocalDensity.current
     val panelWidth = if (state.panel == "advanced") 480 else 360
+    val anchor =
+        when (state.panel) {
+            "advanced" -> state.searchRect
+            "filters",
+            "sort",
+            "ratio" -> state.panelAnchor
+            else -> null
+        }
+    val below = anchor?.let { with(density) { it.bottom.toDp() } + 6.dp } ?: 50.dp
+    val panelHeight =
+        if (!phone && anchor != null) (height.dp - below - 8.dp).coerceAtLeast(120.dp)
+        else (height - 66).coerceAtLeast(120).dp
     key(state.panel, if (state.panel == "account") state.people.profilePage else "") {
         ModalLayer(
             when (state.panel) {
@@ -40,13 +52,13 @@ fun GalleryPanel(state: GalleryState, width: Int, height: Int) {
             val placement =
                 if (phone)
                     Modifier.align(Alignment.BottomCenter).padding(8.dp).width((width - 16).dp)
-                else if (state.panel == "advanced")
+                else if (anchor != null)
                     Modifier.align(Alignment.TopStart)
                         .offset(
                             x =
-                                with(density) { state.searchRect.left.toDp() }
-                                    .coerceAtMost((width - panelWidth - 8).coerceAtLeast(8).dp),
-                            y = 92.dp,
+                                with(density) { anchor.left.toDp() }
+                                    .coerceIn(8.dp, (width - panelWidth - 8).coerceAtLeast(8).dp),
+                            y = below,
                         )
                         .width(panelWidth.dp)
                 else
@@ -75,7 +87,7 @@ fun GalleryPanel(state: GalleryState, width: Int, height: Int) {
                     .clearAndSetSemantics {}
             )
             GlassSurface(
-                placement.heightIn(max = (height - 66).coerceAtLeast(120).dp),
+                placement.heightIn(max = panelHeight),
                 opacity = Metrics.panelGlassOpacity,
             ) {
                 Column(

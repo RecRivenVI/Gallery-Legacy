@@ -31,12 +31,30 @@ internal fun AccessPage(state: ManagerState) {
                 }
             }
             Spacer(Modifier.width(30.dp))
-            Segment(listOf("今天", "7 天", "30 天"), listOf(1, 7, 30).indexOf(state.period)) {
-                state.period = listOf(1, 7, 30)[it]
-                state.action("access", "读取访问记录") { state.refreshPage() }
+            val periods = listOf(1, 7, 30, 0)
+            Segment(listOf("今天", "7 天", "30 天", "全部"), periods.indexOf(state.period)) {
+                state.action("access", "读取访问记录") {
+                    state.period = periods[it]
+                    state.accessPage = 1
+                    state.refreshPage()
+                }
             }
         }
         ManagerError(state, "access")
+        if (state.access != null)
+            Action("清空访问记录…", enabled = !state.busy) {
+                state.confirmation =
+                    ManagerConfirmation(
+                        "清空访问次数和事件记录，现有封禁和封禁历史将保留。",
+                        "清空",
+                        {
+                            admin("access.clear", document("confirm" to true))
+                            state.accessPage = 1
+                            state.refreshPage()
+                        },
+                    )
+            }
+        AccessPagination(state)
         if (state.access == null) Skeleton(Modifier.fillMaxWidth().height(120.dp))
         else if (state.access?.clients.orEmpty().isEmpty()) Label("这段时间没有访问记录", color = p.muted)
         else {
@@ -89,6 +107,31 @@ internal fun AccessPage(state: ManagerState) {
                             }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccessPagination(state: ManagerState) {
+    val snapshot = state.access ?: return
+    if (snapshot.clientPages < 2) return
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Action("上一页", enabled = !state.busy && snapshot.clientPage > 1) {
+            state.action("access", "读取访问记录") {
+                state.accessPage = snapshot.clientPage - 1
+                state.refreshPage()
+            }
+        }
+        Label("${snapshot.clientPage} / ${snapshot.clientPages}")
+        Action("下一页", enabled = !state.busy && snapshot.clientPage < snapshot.clientPages) {
+            state.action("access", "读取访问记录") {
+                state.accessPage = snapshot.clientPage + 1
+                state.refreshPage()
             }
         }
     }

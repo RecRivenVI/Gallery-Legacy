@@ -28,17 +28,19 @@ internal fun ViewerFooter(state: ViewerState, phone: Boolean, modifier: Modifier
     val density = androidx.compose.ui.platform.LocalDensity.current
     val works = state.neighbors.ifEmpty { listOf(state.work) }
     val strip =
-        buildList<Pair<WorkSummaryWire, Int>> {
+        remember(works, state.reading.options.rtl, state.reading.options.mode) {
+            buildList<Pair<WorkSummaryWire, Int>> {
                 works.forEachIndexed { i, w ->
                     if (i > 0) add(w to -1)
-                    visibleMedia(w).indices.forEach { add(w to it) }
+                    val indices = visibleMedia(w).indices
+                    val pages =
+                        if (state.reading.options.rtl && state.reading.options.mode != "continuous")
+                            indices.reversed()
+                        else indices
+                    pages.forEach { add(w to it) }
                 }
             }
-            .let {
-                if (state.reading.options.rtl && state.reading.options.mode != "continuous")
-                    it.reversed()
-                else it
-            }
+        }
     val index =
         strip
             .indexOfFirst {
@@ -67,7 +69,7 @@ internal fun ViewerFooter(state: ViewerState, phone: Boolean, modifier: Modifier
                 Modifier.widthIn(min = 64.dp),
                 color = p.faint,
             )
-        IconAction("left", "上一个作品") { state.neighbor(state.reading.physicalDelta(-1)) }
+        IconAction("left", "上一个作品") { state.neighbor(-1) }
         LazyRow(
             Modifier.weight(1f)
                 .onSizeChanged { stripWidth = with(density) { it.width.toDp().value } }
@@ -101,7 +103,6 @@ internal fun ViewerFooter(state: ViewerState, phone: Boolean, modifier: Modifier
                             )
                             .keyboardFocus(GalleryShape(4.dp))
                             .clickable {
-                                state.direction = if (strip.indexOf(pair) > index) 1 else -1
                                 if (work.stableId != state.work.stableId)
                                     state.changeWork(work, page)
                                 else {
@@ -118,11 +119,12 @@ internal fun ViewerFooter(state: ViewerState, phone: Boolean, modifier: Modifier
                         Thumbnail(
                             visibleMedia(work)[page],
                             Modifier.fillMaxSize(),
+                            showDuration = false,
                         )
                     }
             }
         }
-        IconAction("right", "下一个作品") { state.neighbor(state.reading.physicalDelta(1)) }
+        IconAction("right", "下一个作品") { state.neighbor(1) }
         if (!phone)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Action("适应") { state.setScale(1f) }

@@ -23,17 +23,46 @@ private external fun postRaw(url: String, input: String, id: Int): Promise<JsStr
 )
 external fun fetchBase64(url: String): Promise<JsString>
 
-@JsFun(
-    "(url,id)=>{globalThis.galleryRequests??=new Map();const c=new AbortController();galleryRequests.set(id,c);return fetch(url,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error('MEDIA_UNREADABLE');const a=new Uint8Array(await r.arrayBuffer());let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return JSON.stringify({encoded:btoa(s),width:Number(r.headers.get('X-Gallery-Width'))||0,height:Number(r.headers.get('X-Gallery-Height'))||0,animated:r.headers.get('X-Gallery-Animated')==='true',durationMs:Number(r.headers.get('X-Gallery-Duration'))||0})}).finally(()=>galleryRequests.delete(id))}"
-)
-private external fun fetchImageBase64(url: String, id: Int): Promise<JsString>
+internal external interface BrowserImagePayload : JsAny {
+    val bytes: JsAny
+    val width: Int
+    val height: Int
+    val animated: Boolean
+    val durationMs: Double
+}
 
-suspend fun imagePayload(url: String): ImagePayloadWire {
+@JsFun(
+    """(url,id)=>{
+        globalThis.galleryRequests??=new Map();
+        const c=new AbortController();
+        galleryRequests.set(id,c);
+        return fetch(url,{signal:c.signal}).then(async r=>{
+            if(!r.ok)throw Error('MEDIA_UNREADABLE');
+            return {
+                bytes:new Uint8Array(await r.arrayBuffer()),
+                width:Number(r.headers.get('X-Gallery-Width'))||0,
+                height:Number(r.headers.get('X-Gallery-Height'))||0,
+                animated:r.headers.get('X-Gallery-Animated')==='true',
+                durationMs:Number(r.headers.get('X-Gallery-Duration'))||0
+            };
+        }).finally(()=>galleryRequests.delete(id));
+    }"""
+)
+private external fun fetchImage(url: String, id: Int): Promise<BrowserImagePayload>
+
+@JsFun("bytes=>bytes.length") private external fun byteCount(bytes: JsAny): Int
+
+@JsFun("(bytes,index)=>bytes[index]") private external fun byteAt(bytes: JsAny, index: Int): Byte
+
+internal fun BrowserImagePayload.encodedBytes(): ByteArray {
+    val source = bytes
+    return ByteArray(byteCount(source)) { byteAt(source, it) }
+}
+
+internal suspend fun imagePayload(url: String): BrowserImagePayload {
     val id = ++requestSerial
     return try {
-        json.decodeFromString<ImagePayloadWire>(
-            fetchImageBase64(url, id).await<JsString>().toString()
-        )
+        fetchImage(url, id).await()
     } finally {
         abortRequest(id)
     }
@@ -65,6 +94,11 @@ external fun writeHash(hash: String, replace: Boolean)
     "(callback)=>{const f=()=>callback(location.hash);addEventListener('popstate',f);addEventListener('hashchange',f);return ()=>{removeEventListener('popstate',f);removeEventListener('hashchange',f)}}"
 )
 external fun listenHistory(callback: (String) -> Unit): () -> Unit
+
+@JsFun(
+    "callback=>{const block=e=>{if(e.button===3){e.preventDefault();e.stopImmediatePropagation()}},up=e=>{if(e.button===3){block(e);callback()}},types=['pointerdown','mousedown','mouseup','auxclick'];types.forEach(t=>addEventListener(t,block,true));addEventListener('pointerup',up,true);return()=>{types.forEach(t=>removeEventListener(t,block,true));removeEventListener('pointerup',up,true)}}"
+)
+external fun listenBackButton(callback: () -> Unit): () -> Unit
 
 @JsFun(
     "callback=>{const f=e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;if(e.composedPath().some(n=>n?.tagName==='INPUT'||n?.tagName==='TEXTAREA'||n?.isContentEditable))return;e.preventDefault();callback()};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)}"

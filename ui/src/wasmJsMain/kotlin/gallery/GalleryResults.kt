@@ -16,6 +16,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.*
 
 @Composable
@@ -43,15 +44,15 @@ fun GalleryResults(state: GalleryState, modifier: Modifier, narrow: Boolean) {
                 state.route.kind == "files" -> "这个文件夹里没有图片或视频"
                 else -> "这个平台还没有作品"
             }
-        if (
+        val showEmpty =
             !state.loading &&
                 (state.items.isEmpty() ||
                     state.error.isNotEmpty() ||
                     !state.route.valid ||
                     !state.route.validFilter)
-        ) {
+        if (showEmpty) {
             Column(
-                Modifier.align(Alignment.Center).padding(24.dp),
+                Modifier.align(Alignment.Center).zIndex(1f).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -88,145 +89,93 @@ fun GalleryResults(state: GalleryState, modifier: Modifier, narrow: Boolean) {
                         )
                     }
             }
-        } else {
+        }
+        run {
             val scroll = rememberLazyGridState()
-            val listScroll = rememberLazyListState()
-            LaunchedEffect(state.viewer?.work?.stableId, state.items) {
-                val viewer = state.viewer
-                if (viewer != null && !viewer.split) {
-                    val index =
-                        state.items.indexOfFirst {
-                            it.stableId == viewer.work.stableId
-                        }
-                    if (index >= 0) {
-                        val visible =
-                            if (state.size == 0)
-                                listScroll.layoutInfo.visibleItemsInfo.any {
-                                    it.key == itemKey(state.items[index])
-                                }
-                            else
-                                scroll.layoutInfo.visibleItemsInfo.any {
-                                    it.key == itemKey(state.items[index])
-                                }
-                        if (!visible) {
-                            if (state.size == 0)
-                                listScroll.scrollToItem(
-                                    index + if (state.route.kind == "author") 1 else 0
-                                )
-                            else scroll.scrollToItem(galleryGridIndex(state, index))
-                        }
+            val list = state.size == 0
+            val displayedRoute = state.loadedRoute ?: state.route
+            val arrival =
+                rememberPageArrival(
+                    displayedRoute,
+                    true,
+                    if (state.loading) 0 else state.pageDirection,
+                    state.reduceMotion,
+                )
+            LaunchedEffect(displayedRoute) {
+                if (scroll.firstVisibleItemIndex != 0 || scroll.firstVisibleItemScrollOffset != 0)
+                    scroll.scrollToItem(0)
+            }
+            LaunchedEffect(state.viewer?.work?.stableId, state.viewer?.page, state.items) {
+                val viewer = state.viewer ?: return@LaunchedEffect
+                if (viewer.split) return@LaunchedEffect
+                val index =
+                    state.items.indexOfFirst {
+                        if (displayedRoute.kind == "pages") it.cover?.url == viewer.current?.url
+                        else it.stableId == viewer.work.stableId
                     }
+                if (
+                    index >= 0 &&
+                        scroll.layoutInfo.visibleItemsInfo.none {
+                            it.key == itemKey(state.items[index])
+                        }
+                ) {
+                    scroll.scrollToItem(galleryGridIndex(state, index))
                 }
             }
-            val width =
-                if (narrow) Metrics.touchWidths[state.size] else Metrics.cardWidths[state.size]
-            if (state.size == 0)
-                LazyColumn(
-                    Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    state = listScroll,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp),
-                ) {
-                    if (!state.loading && state.route.kind == "author")
-                        item(key = "author-heading") { AuthorHeader(state) }
-                    if (state.loading) items(12) { Skeleton(Modifier.fillMaxWidth().height(96.dp)) }
-                    else
-                        itemsIndexed(state.items, key = { _, item -> itemKey(item) }) { index, item
-                            ->
-                            Column {
-                                if (
-                                    state.route.kind == "history" &&
-                                        (index == 0 ||
-                                            historyGroup(item.work.personal?.readAt ?: 0) !=
-                                                historyGroup(
-                                                    state.items[index - 1].work.personal?.readAt
-                                                        ?: 0
-                                                ))
-                                )
-                                    Label(
-                                        historyGroup(item.work.personal?.readAt ?: 0),
-                                        Modifier.padding(vertical = 8.dp),
-                                        color = p.faint,
-                                        size = 11,
-                                    )
-                                ContentCard(
-                                    state,
-                                    item,
-                                    true,
-                                    Modifier.animateItem(
-                                            fadeInSpec = null,
-                                            fadeOutSpec =
-                                                if (state.reduceMotion) snap() else tween(220),
-                                        )
-                                        .pageArrival(
-                                            state.route,
-                                            index,
-                                            state.pageDirection,
-                                            state.reduceMotion,
-                                        ),
-                                )
-                            }
-                        }
+            val columns =
+                when {
+                    list -> GridCells.Fixed(1)
+                    !narrow -> GridCells.Adaptive(Metrics.cardWidths[state.size].dp)
+                    maxWidth < 600.dp -> GridCells.Fixed(if (state.size <= 2) 3 else 2)
+                    else -> GridCells.Fixed(if (state.size <= 2) 4 else 3)
                 }
-            else
-                LazyVerticalGrid(
-                    if (narrow)
-                        GridCells.Fixed(
-                            if (maxWidth < 600.dp) {
-                                if (state.size <= 2) 3 else 2
-                            } else {
-                                if (state.size <= 2) 4 else 3
-                            }
-                        )
-                    else GridCells.Adaptive((if (width == 0) 220 else width).dp),
-                    Modifier.fillMaxSize(),
-                    state = scroll,
-                    contentPadding =
-                        PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 16.dp,
-                            bottom = if (state.totalPages > 1) 80.dp else 16.dp,
-                        ),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    if (!state.loading && state.route.kind == "author")
-                        item(key = "author-heading", span = { GridItemSpan(maxLineSpan) }) {
-                            AuthorHeader(state)
-                        }
-                    if (state.loading)
-                        items(24) {
-                            Skeleton(
-                                Modifier.fillMaxWidth()
-                                    .aspectRatio(Metrics.ratios[state.ratio] ?: 1f)
-                            )
-                        }
-                    else resultCards(state)
-                }
-            LaunchedEffect(state.route, state.items) {
-                if (state.items.isEmpty()) return@LaunchedEffect
-                snapshotFlow {
-                    if (state.size == 0)
-                        listScroll.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                    else scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                }
-                    .collect { index ->
-                        if (index >= state.items.size - 6) {
-                            state.prefetchNext()
-                            awaitCancellation()
-                        }
-                    }
-            }
-            LaunchedEffect(
-                state.route.page,
-                state.route.path,
-                state.route.query,
-                state.route.tag,
-                state.route.sort,
+            LazyVerticalGrid(
+                columns,
+                Modifier.fillMaxSize(),
+                state = scroll,
+                contentPadding =
+                    PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = if (list || state.totalPages > 1) 80.dp else 16.dp,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(if (list) 8.dp else 16.dp),
             ) {
-                scroll.scrollToItem(0)
-                listScroll.scrollToItem(0)
+                if (!showEmpty && displayedRoute.kind == "author")
+                    item(key = "author-heading", span = { GridItemSpan(maxLineSpan) }) {
+                        AuthorHeader(state)
+                    }
+                if (!showEmpty && state.items.isNotEmpty()) {
+                    resultCards(state, list, displayedRoute.kind, arrival)
+                } else if (state.loading) {
+                    items(if (list) 12 else 24) {
+                        Skeleton(
+                            Modifier.fillMaxWidth()
+                                .then(
+                                    if (list) Modifier.height(96.dp)
+                                    else Modifier.aspectRatio(Metrics.ratios[state.ratio] ?: 1f)
+                                )
+                        )
+                    }
+                }
+            }
+            LaunchedEffect(displayedRoute, state.items, state.loading) {
+                if (state.items.isEmpty() || state.loading) return@LaunchedEffect
+                var prefetched = false
+                snapshotFlow {
+                    !scroll.isScrollInProgress &&
+                        (scroll.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1) >=
+                            state.items.size - 6
+                }
+                    .collectLatest { nearEnd ->
+                        if (nearEnd && !prefetched) {
+                            delay(180)
+                            state.prefetchNext()
+                            prefetched = true
+                        }
+                    }
             }
         }
         if (state.newContent && state.viewer == null)

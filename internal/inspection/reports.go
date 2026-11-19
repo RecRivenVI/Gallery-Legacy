@@ -122,7 +122,11 @@ func Operation(ctx context.Context, c instance.Config, op string, input Row) (va
 			return nil, e
 		}
 		defer func() { err = errors.Join(err, lease.Close()) }()
-		if s["running"] == true {
+		current, e := Status(c)
+		if e != nil {
+			return nil, e
+		}
+		if current["running"] == true {
 			return nil, fmt.Errorf("VALIDATION_IN_USE")
 		}
 		for _, suffix := range []string{".json", ".findings.jsonl", ".export.json", ".export.csv"} {
@@ -135,6 +139,11 @@ func Operation(ctx context.Context, c instance.Config, op string, input Row) (va
 					return nil, e
 				}
 			} else if !os.IsNotExist(e) {
+				return nil, e
+			}
+		}
+		if current["id"] == id {
+			if e = instance.RemoveOwned(stateFile(c)); e != nil {
 				return nil, e
 			}
 		}

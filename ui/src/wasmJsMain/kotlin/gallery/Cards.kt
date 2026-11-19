@@ -15,27 +15,30 @@ import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
-fun Modifier.edgeFade(scroll: ScrollState): Modifier = graphicsLayer {
-    compositingStrategy = CompositingStrategy.Offscreen
-}
-    .drawWithContent {
-        drawContent()
-        val fade = 24.dp.toPx().coerceAtMost(size.width / 3)
-        if (scroll.value > 0)
-            drawRect(
-                Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), 0f, fade),
-                blendMode = BlendMode.DstIn,
-            )
-        if (scroll.value < scroll.maxValue)
-            drawRect(
+@Composable
+internal fun Modifier.edgeFade(scroll: ScrollState): Modifier {
+    val overflows by
+        remember(scroll) {
+            derivedStateOf { scroll.maxValue in 1 until Int.MAX_VALUE }
+        }
+    if (!overflows) return this
+    return graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithCache {
+            val fade = 24.dp.toPx().coerceAtMost(size.width / 3)
+            val left = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), 0f, fade)
+            val right =
                 Brush.horizontalGradient(
                     listOf(Color.Black, Color.Transparent),
                     size.width - fade,
                     size.width,
-                ),
-                blendMode = BlendMode.DstIn,
-            )
-    }
+                )
+            onDrawWithContent {
+                drawContent()
+                if (scroll.value > 0) drawRect(left, blendMode = BlendMode.DstIn)
+                if (scroll.value < scroll.maxValue) drawRect(right, blendMode = BlendMode.DstIn)
+            }
+        }
+}
 
 @Composable
 fun OverflowLine(
@@ -208,77 +211,93 @@ fun ContentCard(
             }
             .semantics { contentDescription = title(item) }
             .then(if (selected) Modifier.border(2.dp, p.fg, GalleryShape(6.dp)) else Modifier)
-    val privacy = if (state.privacy) Modifier.blur(18.dp) else Modifier
-    if (list)
-        Row(
-            outer.height(100.dp).then(privacy),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Cover(item, state, Modifier.size(64.dp), hover, spread, previews)
-            Row(Modifier.weight(.45f), verticalAlignment = Alignment.CenterVertically) {
-                OverflowLine(title(item), hover, Modifier.weight(1f), bold = true)
+    val blur =
+        animateDpAsState(
+            if (state.privacy) 18.dp else 0.dp,
+            if (state.reduceMotion) snap() else tween(230),
+        )
+    val privacy = Modifier.graphicsLayer {
+        val radius = blur.value.toPx()
+        renderEffect = if (radius > .1f) BlurEffect(radius, radius, TileMode.Decal) else null
+    }
+    val titleLink = Modifier.cardLink(title(item)) { state.open(item) }
+    val authorLink =
+        if (item.work.authorId.isNotEmpty() && author(item).isNotEmpty())
+            Modifier.cardLink(author(item)) {
+                state.navigate(Route(path = item.stableId.substringBeforeLast('/')))
+            }
+        else Modifier
+    val attribution =
+        if (item.isAuthor)
+            listOf(
+                    (if (state.filters.mixed) platformBadges[item.work.platformId] + " · "
+                    else "") + item.authorEntry?.handle.orEmpty(),
+                    grouped(item.workCount) + " 个作品",
+                    item.latestAtMs?.takeIf { it > 0 }?.let { isoDate(it.toDouble()) }.orEmpty(),
+                )
+                .filter { it.isNotEmpty() }
+                .joinToString(" · ")
+        else author(item)
+    val authorFont by
+        animateIntAsState(
+            if (list) 13 else 12,
+            if (state.reduceMotion) snap() else spring(dampingRatio = 1f, stiffness = 324f),
+        )
+    CardLayout(
+        outer.then(privacy),
+        list,
+        if (item.isAuthor) 1f else Metrics.ratios[state.ratio] ?: 1f,
+        state.reduceMotion,
+        cover = { Cover(item, state, Modifier.fillMaxSize(), hover, spread, previews) },
+        title = {
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                OverflowLine(title(item), hover, Modifier.weight(1f).then(titleLink), bold = true)
                 if (!item.isAuthor && !item.isFolder && !item.isFile)
                     CardFavorite(state, item.work, hover)
             }
-            OverflowLine(author(item), hover, Modifier.weight(.25f), p.muted)
-            Label(
-                item.publishedAtMs.takeIf { it > 0 }?.let { isoDate(it.toDouble()) }.orEmpty(),
-                Modifier.width(90.dp),
-                p.faint,
-                11,
-            )
-            Label(
-                grouped(if (item.isAuthor) item.workCount else item.counts.media),
-                Modifier.width(40.dp),
-                p.faint,
-                11,
-            )
-        }
-    else
-        Column(outer.then(privacy), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Cover(
-                item,
-                state,
-                Modifier.fillMaxWidth()
-                    .aspectRatio(if (item.isAuthor) 1f else Metrics.ratios[state.ratio] ?: 1f),
-                hover,
-                spread,
-                previews,
-            )
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OverflowLine(title(item), hover, Modifier.weight(1f), bold = true)
-                if (!item.isAuthor && !item.isFolder && !item.isFile)
-                    CardFavorite(state, item.work, hover)
-            }
+        },
+        author = {
             Row(
+                Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                if (!state.hideAvatars) Fluent("author", size = 16, color = p.faint)
+                if (!state.hideAvatars && !list) Fluent("author", size = 16, color = p.faint)
                 OverflowLine(
-                    if (item.isAuthor)
-                        listOf(
-                                (if (state.filters.mixed)
-                                    (platformBadges[item.work.platformId] + " · ")
-                                else "") + item.authorEntry?.handle.orEmpty(),
-                                grouped(item.workCount) + " 个作品",
-                                item.latestAtMs
-                                    .takeIf { it > 0 }
-                                    ?.let { isoDate(it.toDouble()) }
-                                    .orEmpty(),
-                            )
-                            .filter { it.isNotEmpty() }
-                            .joinToString(" · ")
-                    else author(item),
+                    attribution,
                     hover,
-                    Modifier.fillMaxWidth(),
+                    Modifier.weight(1f).then(authorLink),
                     p.muted,
-                    size = 12,
+                    size = authorFont,
                 )
             }
-        }
+        },
+        date = {
+            Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.CenterStart) {
+                Label(
+                    item.publishedAtMs.takeIf { it > 0 }?.let { isoDate(it.toDouble()) }.orEmpty(),
+                    color = p.faint,
+                    size = 11,
+                    maxLines = 1,
+                )
+            }
+        },
+        count = {
+            Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.CenterStart) {
+                Label(
+                    grouped(if (item.isAuthor) item.workCount else item.counts.media),
+                    color = p.faint,
+                    size = 11,
+                    maxLines = 1,
+                )
+            }
+        },
+    )
 }
+
+@Composable
+private fun Modifier.cardLink(text: String, open: () -> Unit): Modifier =
+    this.then(semanticControl("link", text)).keyboardFocus().clickable(onClick = open)
 
 @Composable
 private fun Cover(
@@ -290,9 +309,33 @@ private fun Cover(
     previews: List<MediaSummaryWire>,
 ) {
     val p = LocalPalette.current
-    val layer = rememberGraphicsLayer()
-    val backdrop = remember { Backdrop(layer) }
-    Box(modifier.onGloballyPositioned { state.cardBounds[itemKey(item)] = it.boundsInWindow() }) {
+    val key = itemKey(item)
+    val coverVisibility = rememberCardMedia(state, item.cover?.url)
+    DisposableEffect(key) { onDispose { state.cardBounds.remove(key) } }
+    var collage by remember(key, item.collage) { mutableStateOf(item.collage) }
+    LaunchedEffect(key) {
+        if (!item.isAuthor || item.workCount < 2) return@LaunchedEffect
+        try {
+            collage =
+                readApi<PageWire<WorkSummaryWire>>(
+                        "works",
+                        mapOf(
+                            "platform" to item.work.platformId,
+                            "author" to item.id,
+                            "pageSize" to 3,
+                            "sort" to "date_desc",
+                        ),
+                    )
+                    .items
+                    .mapNotNull { it.cover }
+                    .ifEmpty { item.collage }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // The author's lead cover remains available.
+        }
+    }
+    Box(modifier.onGloballyPositioned { state.cardBounds[key] = it.boundsInWindow() }) {
         previews.forEachIndexed { index, media ->
             val x = listOf(-.19f, .18f, .02f)[index]
             val y = listOf(-.10f, -.13f, -.21f)[index]
@@ -317,17 +360,21 @@ private fun Cover(
                         scaleX = .8f - index * .02f
                         scaleY = scaleX
                     }
-                    .clip(GalleryShape(6.dp)),
+                    .clip(GalleryShape(6.dp))
+                    .then(rememberCardMedia(state, media.url).image()),
             )
         }
         Box(Modifier.fillMaxSize().clip(GalleryShape(6.dp)).background(p.tint)) {
-            Box(Modifier.fillMaxSize().captureBackdrop(backdrop)) {
+            Box(Modifier.fillMaxSize()) {
                 when {
                     item.isFolder -> Fluent("folder", Modifier.align(Alignment.Center), p.faint, 48)
-                    item.isAuthor -> Collage(item.collage)
+                    item.isAuthor -> Collage(collage)
                     item.cover == null ->
                         Fluent("gallery", Modifier.align(Alignment.Center), p.faint, 48)
-                    else -> Thumbnail(item.cover, Modifier.fillMaxSize())
+                    else -> {
+                        Fluent("gallery", Modifier.align(Alignment.Center), p.faint, 48)
+                        Thumbnail(item.cover, Modifier.fillMaxSize().then(coverVisibility.image()))
+                    }
                 }
             }
             val readPage = item.work.personal?.page ?: 0
@@ -346,33 +393,34 @@ private fun Cover(
                             .background(p.fg)
                     )
                 }
-            CompositionLocalProvider(LocalBackdrop provides backdrop) {
-                if (!item.isAuthor && !item.isFolder) {
-                    val counts = item.counts.media
-                    if (counts > 1)
-                        Chip(grouped(counts), Modifier.align(Alignment.TopEnd).padding(6.dp))
-                    val badges = buildList {
-                        if (state.filters.mixed && !item.isFile)
-                            platformBadges[item.work.platformId]?.let { add(it) }
-                        if (
-                            item.work.platformId == "pixiv" &&
-                                item.work.details?.rating in listOf(1L, 2L)
-                        )
-                            add(if (item.work.details?.rating == 2L) "R-18G" else "R-18")
-                        if (item.work.platformId == "pixiv" && item.flags.aiGenerated == true)
-                            add("AI")
-                        if (item.cover?.type == "video") add("视频")
-                    }
-                    if (badges.isNotEmpty())
-                        Chip(
-                            badges.joinToString(" · "),
-                            Modifier.align(Alignment.TopStart).padding(6.dp),
-                        )
-                    if (item.tags.isNotEmpty())
-                        Box(Modifier.align(Alignment.BottomStart).padding(6.dp)) {
-                            Tags(item.tags, state, hover, true)
+            CompositionLocalProvider(LocalBackdrop provides null) {
+                if (!item.isAuthor && !item.isFolder)
+                    Box(Modifier.fillMaxSize().then(coverVisibility.badges())) {
+                        val counts = item.counts.media
+                        if (counts > 1)
+                            Chip(grouped(counts), Modifier.align(Alignment.TopEnd).padding(6.dp))
+                        val badges = buildList {
+                            if (state.filters.mixed && !item.isFile)
+                                platformBadges[item.work.platformId]?.let { add(it) }
+                            if (
+                                item.work.platformId == "pixiv" &&
+                                    item.work.details?.rating in listOf(1L, 2L)
+                            )
+                                add(if (item.work.details?.rating == 2L) "R-18G" else "R-18")
+                            if (item.work.platformId == "pixiv" && item.flags.aiGenerated == true)
+                                add("AI")
+                            if (item.cover?.type == "video") add("视频")
                         }
-                }
+                        if (badges.isNotEmpty())
+                            Chip(
+                                badges.joinToString(" · "),
+                                Modifier.align(Alignment.TopStart).padding(6.dp),
+                            )
+                        if (item.tags.isNotEmpty())
+                            Box(Modifier.align(Alignment.BottomStart).padding(6.dp)) {
+                                Tags(item.tags, state, hover, true)
+                            }
+                    }
             }
         }
     }

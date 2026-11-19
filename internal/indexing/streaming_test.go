@@ -55,7 +55,7 @@ func syntheticPipeline(t *testing.T, works int) (library.Config, inventoryProvid
 	return config, provider
 }
 
-func TestStreamingHugeAuthorVisibleBeforeCompletionAndIncrementalReuses(t *testing.T) {
+func TestFullScanBatchesCompletedLargeAuthorAndIncrementalReuses(t *testing.T) {
 	config, provider := syntheticPipeline(t, 80)
 	config.AllowNative = false
 	p := &Pipeline{Config: config, Inventory: provider, Delay: 30 * time.Millisecond}
@@ -72,7 +72,7 @@ func TestStreamingHugeAuthorVisibleBeforeCompletionAndIncrementalReuses(t *testi
 	for !early {
 		select {
 		case err := <-done:
-			t.Fatal("author completed before any partial visibility", err)
+			t.Fatal("scan ended before a partial batch became visible", err)
 		case <-time.After(20 * time.Millisecond):
 		}
 		var n int
@@ -80,6 +80,9 @@ func TestStreamingHugeAuthorVisibleBeforeCompletionAndIncrementalReuses(t *testi
 			t.Fatal(err)
 		}
 		early = n > 0 && n < 80
+		if early && p.c.Prepared.Load() != 80 {
+			t.Fatal("published an author before preparing all its works", p.c.Prepared.Load())
+		}
 	}
 	if err = <-done; err != nil {
 		t.Fatal(err)
@@ -294,7 +297,7 @@ func TestCancelStreamingScanReleasesBudgetsAndResumesCommittedWorks(t *testing.T
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	for _, b := range []*Budget{p.rawBudget, p.queueBudget} {
+	for _, b := range []*Budget{p.rawBudget, p.queueBudget, p.replayBudget} {
 		if b.used != 0 {
 			t.Fatal("cancelled pipeline retained memory budget", b.used)
 		}

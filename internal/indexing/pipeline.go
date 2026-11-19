@@ -80,6 +80,7 @@ type message struct {
 	platform, key, fingerprint string
 	complete                   bool
 	bytes                      int64
+	replayed                   bool
 	finished                   *platformStage
 }
 type Pipeline struct {
@@ -100,6 +101,7 @@ type Pipeline struct {
 	selected                  []string
 	disks                     map[string]chan struct{}
 	rawBudget, queueBudget    *Budget
+	replayBudget              *Budget
 	prepareSlots              chan struct{}
 	admissionMu               sync.Mutex
 	admissionQueue            []*preparationRequest
@@ -233,6 +235,7 @@ func (p *Pipeline) Run(parent context.Context, platforms []string) error {
 	p.disks = map[string]chan struct{}{}
 	p.rawBudget = NewBudget(64 << 20)
 	p.queueBudget = NewBudget(64 << 20)
+	p.replayBudget = NewBudget(64 << 20)
 	p.prepareSlots = make(chan struct{}, p.Config.Workers)
 	p.preparation = map[string]*preparationMetrics{}
 	p.platformProgress = map[string]*platformProgress{}

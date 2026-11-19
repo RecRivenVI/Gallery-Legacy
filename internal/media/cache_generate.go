@@ -8,13 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/imaging"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
@@ -51,13 +51,7 @@ func (c *Cache) generate(ctx context.Context, engine func() (*imaging.Engine, er
 		if err := cmd.Run(); err != nil {
 			return zero, fmt.Errorf("video thumbnail: %w", err)
 		}
-		match := regexp.MustCompile(`Duration: (\d+):(\d+):(\d+(?:\.\d+)?)`).FindStringSubmatch(info.String())
-		if len(match) == 4 {
-			h, _ := strconv.ParseFloat(match[1], 64)
-			m, _ := strconv.ParseFloat(match[2], 64)
-			s, _ := strconv.ParseFloat(match[3], 64)
-			duration = int64(math.Round((h*3600 + m*60 + s) * 1000))
-		}
+		duration = sourceVideoDuration(info.String()).Round(time.Millisecond).Milliseconds()
 	}
 	e, err := engine()
 	if err != nil {
@@ -84,6 +78,19 @@ func (c *Cache) generate(ctx context.Context, engine func() (*imaging.Engine, er
 		}
 	}
 	return preview, nil
+}
+
+var sourceDurationPattern = regexp.MustCompile(`Duration: (\d+):(\d+):(\d+(?:\.\d+)?)`)
+
+func sourceVideoDuration(info string) time.Duration {
+	match := sourceDurationPattern.FindStringSubmatch(info)
+	if len(match) != 4 {
+		return 0
+	}
+	hours, _ := strconv.ParseFloat(match[1], 64)
+	minutes, _ := strconv.ParseFloat(match[2], 64)
+	seconds, _ := strconv.ParseFloat(match[3], 64)
+	return time.Duration((hours*3600 + minutes*60 + seconds) * float64(time.Second))
 }
 func removeTemporary(file string) {
 	if _, err := os.Lstat(file); err != nil {

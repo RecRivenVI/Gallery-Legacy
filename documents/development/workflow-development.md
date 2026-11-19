@@ -34,6 +34,12 @@ cargo test --locked --manifest-path src-tauri/Cargo.toml
 
 Cargo 构建需将 `CARGO_TARGET_DIR`、`GALLERY_ICON`、`GALLERY_TRAY_ICON` 指向构建工具生成的仓外缓存/图标，并以 `TAURI_CONFIG` 指定相对于 `src-tauri` 的前端目录。不能把 Windows 绝对路径直接作为 frontendDist，它会被当成 URL。完整构建入口会设置这些参数。
 
+### 前端调整
+
+快速预览使用 Gradle 的 `wasmJsBrowserDevelopmentWebpack`。它生成未优化的 Wasm 和外部源码映射。需要对照接近发行构建的加载与渲染表现时，使用 `wasmJsBrowserDistribution`。从 `ui/` 运行，继续用 `galleryBuildRoot` 指向仓外构建缓存。
+
+浏览器可通过 `gallery-read` 查看独立的合成目录。大库预览复用一组本地媒体，并为各媒体记录保留独立 URL。可以检查深页、查询、布局和解码，扫描、逐文件 I/O 及原生管理动作按相应场景另测。
+
 Go 常规数据库测试可自行创建合成空库，metadata 对照固定在 `internal/metadata/testdata`。旧黄金差分仅在显式提供对应环境变量时运行；跳过不是一致结论。原生控制及媒体场景以 `GALLERY_CONTROL_ROOT`、`GALLERY_UNIT_ROOT` 指向新的仓外合成结果根。Windows race 需独立 MinGW-w64/UCRT，设置本机路径的 raceCompiler 或 CC，不更换系统编译器。
 
 ## 接口生成与新实例

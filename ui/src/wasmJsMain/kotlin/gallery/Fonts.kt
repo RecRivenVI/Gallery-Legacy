@@ -47,15 +47,21 @@ class Fonts(private val scope: CoroutineScope, private val resolver: FontFamily.
                     .toString()
         val document = json.decodeFromString<FontManifestWire>(value)
         manifest = document.families
-        document.latin.forEachIndexed { index, file ->
-            val latin =
-                webfont.createVariableFontFamily(
-                    "misans-" + file,
-                    resourceBytes("misans-cdn/" + file),
-                    FontStyle.Normal,
-                ) ?: throw IllegalStateException("FONT_UNAVAILABLE")
-            resolver.preload(latin)
-            if (index == 0) family = latin
+        coroutineScope {
+            val subsets =
+                document.latin.map { file ->
+                    file to async { resourceBytes("misans-cdn/" + file) }
+                }
+            subsets.forEachIndexed { index, (file, bytes) ->
+                val latin =
+                    webfont.createVariableFontFamily(
+                        "misans-" + file,
+                        bytes.await(),
+                        FontStyle.Normal,
+                    ) ?: throw IllegalStateException("FONT_UNAVAILABLE")
+                resolver.preload(latin)
+                if (index == 0) family = latin
+            }
         }
         val base =
             if (isDesktop()) "http://gallery-font.localhost/misans-cdn/"

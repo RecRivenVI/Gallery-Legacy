@@ -6,7 +6,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.*
-import kotlinx.serialization.json.*
 
 @Composable
 internal fun BrowserMedia(
@@ -15,19 +14,14 @@ internal fun BrowserMedia(
     scale: Float,
     pan: Offset,
     rect: Rect,
-    opening: Float,
-    loaded: () -> Unit,
-    failed: () -> Unit,
+    opacity: Float,
+    active: Boolean,
+    playback: VideoPlayback?,
+    loaded: (Int, Int) -> Unit,
+    failed: (String) -> Unit,
 ) {
     val video = media.type == "video"
     val density = LocalDensity.current.density
-    val appearance = remember(media.url) { androidx.compose.animation.core.Animatable(0f) }
-    LaunchedEffect(media.url) {
-        appearance.animateTo(
-            1f,
-            androidx.compose.animation.core.tween(if (state.gallery.reduceMotion) 120 else 220),
-        )
-    }
     var element by remember { mutableStateOf<kotlin.js.JsAny?>(null) }
     var tracks by remember(media) { mutableStateOf(media.subtitles) }
     val loadedNow by rememberUpdatedState(loaded)
@@ -55,31 +49,54 @@ internal fun BrowserMedia(
             }
         }
     }
-    DisposableEffect(media.url, state.retry, tracks) {
+    DisposableEffect(media.url, state.retry) {
         val node =
             createMedia(
                 media.url,
                 video,
-                json.encodeToString(
-                    kotlinx.serialization.builtins.ListSerializer(SubtitleWire.serializer()),
-                    tracks,
-                ),
+                playback?.preloadShortClip == true,
                 title(state.work),
                 { w, h ->
-                    state.imageWidth = media.width.takeIf { it > 0 } ?: w
-                    state.imageHeight = media.height.takeIf { it > 0 } ?: h
-                    loadedNow()
+                    loadedNow(
+                        media.width.takeIf { it > 0 } ?: w,
+                        media.height.takeIf { it > 0 } ?: h,
+                    )
                 },
-                failedNow,
+                { code ->
+                    val recovering =
+                        playback?.compatibilityLoading == true ||
+                            ((code == 3 || code == 4) && playback?.tryCompatibility() == true)
+                    if (!recovering) {
+                        failedNow(
+                            if (!video) "文件无法读取"
+                            else if (playback?.usingCompatibleSource == true) "浏览器无法解码兼容视频"
+                            else if (code == 3) "浏览器无法解码视频" else "视频无法播放"
+                        )
+                    }
+                },
             )
         element = node
+        playback?.attach(node) { failedNow(it) }
+        val compatibility =
+            if (playback?.canTryCompatibility == true)
+                watchVideoCompatibility(node) {
+                    playback.tryCompatibility(resume = true)
+                }
+            else null
+        val observation = playback?.let {
+            observeVideo(node, it::update, it::ended)
+        }
         onDispose {
+            if (compatibility != null) unobserveVideo(compatibility)
+            if (observation != null) unobserveVideo(observation)
+            playback?.detach()
             releaseMedia(node)
             element = null
         }
     }
     val masks = LocalGlassMasks.current?.values?.toList().orEmpty()
     SideEffect {
+        playback?.activate(active)
         val w = rect.width / density
         val h = rect.height / density
         val holes =
@@ -103,11 +120,13 @@ internal fun BrowserMedia(
                 w,
                 h,
                 scale,
-                pan.x / density + (1 - appearance.value) * w * .125f * state.direction,
+                pan.x / density,
                 pan.y / density,
                 gallery.element(holes).toString(),
-                if (opening > .99f) appearance.value else 0f,
+                opacity,
+                active,
             )
         }
     }
+    LaunchedEffect(playback, element, tracks) { playback?.setTracks(tracks) }
 }

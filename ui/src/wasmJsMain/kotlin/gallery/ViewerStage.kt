@@ -19,16 +19,22 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
 @Composable
-internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
+internal fun ViewerStage(
+    state: ViewerState,
+    phone: Boolean,
+    progress: State<Float>,
+    opened: Boolean,
+    useFlight: Boolean,
+) {
     val media = state.current
+    val playback =
+        remember(state, media?.url, state.retry) {
+            media?.takeIf { it.type == "video" }?.let { VideoPlayback(state, it) }
+        }
+    SideEffect { state.videoPlayback = playback }
     val density = LocalDensity.current
     var rect by remember { mutableStateOf(Rect.Zero) }
-    var loaded by remember(media?.url, state.retry) { mutableStateOf(false) }
-    var failed by remember(media?.url, state.retry) { mutableStateOf(false) }
-    var delayed by remember(media?.url, state.retry) { mutableStateOf(false) }
     var autoHidden by remember { mutableStateOf(false) }
-    val imageLayer = rememberGraphicsLayer()
-    val imageBackdrop = remember { Backdrop(imageLayer) }
     val scale by
         animateFloatAsState(
             state.zoom,
@@ -45,16 +51,19 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
             state.pan.y,
             if (state.dragging) snap() else spring(dampingRatio = 1f, stiffness = 324f),
         )
-    LaunchedEffect(media?.url, state.retry) {
-        delay(200)
-        delayed = true
-    }
     LaunchedEffect(state.lastPointer) {
         autoHidden = false
         delay(1800)
         autoHidden = true
     }
-    val arrows = !state.hidden && !(phone && state.details) && (!autoHidden || state.nearEdge)
+    val videoFullscreen by
+        remember(playback) { derivedStateOf { playback?.status?.fullscreen == true } }
+    val arrows =
+        !state.hidden &&
+            !(phone && state.details) &&
+            (!autoHidden || state.nearEdge) &&
+            playback?.menu != true &&
+            !videoFullscreen
     Box(
         Modifier.fillMaxSize()
             .clipToBounds()
@@ -66,6 +75,7 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
             }
             .onGloballyPositioned { rect = it.boundsInWindow() }
             .onWebPointerEvent(PointerEventType.Move) { e ->
+                if (!phone) playback?.activity()
                 state.lastPointer = now()
                 val x = e.changes.firstOrNull()?.position?.x ?: 0f
                 state.nearEdge =
@@ -73,20 +83,8 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                         x > rect.width - with(density) { 200.dp.toPx() }
             }
     ) {
-        MediaImage(
-            media?.thumbnailUrl.orEmpty(),
-            Modifier.fillMaxSize().blur(40.dp).alpha(.18f),
-            placeholder = false,
-        )
-        val transform =
-            Modifier.fillMaxSize().graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                translationX = panX + state.dragX
-                translationY = panY
-            }
-        Box(Modifier.fillMaxSize().viewerGestures(state, phone)) {
-            Box(Modifier.fillMaxSize().captureBackdrop(imageBackdrop)) {
+        Box(Modifier.fillMaxSize().viewerGestures(state, phone, playback)) {
+            Box(Modifier.fillMaxSize()) {
                 if (media == null)
                     Label(
                         "这个作品没有图片或视频",
@@ -95,108 +93,24 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                         size = 14,
                     )
                 else {
-                    val opening = progress < .999f && !state.split
-                    val target = if (state.closing) state.closeRect() else state.origin
-                    val ratioW =
-                        (state.imageWidth.takeIf { it > 0 } ?: media.width).coerceAtLeast(1)
-                    val ratioH =
-                        (state.imageHeight.takeIf { it > 0 } ?: media.height).coerceAtLeast(1)
-                    val fit = minOf(rect.width / ratioW, rect.height / ratioH)
-                    val final =
-                        Rect(
-                            (rect.width - ratioW * fit) / 2,
-                            (rect.height - ratioH * fit) / 2,
-                            (rect.width + ratioW * fit) / 2,
-                            (rect.height + ratioH * fit) / 2,
-                        )
-                    val origin =
-                        target?.translate(-rect.topLeft)
-                            ?: Rect(
-                                rect.width * .4f,
-                                rect.height * .4f,
-                                rect.width * .6f,
-                                rect.height * .6f,
-                            )
-                    val start =
-                        if (state.openingCover?.relativePath.orEmpty() != media.relativePath)
-                            origin.translate(Offset(-origin.width * .19f, -origin.height * .1f))
-                        else origin
-                    val bounds = lerp(start, final, progress)
-                    val imageModifier =
-                        if (opening)
-                            Modifier.offset {
-                                    IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt())
-                                }
-                                .size(
-                                    with(density) { bounds.width.toDp() },
-                                    with(density) { bounds.height.toDp() },
-                                )
-                                .clip(GalleryShape((6 * (1 - progress)).dp))
-                        else transform
-                    AnimatedContent(
-                        media.url,
-                        transitionSpec = {
-                            if (state.gallery.reduceMotion)
-                                fadeIn(tween(150)) togetherWith fadeOut(tween(150))
-                            else
-                                (slideInHorizontally(spring(dampingRatio = 1f, stiffness = 324f)) {
-                                    it * state.direction / 8
-                                } + fadeIn(tween(160))) togetherWith
-                                    (slideOutHorizontally(tween(180)) {
-                                        -it * state.direction / 8
-                                    } + fadeOut(tween(160)))
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    ) { target ->
-                        val picture = remember(target) { media }
-                        MediaImage(
-                            picture.thumbnailUrl,
-                            imageModifier,
-                            fit = !opening,
-                            placeholder = false,
-                            onInfo = { w, h, animated ->
-                                state.mediaInfo(picture.relativePath, w, h, animated)
-                            },
-                            onSize = { w, h ->
-                                if (state.imageWidth == 0) {
-                                    state.imageWidth = w
-                                    state.imageHeight = h
-                                }
-                            },
-                        )
-                    }
+                    SingleMediaTransition(
+                        media,
+                        state,
+                        rect,
+                        scale,
+                        Offset(panX, panY),
+                        visible = !useFlight || opened,
+                        nativeProgress = if (useFlight) null else progress,
+                        playback = playback,
+                    )
                 }
             }
         }
-        if (media != null && !failed)
-            BrowserMedia(
-                media,
-                state,
-                scale,
-                Offset(panX + state.dragX, panY),
-                rect,
-                progress,
-                { loaded = true },
-                { failed = true },
-            )
-        CompositionLocalProvider(LocalBackdrop provides imageBackdrop) {
-            if (delayed && !loaded && !failed) {
-                val cycle = rememberInfiniteTransition()
-                val x by
-                    cycle.animateFloat(
-                        0f,
-                        1f,
-                        infiniteRepeatable(tween(1200, easing = LinearEasing)),
-                    )
-                Box(
-                    Modifier.align(Alignment.BottomStart)
-                        .fillMaxWidth(.3f)
-                        .offset { IntOffset((rect.width * x * .7f).roundToInt(), 0) }
-                        .height(3.dp)
-                        .background(Color.White.copy(alpha = .7f))
-                )
+        CompositionLocalProvider(LocalBackdrop provides null) {
+            if (playback != null && opened && !state.closing && state.error.isEmpty()) {
+                VideoControls(playback, phone, Modifier.matchParentSize())
             }
-            if (failed || state.error.isNotEmpty())
+            if (state.error.isNotEmpty())
                 GlassSurface(
                     Modifier.align(Alignment.Center).widthIn(max = 360.dp).padding(16.dp)
                 ) {
@@ -204,12 +118,7 @@ internal fun ViewerStage(state: ViewerState, phone: Boolean, progress: Float) {
                         Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Label(
-                            "加载失败：" +
-                                state.error.ifEmpty {
-                                    if (media?.type == "video") "视频无法播放" else "文件无法读取"
-                                }
-                        )
+                        Label("加载失败：" + state.error)
                         Action("重试") {
                             state.error = ""
                             state.retry++

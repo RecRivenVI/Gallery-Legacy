@@ -159,12 +159,18 @@ fun Sidebar(state: GalleryState, modifier: Modifier, expanded: Boolean) {
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Label(
-                                platformBadges[id] ?: id.take(2),
-                                Modifier.width(30.dp),
-                                p.muted,
-                                11,
-                            )
+                            Box(Modifier.width(30.dp), contentAlignment = Alignment.Center) {
+                                Box(
+                                    Modifier.size(22.dp).background(p.tint, GalleryShape(5.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Label(
+                                        platformBadges[id] ?: id.take(2),
+                                        color = p.muted,
+                                        size = 11,
+                                    )
+                                }
+                            }
                             Row(
                                 Modifier.offset(x = textX).alpha(textAlpha),
                                 verticalAlignment = Alignment.CenterVertically,

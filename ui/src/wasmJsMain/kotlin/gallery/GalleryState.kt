@@ -7,6 +7,7 @@ import kotlinx.serialization.json.*
 
 @Stable
 class GalleryState(val scope: CoroutineScope) {
+    internal val videoPreferences = VideoPreferencesStore()
     internal var preferences =
         try {
             json.decodeFromString<PreferencesWire>(
@@ -33,6 +34,12 @@ class GalleryState(val scope: CoroutineScope) {
     var authorTotal by mutableLongStateOf(0)
     var workTotal by mutableLongStateOf(0)
     var totalPages by mutableIntStateOf(0)
+    internal var loadedRoute by mutableStateOf<Route?>(null)
+        private set
+
+    internal var retainedCards by mutableStateOf(emptySet<String>())
+        private set
+
     var loading by mutableStateOf(true)
     var error by mutableStateOf("")
     var incomplete by mutableStateOf(false)
@@ -74,6 +81,7 @@ class GalleryState(val scope: CoroutineScope) {
     var splitEnabled by mutableStateOf(false)
     var viewer by mutableStateOf<ViewerState?>(null)
     val cardBounds = mutableMapOf<String, Rect>()
+    var panelAnchor by mutableStateOf<Rect?>(null)
     var searchRect by mutableStateOf(Rect.Zero)
     var tagQuery by mutableStateOf("")
     var tags by mutableStateOf<List<TagWire>>(emptyList())
@@ -84,6 +92,13 @@ class GalleryState(val scope: CoroutineScope) {
     private var openJob: Job? = null
     val dark
         get() = theme == "dark" || (theme == "system" && systemDark())
+
+    internal val pagerVisible: Boolean
+        get() =
+            error.isEmpty() &&
+                items.isNotEmpty() &&
+                totalPages > 1 &&
+                loadedRoute?.copy(page = route.page) == route
 
     init {
         if (!currentHash().contains("pageSize="))
@@ -133,7 +148,7 @@ class GalleryState(val scope: CoroutineScope) {
 
     fun reload() {
         filters.parse(route.query)
-        filters.loadOptions()
+        if (panel == "filters") filters.loadOptions()
         loadingJob?.cancel()
         loading = true
         var requested = route
@@ -142,8 +157,7 @@ class GalleryState(val scope: CoroutineScope) {
             error = ""
             newCount = 0
             newContent = false
-            heading = null
-            authorPage = null
+            if (loadedRoute?.path != requested.path) authorPage = null
             if (!requested.valid || !requested.validFilter) {
                 loading = false
                 return@launch
@@ -162,27 +176,40 @@ class GalleryState(val scope: CoroutineScope) {
                     ensureActive()
                     if (route != requested) return@launch
                 }
+                retainedCards = items.mapTo(mutableSetOf(), ::itemKey)
                 items = data.items
                 total = data.total
                 totalPages = data.totalPages
+                loadedRoute = requested
                 heading = data.heading
                 incomplete = data.incomplete
-                workTotal = if (requested.kind != "authors") total else 0
+                val source = sources.find { it.id == decode(requested.platform) }
+                workTotal = if (requested.kind != "authors") total else source?.works ?: 0
                 authorTotal = if (requested.kind == "authors") total else 0
+                loading = false
                 if (
                     requested.kind in listOf("works", "authors") &&
                         requested.filters.isEmpty() &&
                         requested.tag.isEmpty() &&
-                        requested.mediaType == "all"
+                        requested.mediaType == "all" &&
+                        (requested.kind == "works" ||
+                            source == null ||
+                            requested.query.isNotEmpty())
                 ) {
                     val opposite = if (requested.kind == "authors") "works" else "authors"
                     val count =
-                        readApi<PageWire<WorkSummaryWire>>(
-                                opposite,
-                                parameters(requested.copy(page = 1, pageSize = 24), opposite) +
-                                    ("pageSize" to 1),
-                            )
-                            .total
+                        try {
+                            readApi<PageWire<WorkSummaryWire>>(
+                                    opposite,
+                                    parameters(requested.copy(page = 1, pageSize = 24), opposite) +
+                                        ("pageSize" to 1),
+                                )
+                                .total
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            return@launch
+                        }
                     ensureActive()
                     if (opposite == "works") workTotal = count else authorTotal = count
                 }
@@ -329,24 +356,7 @@ class GalleryState(val scope: CoroutineScope) {
             )
         }
         val response = readApi<PageWire<AuthorSummaryWire>>("authors", parameters(r))
-        val rows =
-            response.items
-                .map { author ->
-                    scope.async {
-                        val recent =
-                            readApi<PageWire<WorkSummaryWire>>(
-                                "works",
-                                mapOf(
-                                    "platform" to decode(r.platform),
-                                    "author" to author.id,
-                                    "pageSize" to 3,
-                                    "sort" to "date_desc",
-                                ),
-                            )
-                        authorItem(author, recent.items.mapNotNull { it.cover })
-                    }
-                }
-                .awaitAll()
+        val rows = response.items.map { authorItem(it, listOfNotNull(it.cover)) }
         return ContentPage(rows, response.total, response.totalPages)
     }
 
@@ -356,6 +366,7 @@ class GalleryState(val scope: CoroutineScope) {
             val page = readRows(route.copy(page = route.page + 1))
             coroutineScope {
                 page.items
+                    .take(8)
                     .mapNotNull { it.cover }
                     .forEach { media ->
                         launch { prefetchImage(media.thumbnailUrl) }
@@ -369,6 +380,7 @@ class GalleryState(val scope: CoroutineScope) {
     }
 
     fun open(item: ContentItem) {
+        if (loading && loadedRoute != route) return
         if (item.isFolder || item.isAuthor) {
             navigate(
                 route.copy(
@@ -379,6 +391,7 @@ class GalleryState(val scope: CoroutineScope) {
             )
             return
         }
+        val origin = cardBounds[itemKey(item)]
         openJob?.cancel()
         openJob = scope.launch {
             try {
@@ -402,7 +415,8 @@ class GalleryState(val scope: CoroutineScope) {
                         work,
                         index,
                         splitEnabled && browserWidth() >= 1280 && !coarsePointer(),
-                        itemKey(item),
+                        origin,
+                        item.cover,
                     )
                 writeHash(
                     routeHash(route) + "&view=" + encode(work.stableId) + "&index=" + index,
@@ -480,12 +494,13 @@ class GalleryState(val scope: CoroutineScope) {
         }
         if (viewer?.work?.stableId == path) {
             viewer?.closing = false
-            viewer?.page =
+            viewer?.selectPage(
                 requestedMediaPage(viewer!!.work, values)
                     .coerceIn(
                         0,
                         (viewer!!.media.size - 1).coerceAtLeast(0),
                     )
+            )
             return
         }
         openJob?.cancel()

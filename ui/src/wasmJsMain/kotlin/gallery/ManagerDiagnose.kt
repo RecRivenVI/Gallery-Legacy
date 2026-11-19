@@ -138,6 +138,25 @@ internal fun DiagnosePage(state: ManagerState) {
                         }
                 }
                 ManagerError(state, "validation")
+                if (state.validation.id.isNotEmpty() && !state.validation.running)
+                    Action("删除检查报告…", enabled = !state.busy) {
+                        val id = state.validation.id
+                        state.confirmation =
+                            ManagerConfirmation(
+                                "删除这次检查的报告、问题明细和导出文件。",
+                                "删除",
+                                {
+                                    admin(
+                                        "validation.purge",
+                                        document("confirm" to true, "id" to id),
+                                    )
+                                    state.findingsOpen = false
+                                    state.findings = null
+                                    state.validation =
+                                        readAdmin<ValidationStatusWire>("validation.status")
+                                },
+                            )
+                    }
             }
             Section("运行环境") {
                 val checks = state.environment?.checks.orEmpty()
@@ -168,22 +187,24 @@ internal fun DiagnosePage(state: ManagerState) {
             Section("缓存") {
                 val bytes = state.storage.cache.bytes
                 Label(
-                    if (bytes == 0L) "没有缓存"
-                    else "缩略图缓存 ${(bytes/1048576.0).toInt()} MB，清理后会在浏览时重新生成",
+                    if (bytes == 0L) "没有缓存" else "缓存目录占用 ${(bytes/1048576.0).toInt()} MB",
                     color = p.muted,
                 )
-                Action("清理缓存…", enabled = !state.busy) {
+                Action(
+                    "清理孤儿缩略图…",
+                    enabled = !state.busy && !state.scan.running && !state.thumbnails.running,
+                ) {
                     state.confirmation =
                         ManagerConfirmation(
-                            "缩略图缓存会被删除，浏览时会重新生成，这段时间图片加载会变慢。",
+                            "删除已不对应图库媒体的缩略图。正在运行的画廊会暂时停止，清理后恢复。",
                             "清理",
                             {
-                                val active = state.active
-                                if (active) host("stop")
+                                val running = state.active
+                                if (running) host("stop")
                                 try {
-                                    admin("cache.clear", document("confirm" to true))
+                                    admin("cache.orphans.clear", document("confirm" to true))
                                 } finally {
-                                    if (active) host("start")
+                                    if (running) host("start")
                                 }
                                 state.storage = readAdmin<StorageSnapshotWire>("storage.read")
                                 state.refreshStatus()

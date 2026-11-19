@@ -464,28 +464,22 @@ func (v *View) MediaAtPath(value string) (any, error) {
 }
 
 func (v *View) Stats() (Row, error) {
-	metadata, err := v.rows("SELECT metadata_state,count(*) count FROM works GROUP BY metadata_state")
+	metadataQuery := "SELECT metadata_state,count(*) count FROM works GROUP BY metadata_state"
+	countQuery := "SELECT (SELECT count(*) FROM works) works,(SELECT count(*) FROM media) media,(SELECT count(*) FROM authors) authors"
+	if v.live {
+		metadataQuery = "SELECT metadata_state,count FROM live_metadata_stats WHERE count>0 ORDER BY metadata_state"
+		countQuery = "SELECT works,media,authors FROM live_stats WHERE singleton=1"
+	}
+	metadata, err := v.rows(metadataQuery)
 	if err != nil {
 		return nil, err
 	}
-	if v.live {
-		metadata, err = v.rows("SELECT metadata_state,count FROM live_metadata_stats WHERE count>0 ORDER BY metadata_state")
-		if err != nil {
-			return nil, err
-		}
-	}
-	counts, err := v.row("SELECT (SELECT count(*) FROM works) works,(SELECT count(*) FROM media) media,(SELECT count(*) FROM authors) authors")
+	counts, err := v.row(countQuery)
 	if err != nil {
 		return nil, err
 	}
-	if v.live {
-		counts, err = v.row("SELECT works,media,authors FROM live_stats WHERE singleton=1")
-		if err != nil {
-			return nil, err
-		}
-		if counts == nil {
-			return nil, fmt.Errorf("LIVE_STATS_INVALID")
-		}
+	if counts == nil {
+		return nil, fmt.Errorf("LIVE_STATS_INVALID")
 	}
 	states := Row{}
 	for _, row := range metadata {

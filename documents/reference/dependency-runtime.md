@@ -13,7 +13,7 @@
 | Node、Playwright、Prettier | 开发时图标生成、浏览器验证、格式化；无生产 Node 依赖 |
 | libvips | 官方 Windows web DLL 包，图片进程内解码、缩放与 WebP；固定来源和摘要见 tools/media/libvips.lock.json |
 | ThumbHash | 占位图编解码使用 go.n16f.net/thumbhash，版本在 go.mod；ISC 许可，原项目推荐的 Go 实现 |
-| FFmpeg | 可配置的视频首帧提取；缺失时提示工具不可用，不丢弃作品。ImageMagick 仅用于合成夹具与开发截图 |
+| FFmpeg | 可配置的视频首帧提取，以及 Pixiv 短 WebM 的兼容播放。兼容播放需支持 `libx264` 和 AAC 编码，具体边界见[后端协议](protocol-backend.md#媒体与文件)。ImageMagick 仅用于合成夹具与开发截图 |
 | MiSans、Noto Color Emoji | 原样内置官方 CSS/190 子集，按 Unicode 范围从本地加载；九种小语种可变字体和可见表情按需加载 |
 | Windows NTFS 文件表与 USN | 卷级清单、日志重放和物理位置提示；完整清单不可用时要求用户确认后遍历目录 |
 | Fluent System Icons | 矢量图标，MIT 原文随浏览器资源保留 |
@@ -28,4 +28,4 @@ FFmpeg/ImageMagick 沿用环境中的工具，不由本轮安装。libvips 官�
 
 使用 MinGW-w64 的 UCRT 工具链，以 `raceCompiler` 或当前进程 CC 配置，不替换系统工具。其来源为 [MinGW-w64 官方目录](https://www.mingw-w64.org/downloads/)列出的 MinGW-Builds；实际工具仍在工作区 Scratches。Go 模块和源码不因编译器路径改变。
 
-新增心形、星形、阅读和历史图标直接取自 Microsoft Fluent System Icons 官方源码；固定提交及原文件 SHA 在 tools/icons/personal.lock.json，第三方原文件在 third_party/fluent_personal。它们使用相同 MIT 许可，未引入另一套图标样式。
+个人阅读和播放器补充图标取自 Microsoft Fluent System Icons 官方源码，采用 MIT 许可。提交版本与原文件 SHA 见 [图标清单](../../tools/icons/personal.lock.json)，原文件见 [第三方图标](../../third_party/fluent_personal)。

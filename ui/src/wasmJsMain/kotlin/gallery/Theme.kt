@@ -94,6 +94,7 @@ object Metrics {
     const val pageBandMax = 310f
     const val pageGap = 3f
     const val pageHeight = 34
+    const val pageJumpSize = 28
     const val pageFade = 28
     const val pageInset = 8
     const val pageBottom = 16

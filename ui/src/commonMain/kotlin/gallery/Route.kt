@@ -116,7 +116,10 @@ fun thumbnailBandWidth(total: Int, step: Float, available: Float) =
     minOf(310f, available, (total * step - 3).coerceAtLeast(0f))
 
 fun pageBandTarget(page: Int, total: Int, step: Float, width: Float): Float =
-    ((page - .5f) * step - width / 2).coerceIn(0f, (total * step - 3 - width).coerceAtLeast(0f))
+    ((page - .5f) * step - (width + 3) / 2).coerceIn(
+        0f,
+        (total * step - 3 - width).coerceAtLeast(0f),
+    )
 
 fun visiblePageRange(offset: Float, step: Float, width: Float, total: Int): IntRange {
     val first = (offset / step).toInt().coerceAtLeast(0)

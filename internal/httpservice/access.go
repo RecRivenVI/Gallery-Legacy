@@ -2,20 +2,19 @@ package httpservice
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/RecRivenVI/Gallery-Legacy/internal/accesslog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
-	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/reading"
 )
 
@@ -25,10 +24,14 @@ type access struct {
 	rule           banRule
 	windows        map[string]*accessWindow
 	mu             sync.Mutex
-	file, id       string
+	store          *accesslog.Store
+	id             string
 	enabled, dirty bool
-	clients        []reading.Row
-	events         []reading.Row
+	clients        map[string]reading.Row
+	changed        map[string]reading.Row
+	requests, bans []reading.Row
+	cleared        bool
+	clearRevision  uint64
 	now            func() time.Time
 	stop           chan struct{}
 	done           chan struct{}
@@ -69,12 +72,11 @@ func today(t time.Time) int64 {
 	y, m, d := t.Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC).Unix() / 86400
 }
-func validDays(value any, day int64) reading.Row {
+func validDays(value any) reading.Row {
 	result := reading.Row{}
 	if rows, ok := value.(map[string]any); ok {
 		for k, v := range rows {
-			d, err := strconv.ParseInt(k, 10, 64)
-			if err != nil || d < day-30 || d > day {
+			if _, err := strconv.ParseInt(k, 10, 64); err != nil {
 				continue
 			}
 			row, ok := v.(map[string]any)
@@ -94,58 +96,13 @@ func validDays(value any, day int64) reading.Row {
 	return result
 }
 func newAccess(config instance.Config, now func() time.Time) (*access, error) {
-	a := &access{rule: defaultBanRule(), windows: map[string]*accessWindow{}, file: filepath.Join(config.StateRoot, "access-history.json"), id: config.InstanceID, enabled: true, clients: []reading.Row{}, events: []reading.Row{}, now: now, stop: make(chan struct{}), done: make(chan struct{})}
-	if err := library.NoLinks(a.file); err != nil {
+	store, err := accesslog.Open(config.StateRoot, config.InstanceID)
+	if err != nil {
 		return nil, err
 	}
-	b, err := os.ReadFile(a.file)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
-	var saved struct {
-		AutoBan         *banRule `json:"autoBan"`
-		Version         int
-		InstanceID      string
-		Enabled         *bool
-		Clients, Events []reading.Row
-	}
-	if json.Unmarshal(b, &saved) == nil && saved.Version == 1 && saved.InstanceID == a.id {
-		if saved.AutoBan != nil {
-			a.rule = *saved.AutoBan
-		}
-		if saved.Enabled != nil {
-			a.enabled = *saved.Enabled
-		}
-		for _, c := range saved.Clients[max(0, len(saved.Clients)-256):] {
-			ip, ok := c["address"].(string)
-			if !ok || len(ip) > 64 || c["id"] != clientID(a.id, ip) || count(c["lastSeenAtMs"]) < a.now().Add(-30*24*time.Hour).UnixMilli() {
-				continue
-			}
-			c = reading.Row{"id": c["id"], "address": ip, "agent": c["agent"], "blocked": c["blocked"], "blockedUntilMs": count(c["blockedUntilMs"]), "days": c["days"], "requests": c["requests"], "errors": c["errors"], "bytes": c["bytes"], "lastSeenAtMs": c["lastSeenAtMs"]}
-			c["local"], c["active"] = local(ip), int64(0)
-			c["blocked"] = !local(ip) && c["blocked"] == true
-			if !slices.Contains([]string{"Browser", "Venera", "Other"}, stringValue(c["agent"])) {
-				c["agent"] = "Other"
-			}
-			for _, k := range []string{"requests", "errors", "bytes", "lastSeenAtMs"} {
-				c[k] = count(c[k])
-			}
-			c["days"] = validDays(c["days"], today(a.now()))
-			a.clients = append(a.clients, c)
-		}
-		category := regexp.MustCompile(`^[a-z-]+$`)
-		for _, e := range saved.Events[max(0, len(saved.Events)-200):] {
-			client := false
-			for _, c := range a.clients {
-				if c["id"] == e["client"] {
-					client = true
-					break
-				}
-			}
-			if client && category.MatchString(stringValue(e["resource"])) && slices.Contains([]string{"GET", "HEAD", "POST", "OPTIONS"}, stringValue(e["method"])) {
-				a.events = append(a.events, reading.Row{"client": e["client"], "resource": e["resource"], "method": e["method"], "status": e["status"], "atMs": e["atMs"], "elapsedMs": count(e["elapsedMs"])})
-			}
-		}
+	a := &access{rule: defaultBanRule(), windows: map[string]*accessWindow{}, store: store, id: config.InstanceID, enabled: true, clients: map[string]reading.Row{}, changed: map[string]reading.Row{}, now: now, stop: make(chan struct{}), done: make(chan struct{})}
+	if err = a.load(); err != nil {
+		return nil, errors.Join(err, store.Close())
 	}
 	go func() {
 		defer close(a.done)
@@ -163,6 +120,38 @@ func newAccess(config instance.Config, now func() time.Time) (*access, error) {
 		}
 	}()
 	return a, nil
+}
+
+func (a *access) load() error {
+	saved, err := a.store.Load()
+	if err != nil {
+		return err
+	}
+	if len(saved.AutoBan) > 0 {
+		if err = json.Unmarshal(saved.AutoBan, &a.rule); err != nil {
+			return err
+		}
+	}
+	if saved.Enabled != nil {
+		a.enabled = *saved.Enabled
+	}
+	for _, c := range saved.Clients {
+		ip, ok := c["address"].(string)
+		if !ok || len(ip) > 64 || c["id"] != clientID(a.id, ip) {
+			continue
+		}
+		c["local"], c["active"] = local(ip), int64(0)
+		c["blocked"] = c["local"] != true && c["blocked"] == true
+		if !slices.Contains([]string{"Browser", "Venera", "Other"}, stringValue(c["agent"])) {
+			c["agent"] = "Other"
+		}
+		for _, k := range []string{"requests", "errors", "bytes", "lastSeenAtMs", "blockedUntilMs"} {
+			c[k] = count(c[k])
+		}
+		c["days"] = validDays(c["days"])
+		a.clients[stringValue(c["id"])] = c
+	}
+	return nil
 }
 func stringValue(v any) string { s, _ := v.(string); return s }
 func category(p string) string {
@@ -190,27 +179,8 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 		ip = "unknown"
 	}
 	id := clientID(a.id, ip)
-	var client reading.Row
-	for _, c := range a.clients {
-		if c["id"] == id {
-			client = c
-			break
-		}
-	}
+	client := a.clients[id]
 	if client == nil {
-		if len(a.clients) >= 256 {
-			old := -1
-			for i, c := range a.clients {
-				if count(c["active"]) == 0 && c["blocked"] != true && (old < 0 || count(c["lastSeenAtMs"]) < count(a.clients[old]["lastSeenAtMs"])) {
-					old = i
-				}
-			}
-			if old < 0 {
-				return false, func(int, int64) {}
-			}
-			delete(a.windows, stringValue(a.clients[old]["id"]))
-			a.clients = slices.Delete(a.clients, old, old+1)
-		}
 		agent := "Other"
 		ua := strings.ToLower(r.UserAgent())
 		if strings.Contains(ua, "venera") {
@@ -219,12 +189,9 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 			agent = "Browser"
 		}
 		client = reading.Row{"id": id, "address": ip, "local": local(ip), "agent": agent, "requests": int64(0), "errors": int64(0), "active": int64(0), "bytes": int64(0), "blocked": false, "lastSeenAtMs": int64(0), "days": reading.Row{}}
-		a.clients = append(a.clients, client)
+		a.clients[id] = client
 	}
-	if until := count(client["blockedUntilMs"]); until > 0 && until <= a.now().UnixMilli() {
-		client["blocked"] = false
-		client["blockedUntilMs"] = int64(0)
-	}
+	a.expireBan(client)
 	a.checkBan(client, false)
 	day := strconv.FormatInt(today(a.now()), 10)
 	days := client["days"].(map[string]any)
@@ -237,12 +204,16 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 	client["requests"] = count(client["requests"]) + 1
 	client["active"] = count(client["active"]) + 1
 	client["lastSeenAtMs"] = a.now().UnixMilli()
-	a.dirty = true
+	a.touch(client)
+	revision := a.clearRevision
 	started := time.Now()
 	return !a.enabled || client["blocked"] != true, func(status int, bytes int64) {
 		a.mu.Lock()
 		defer a.mu.Unlock()
 		client["active"] = count(client["active"]) - 1
+		if revision != a.clearRevision {
+			return
+		}
 		client["lastSeenAtMs"] = a.now().UnixMilli()
 		if status >= 400 && status != 403 {
 			a.checkBan(client, true)
@@ -252,51 +223,46 @@ func (a *access) begin(r *http.Request) (bool, func(int, int64)) {
 			counter["errors"] = count(counter["errors"]) + 1
 		}
 		client["bytes"] = count(client["bytes"]) + bytes
-		a.events = append(a.events, reading.Row{"atMs": a.now().UnixMilli(), "client": id, "method": r.Method, "resource": category(r.URL.Path), "status": status, "elapsedMs": time.Since(started).Milliseconds()})
-		if len(a.events) > 200 {
-			a.events = a.events[1:]
-		}
-		a.dirty = true
+		a.requests = append(a.requests, reading.Row{"atMs": a.now().UnixMilli(), "client": id, "method": r.Method, "resource": category(r.URL.Path), "status": status, "elapsedMs": time.Since(started).Milliseconds()})
+		a.touch(client)
 	}
 }
+
+func (a *access) touch(client reading.Row) {
+	a.changed[stringValue(client["id"])] = client
+}
+
 func (a *access) flush() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	day := today(a.now())
-	a.clients = slices.DeleteFunc(a.clients, func(c reading.Row) bool {
-		c["days"] = validDays(c["days"], day)
-		if count(c["active"]) == 0 && count(c["lastSeenAtMs"]) < a.now().Add(-30*24*time.Hour).UnixMilli() {
-			a.dirty = true
-			delete(a.windows, stringValue(c["id"]))
-			return true
-		}
-		return false
-	})
-	a.events = slices.DeleteFunc(a.events, func(e reading.Row) bool {
-		for _, c := range a.clients {
-			if c["id"] == e["client"] {
-				return false
-			}
-		}
-		a.dirty = true
-		return true
-	})
-	if !a.dirty {
+	return a.flushLocked()
+}
+
+func (a *access) flushLocked() error {
+	if !a.dirty && len(a.changed) == 0 && len(a.requests) == 0 && len(a.bans) == 0 {
 		return nil
 	}
-	clients := []reading.Row{}
-	for _, c := range a.clients {
-		row := reading.Row{}
-		for k, v := range c {
-			row[k] = v
-		}
+	clients := make([]reading.Row, 0, len(a.changed))
+	for _, c := range a.changed {
+		row := maps.Clone(c)
 		row["active"] = 0
 		clients = append(clients, row)
 	}
-	if err := instance.WriteJSON(a.file, reading.Row{"version": 1, "instanceId": a.id, "enabled": a.enabled, "autoBan": a.rule, "clients": clients, "events": a.events}); err != nil {
+	rule, err := json.Marshal(a.rule)
+	if err != nil {
 		return err
 	}
-	a.dirty = false
+	history := accesslog.History{InstanceID: a.id, Enabled: &a.enabled, AutoBan: rule, Clients: clients, Events: a.requests}
+	if err = a.store.Save(history, a.bans, a.cleared, a.cleared); err != nil {
+		return err
+	}
+	clear(a.changed)
+	a.requests, a.bans = nil, nil
+	a.dirty, a.cleared = false, false
 	return nil
 }
-func (a *access) close() error { close(a.stop); <-a.done; return a.flush() }
+func (a *access) close() error {
+	close(a.stop)
+	<-a.done
+	return errors.Join(a.flush(), a.store.Close())
+}

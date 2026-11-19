@@ -13,10 +13,23 @@ class ViewerState(
     initial: WorkSummaryWire,
     initialPage: Int,
     initialSplit: Boolean,
-    originKey: String = initial.stableId,
+    val origin: Rect? = null,
+    val openingCover: MediaSummaryWire? = initial.cover,
 ) {
-    val origin = gallery.cardBounds[originKey]
-    val openingCover = initial.cover
+    private val openingWork = initial.stableId
+    private val openingMedia =
+        visibleMedia(initial).let {
+            it.getOrNull(initialPage.coerceIn(0, it.lastIndex.coerceAtLeast(0)))
+        }
+    private val displayedMedia = mutableStateMapOf<String, Int>()
+    internal var flightProgress by mutableStateOf<State<Float>?>(null)
+    internal var flightStarted by mutableStateOf(false)
+    internal var changingMedia by mutableStateOf(false)
+    internal var videoPlayback by mutableStateOf<VideoPlayback?>(null)
+    private var nextVideoToPlay: String? = null
+    internal val flightCoverUrl: String?
+        get() = if (closing) current?.let { cardFor(it)?.cover?.url } else openingCover?.url
+
     var work by mutableStateOf(initial)
     var page by
         mutableIntStateOf(
@@ -43,14 +56,47 @@ class ViewerState(
     var areaHeight by mutableFloatStateOf(0f)
     var pixelRatio by mutableFloatStateOf(1f)
     var dragging by mutableStateOf(false)
-    var direction by mutableIntStateOf(1)
-    var dragX by mutableFloatStateOf(0f)
     var neighbors by mutableStateOf(listOf(initial))
     val media
         get() = visibleMedia(work)
 
     val current
         get() = media.getOrNull(page)
+
+    internal fun previewFor(media: MediaSummaryWire) =
+        cardFor(media)?.cover?.takeIf { it.url == media.url }
+            ?: openingCover?.takeIf { it.url == media.url }
+            ?: media
+
+    internal fun cardFor(media: MediaSummaryWire): ContentItem? =
+        if (gallery.route.kind == "pages") gallery.items.firstOrNull { it.cover?.url == media.url }
+        else gallery.items.firstOrNull { it.stableId == work.stableId }
+
+    internal fun hasMedia(url: String): Boolean =
+        current?.url == url || displayedMedia.containsKey(url)
+
+    internal fun showMedia(url: String) {
+        displayedMedia[url] = (displayedMedia[url] ?: 0) + 1
+    }
+
+    internal fun hideMedia(url: String) {
+        val count = displayedMedia.getValue(url)
+        if (count == 1) displayedMedia.remove(url) else displayedMedia[url] = count - 1
+    }
+
+    internal fun coverInFlight(url: String): Boolean =
+        !split &&
+            !gallery.reduceMotion &&
+            flightStarted &&
+            (if (closing) current?.url == url else !changingMedia && openingMedia?.url == url)
+
+    internal fun isOpeningCover(url: String): Boolean =
+        !split &&
+            !gallery.reduceMotion &&
+            origin != null &&
+            openingMedia?.url == url &&
+            current?.url == url &&
+            !changingMedia
 
     private var workJob: Job? = null
     private var neighborJob: Job? = null
@@ -78,18 +124,21 @@ class ViewerState(
     }
 
     fun closeRect(): Rect? {
-        val key =
-            if (gallery.route.kind == "pages")
-                gallery.items.find { it.pageIndex == page }?.let(::itemKey)
-            else work.stableId
-        return gallery.cardBounds[key] ?: origin
+        val key = current?.let(::cardFor)?.let(::itemKey)
+        return gallery.cardBounds[key] ?: origin?.takeIf { work.stableId == openingWork }
     }
 
     private fun loadNeighbors() {
         neighborJob?.cancel()
         neighborJob =
             gallery.scope.launch {
-                val list = gallery.items.filter { !it.isAuthor && !it.isFolder }
+                if (gallery.route.kind == "pages") {
+                    neighbors = listOf(work)
+                    return@launch
+                }
+                delay(180)
+                val list =
+                    gallery.items.filter { !it.isAuthor && !it.isFolder }.distinctBy { it.stableId }
                 val index = list.indexOfFirst { it.stableId == work.stableId }
                 if (index < 0) {
                     neighbors = listOf(work)
@@ -153,6 +202,7 @@ class ViewerState(
     }
 
     fun changeWork(next: WorkSummaryWire, index: Int = 0) {
+        changingMedia = true
         work = next
         page = index.coerceIn(0, (visibleMedia(next).size - 1).coerceAtLeast(0))
         zoom = 1f
@@ -172,7 +222,6 @@ class ViewerState(
     }
 
     private fun flipPages(delta: Int) {
-        direction = delta
         val currentIndex = neighbors.indexOfFirst { it.stableId == work.stableId }
         if (currentIndex >= 0) {
             val next =
@@ -184,7 +233,7 @@ class ViewerState(
             if (next != null) {
                 if (next.work != currentIndex) changeWork(neighbors[next.work], next.page)
                 else {
-                    page = next.page
+                    selectPage(next.page)
                     zoom = 1f
                     pan = Offset.Zero
                     error = ""
@@ -195,7 +244,7 @@ class ViewerState(
             }
         }
         if (page + delta in media.indices) {
-            page += delta
+            selectPage(page + delta)
             zoom = 1f
             pan = Offset.Zero
             error = ""
@@ -204,7 +253,6 @@ class ViewerState(
     }
 
     fun neighbor(delta: Int) {
-        direction = delta
         workJob?.cancel()
         workJob =
             gallery.scope.launch {
@@ -251,7 +299,39 @@ class ViewerState(
     }
 
     fun close() {
+        videoPlayback?.activate(false)
         closing = true
+    }
+
+    internal fun dismiss() {
+        val video = videoPlayback
+        when {
+            video?.menu == true -> video.menu = false
+            video?.status?.fullscreen == true -> video.fullscreen()
+            reading.menu -> reading.menu = false
+            else -> close()
+        }
+    }
+
+    internal fun selectPage(index: Int) {
+        if (page != index) {
+            videoPlayback?.activate(false)
+            changingMedia = true
+            page = index
+        }
+    }
+
+    internal fun continueVideo(url: String) {
+        if (closing || current?.url != url) return
+        val next = media.getOrNull(page + 1)?.takeIf { it.type == "video" } ?: return
+        nextVideoToPlay = next.url
+        reading.select(page + 1)
+    }
+
+    internal fun consumeVideoContinuation(url: String): Boolean {
+        val next = nextVideoToPlay
+        nextVideoToPlay = null
+        return next == url
     }
 
     fun toggleHidden() {

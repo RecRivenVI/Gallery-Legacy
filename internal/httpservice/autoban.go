@@ -32,7 +32,7 @@ func (a *access) configureBan(input reading.Row) error {
 	return nil
 }
 func (a *access) checkBan(client reading.Row, failure bool) {
-	if !a.enabled || !a.rule.Enabled || client["local"] == true {
+	if !a.enabled || !a.rule.Enabled || client["local"] == true || client["blocked"] == true {
 		return
 	}
 	now := a.now().UnixMilli()
@@ -48,8 +48,26 @@ func (a *access) checkBan(client reading.Row, failure bool) {
 		w.requests++
 	}
 	if w.requests >= a.rule.MaxRequests || w.errors >= a.rule.MaxErrors {
-		client["blocked"] = true
-		client["blockedUntilMs"] = now + a.rule.BanMinutes*60000
-		a.dirty = true
+		a.changeBan(client, true, now+a.rule.BanMinutes*60000, "automatic", now)
 	}
+}
+
+func (a *access) expireBan(client reading.Row) {
+	until := count(client["blockedUntilMs"])
+	if until > 0 && until <= a.now().UnixMilli() {
+		a.changeBan(client, false, 0, "expired", until)
+	}
+}
+
+func (a *access) changeBan(client reading.Row, blocked bool, until int64, action string, at int64) {
+	if client["blocked"] == blocked && count(client["blockedUntilMs"]) == until {
+		return
+	}
+	client["blocked"], client["blockedUntilMs"] = blocked, until
+	a.touch(client)
+	delete(a.windows, stringValue(client["id"]))
+	a.bans = append(a.bans, reading.Row{
+		"client": client["id"], "address": client["address"], "action": action,
+		"blocked": blocked, "blockedUntilMs": until, "atMs": at,
+	})
 }

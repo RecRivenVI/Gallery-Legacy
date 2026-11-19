@@ -297,9 +297,11 @@ type ClientAccess struct {
 }
 
 type AccessSnapshot struct {
-	Enabled bool           `json:"enabled"`
-	Clients []ClientAccess `json:"clients"`
-	AutoBan AutoBanRule    `json:"autoBan"`
+	Enabled     bool           `json:"enabled"`
+	Clients     []ClientAccess `json:"clients"`
+	ClientPage  int            `json:"clientPage"`
+	ClientPages int            `json:"clientPages"`
+	AutoBan     AutoBanRule    `json:"autoBan"`
 }
 
 type ValidationStatus struct {
@@ -444,14 +446,6 @@ type WorkRelation struct {
 	TargetPlatform string `json:"targetPlatform"`
 	TargetID       string `json:"targetId"`
 	TargetPath     string `json:"targetPath"`
-}
-
-type ImagePayload struct {
-	Encoded    string `json:"encoded"`
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
-	Animated   bool   `json:"animated"`
-	DurationMs int64  `json:"durationMs"`
 }
 
 type SearchTerm struct {

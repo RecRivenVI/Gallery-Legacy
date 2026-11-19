@@ -1118,6 +1118,18 @@
           "type": "list:ClientAccess"
         },
         {
+          "name": "clientPage",
+          "go": "ClientPage",
+          "type": "int",
+          "default": "1"
+        },
+        {
+          "name": "clientPages",
+          "go": "ClientPages",
+          "type": "int",
+          "default": "1"
+        },
+        {
           "name": "autoBan",
           "go": "AutoBan",
           "type": "AutoBanRule"
@@ -1624,36 +1636,6 @@
           "name": "targetPath",
           "go": "TargetPath",
           "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "ImagePayload",
-      "fields": [
-        {
-          "name": "encoded",
-          "go": "Encoded",
-          "type": "string"
-        },
-        {
-          "name": "width",
-          "go": "Width",
-          "type": "int"
-        },
-        {
-          "name": "height",
-          "go": "Height",
-          "type": "int"
-        },
-        {
-          "name": "animated",
-          "go": "Animated",
-          "type": "bool"
-        },
-        {
-          "name": "durationMs",
-          "go": "DurationMs",
-          "type": "long"
         }
       ]
     },

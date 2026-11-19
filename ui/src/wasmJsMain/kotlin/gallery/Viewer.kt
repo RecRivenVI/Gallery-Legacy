@@ -7,9 +7,11 @@ import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
@@ -17,6 +19,7 @@ import androidx.compose.ui.layout.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
 
 @Composable
@@ -24,14 +27,37 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
     val phone = width < 700
     val progress = remember(state) { Animatable(0f) }
+    val velocity = remember(state) { FloatArray(1) }
+    val frame = remember(progress) { progress.asState() }
+    val opened by remember(frame) { derivedStateOf { frame.value >= .995f } }
     val focus = remember { FocusRequester() }
-    LaunchedEffect(state.closing) {
+    val galleryBackdrop = LocalBackdrop.current
+    var stageBounds by remember(state) { mutableStateOf(Rect.Zero) }
+    var viewerBounds by remember { mutableStateOf(Rect.Zero) }
+    var readerPageBounds by
+        remember(state, state.current?.url, state.reading.options.mode) {
+            mutableStateOf(Rect.Zero)
+        }
+    var flightReady by remember(state) { mutableStateOf(false) }
+    val useFlight =
+        !state.split && !state.gallery.reduceMotion && state.origin != null && state.current != null
+    val flightArea = if (state.reading.options.mode == "single") stageBounds else readerPageBounds
+    SideEffect { state.flightProgress = frame }
+    LaunchedEffect(state, state.closing) {
+        withFrameNanos {}
+        if (!state.closing && useFlight)
+            withTimeoutOrNull(200) { snapshotFlow { flightReady }.first { it } }
+        state.flightStarted = useFlight
         progress.animateTo(
             if (state.closing) 0f else 1f,
-            if (state.gallery.reduceMotion) snap() else spring(dampingRatio = 1f, stiffness = 324f),
-        )
+            if (state.gallery.reduceMotion) snap()
+            else spring(dampingRatio = 1f, stiffness = 245f, visibilityThreshold = .002f),
+            initialVelocity = velocity[0],
+        ) {
+            velocity[0] = this.velocity
+        }
         if (state.closing) {
-            state.gallery.viewer = null
+            Snapshot.withMutableSnapshot { state.gallery.viewer = null }
             writeHash(routeHash(state.gallery.route), true)
         }
     }
@@ -49,14 +75,19 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
             state.gallery.people.record(state.work, state.reading.progressPage)
     }
     DisposableEffect(state) { onDispose { state.dispose() } }
+    val videoFullscreen by
+        remember(state) {
+            derivedStateOf { state.videoPlayback?.status?.fullscreen == true }
+        }
     val detailWidth by
         animateDpAsState(
-            if (state.details && !state.hidden && !state.split && !phone) 240.dp else 0.dp,
+            if (state.details && !state.hidden && !state.split && !phone && !videoFullscreen) 240.dp
+            else 0.dp,
             if (state.gallery.reduceMotion) snap() else spring(dampingRatio = 1f, stiffness = 324f),
         )
     val bars by
         animateFloatAsState(
-            if (state.hidden) 0f else 1f,
+            if (state.hidden || videoFullscreen) 0f else 1f,
             if (state.gallery.reduceMotion) snap() else spring(dampingRatio = 1f, stiffness = 324f),
         )
     val masks = state.glassMasks
@@ -66,8 +97,7 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
         Box(
             modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = progress.value }
-                .background(Color(0xff0c0c0d))
+                .onGloballyPositioned { viewerBounds = it.boundsInWindow() }
                 .focusRequester(focus)
                 .onKeyEvent { e ->
                     if (
@@ -78,21 +108,20 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                             e.isAltPressed
                     )
                         false
+                    else if (state.videoPlayback?.let { videoShortcut(it, e) } == true) true
                     else
                         when (e.key) {
                             Key.Escape -> {
-                                if (state.reading.menu) state.reading.menu = false
-                                else state.close()
+                                state.dismiss()
                                 true
                             }
                             Key.DirectionLeft -> {
-                                if (e.isShiftPressed)
-                                    state.neighbor(state.reading.physicalDelta(-1))
+                                if (e.isShiftPressed) state.neighbor(-1)
                                 else state.flip(state.reading.physicalDelta(-1))
                                 true
                             }
                             Key.DirectionRight -> {
-                                if (e.isShiftPressed) state.neighbor(state.reading.physicalDelta(1))
+                                if (e.isShiftPressed) state.neighbor(1)
                                 else state.flip(state.reading.physicalDelta(1))
                                 true
                             }
@@ -150,7 +179,22 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                 .focusable()
                 .semantics { paneTitle = "看大图" }
         ) {
-            Column(Modifier.fillMaxSize().captureBackdrop(pictureBackdrop)) {
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress.value }) {
+                if (!state.split && galleryBackdrop != null) ViewerBackdrop(galleryBackdrop)
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(p.bg.copy(alpha = if (state.split) 1f else .48f))
+                )
+            }
+            Column(
+                Modifier.fillMaxSize()
+                    .graphicsLayer { alpha = progress.value }
+                    .then(
+                        if (phone && state.details && !state.split || state.reading.menu)
+                            Modifier.captureBackdrop(pictureBackdrop)
+                        else Modifier
+                    )
+            ) {
                 if (bars > .01f)
                     Row(
                         Modifier.fillMaxWidth()
@@ -184,9 +228,13 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                             }
                     }
                 Row(Modifier.weight(1f)) {
-                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                    Box(
+                        Modifier.weight(1f).fillMaxHeight().onGloballyPositioned {
+                            stageBounds = it.boundsInWindow()
+                        }
+                    ) {
                         if (state.reading.options.mode == "single") {
-                            ViewerStage(state, phone, progress.value)
+                            ViewerStage(state, phone, frame, opened, useFlight)
                             state.reading.episodePrompt?.let { episode ->
                                 Box(Modifier.align(Alignment.Center)) {
                                     GlassSurface(Modifier.widthIn(max = 420.dp).padding(16.dp)) {
@@ -203,7 +251,10 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                                     }
                                 }
                             }
-                        } else ReaderStage(state, phone, progress.value)
+                        } else
+                            ReaderStage(state, phone, frame, useFlight) {
+                                readerPageBounds = it
+                            }
                     }
                     if (detailWidth > 0.dp)
                         Box(
@@ -240,7 +291,7 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                     )
             }
             CompositionLocalProvider(LocalBackdrop provides pictureBackdrop) {
-                if (phone && state.details && !state.hidden && !state.split)
+                if (phone && state.details && !state.hidden && !state.split && !videoFullscreen)
                     GlassSurface(
                         Modifier.align(Alignment.BottomCenter)
                             .fillMaxWidth()
@@ -264,6 +315,10 @@ fun Viewer(state: ViewerState, width: Int, modifier: Modifier = Modifier) {
                     )
                 if (state.reading.menu) ReadingMenu(state)
             }
+            if (useFlight)
+                ViewerFlight(state, progress, flightArea, stageBounds, viewerBounds.topLeft) {
+                    flightReady = true
+                }
         }
     }
     LaunchedEffect(state.message) {

@@ -15,7 +15,7 @@ type platformBatch struct {
 	works                                                                                     []catalog.PreparedWork
 	ends                                                                                      []catalog.AuthorEnd
 	authorities                                                                               []catalog.PreparedWork
-	bytes                                                                                     int64
+	bytes, replayBytes                                                                        int64
 	added, updated, deleted, writeNanos, catalogNanos, searchNanos, commitNanos, transactions int64
 	firstCommitAt                                                                             time.Time
 }
@@ -29,6 +29,7 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 	defer func() {
 		for _, b := range batches {
 			p.queueBudget.Release(b.bytes)
+			p.replayBudget.Release(b.replayBytes)
 			for _, work := range b.works {
 				if err := catalog.ReleasePrepared(work); err != nil {
 					result = errors.Join(result, fmt.Errorf("release prepared work: %w", err))
@@ -74,7 +75,8 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 			}
 		}
 		p.queueBudget.Release(b.bytes)
-		b.works, b.ends, b.authorities, b.bytes = nil, nil, nil, 0
+		p.replayBudget.Release(b.replayBytes)
+		b.works, b.ends, b.authorities, b.bytes, b.replayBytes = nil, nil, nil, 0, 0
 		if time.Since(lastCheckpoint) > 5*time.Second {
 			if err = writer.Checkpoint(writeCtx); err != nil {
 				return err
@@ -118,11 +120,8 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 			}
 
 			if writerFailed {
-				p.queueBudget.Release(m.bytes)
-				if m.work != nil {
-					if err := catalog.ReleasePrepared(*m.work); err != nil {
-						result = errors.Join(result, err)
-					}
+				if err := p.discardMessage(m); err != nil {
+					result = errors.Join(result, err)
 				}
 				continue
 			}
@@ -171,7 +170,11 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 				p.mu.Unlock()
 				continue
 			}
-			b.bytes += m.bytes
+			if m.replayed {
+				b.replayBytes += m.bytes
+			} else {
+				b.bytes += m.bytes
+			}
 			if m.work != nil {
 				b.works = append(b.works, *m.work)
 			} else if m.empty != nil {
@@ -184,7 +187,7 @@ func (p *Pipeline) writeMessages(ctx context.Context, cancel context.CancelFunc,
 					b.authorities = append(b.authorities, *m.authority)
 				}
 			}
-			if len(b.works) >= p.Config.BatchSize || len(b.ends) >= 64 || b.bytes >= 8<<20 {
+			if len(b.works) >= p.Config.BatchSize || len(b.ends) >= 64 || b.bytes+b.replayBytes >= 8<<20 {
 				if err := flush(m.platform); err != nil {
 					fail(err)
 				}

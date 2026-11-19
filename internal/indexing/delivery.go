@@ -27,8 +27,9 @@ func (m pendingDelivery) message() message {
 	return message{work: m.Work, empty: m.Empty, authority: m.Authority, platform: m.Platform, key: m.Key, fingerprint: m.Fingerprint, complete: m.Complete, bytes: m.Bytes}
 }
 
-// HDD reading follows physical location. Future authors are spooled on the
-// instance disk so display order need not force source seeks or unbounded RAM.
+// Stage full-scan works on the instance disk until their author completes.
+// HDD reads can keep following physical location without holding all prepared
+// works in memory or waiting for another author to publish.
 type deliveryQueue struct {
 	p       *Pipeline
 	ctx     context.Context
@@ -44,6 +45,9 @@ CREATE TABLE author_delivery(platform TEXT,key TEXT,rank INTEGER,done INTEGER DE
 CREATE INDEX author_delivery_head ON author_delivery(platform,done,rank);`)
 	if err != nil {
 		return nil, err
+	}
+	if p.Mode == "full" {
+		return &deliveryQueue{p, context.WithoutCancel(ctx), l, output}, nil
 	}
 	for _, id := range p.selected {
 		if cap(p.disks[p.Config.Sources[id]]) != 1 {
@@ -75,7 +79,7 @@ func (d *deliveryQueue) head(id string) (string, error) {
 
 func (d *deliveryQueue) forward(m message) error {
 	ctx, l := d.ctx, d.listing
-	if m.work == nil && m.complete {
+	if d.p.Mode != "full" && m.work == nil && m.complete {
 		_, err := l.DB.ExecContext(ctx, "UPDATE author_delivery SET done=1 WHERE platform=? AND key=?", m.platform, m.key)
 		if err != nil {
 			return err
@@ -87,23 +91,29 @@ func (d *deliveryQueue) forward(m message) error {
 	return nil
 }
 
-func (d *deliveryQueue) drain(id string, all bool) error {
+func (d *deliveryQueue) drain(id string, all bool, completedAuthor *string) error {
 	ctx, l, p := d.ctx, d.listing, d.p
 	for {
-		key, err := d.head(id)
-		if err != nil {
-			return err
-		}
 		query := "SELECT ordinal,payload FROM pending_delivery WHERE platform=?"
 		args := []any{id}
 		if !all {
+			var key string
+			if completedAuthor != nil {
+				key = *completedAuthor
+			} else {
+				var err error
+				key, err = d.head(id)
+				if err != nil {
+					return err
+				}
+			}
 			query += " AND author=?"
 			args = append(args, key)
 		}
 		var ordinal int64
 		var payload []byte
 		at := time.Now()
-		err = l.DB.QueryRowContext(ctx, query+" ORDER BY ordinal LIMIT 1", args...).Scan(&ordinal, &payload)
+		err := l.DB.QueryRowContext(ctx, query+" ORDER BY ordinal LIMIT 1", args...).Scan(&ordinal, &payload)
 		if err == sql.ErrNoRows {
 			return nil
 		}
@@ -115,11 +125,15 @@ func (d *deliveryQueue) drain(id string, all bool) error {
 			return err
 		}
 		p.preparation[id].Replay.Add(time.Since(at).Nanoseconds())
-		if err = p.queueBudget.Acquire(ctx, stored.Bytes); err != nil {
+		// Producers may already hold the preparation budget while waiting to
+		// send. Replaying an author must be able to reach the writer first.
+		if err = p.replayBudget.Acquire(ctx, stored.Bytes); err != nil {
 			return err
 		}
-		if err = d.forward(stored.message()); err != nil {
-			p.discardMessage(stored.message())
+		m := stored.message()
+		m.replayed = true
+		if err = d.forward(m); err != nil {
+			p.discardMessage(m)
 			return err
 		}
 		if _, err = l.DB.ExecContext(ctx, "DELETE FROM pending_delivery WHERE ordinal=?", ordinal); err != nil {
@@ -149,7 +163,11 @@ func (d *deliveryQueue) store(m message) error {
 }
 
 func (p *Pipeline) discardMessage(m message) error {
-	p.queueBudget.Release(m.bytes)
+	if m.replayed {
+		p.replayBudget.Release(m.bytes)
+	} else {
+		p.queueBudget.Release(m.bytes)
+	}
 	if m.work != nil {
 		return catalog.ReleasePrepared(*m.work)
 	}
@@ -161,15 +179,26 @@ func (d *deliveryQueue) accept(m message) (result error) {
 			result = errors.Join(result, d.p.discardMessage(m))
 		}
 	}()
-	if cap(d.p.disks[d.p.Config.Sources[m.platform]]) != 1 {
-		return d.forward(m)
-	}
 	if m.finished != nil {
-		if err := d.drain(m.platform, true); err != nil {
+		if err := d.drain(m.platform, true, nil); err != nil {
 			return err
 		}
 		d.output <- m
 		return nil
+	}
+	if d.p.Mode == "full" {
+		if m.work != nil && m.platform != "Venera" {
+			return d.store(m)
+		}
+		if m.complete && m.work == nil {
+			if err := d.drain(m.platform, false, &m.key); err != nil {
+				return err
+			}
+		}
+		return d.forward(m)
+	}
+	if cap(d.p.disks[d.p.Config.Sources[m.platform]]) != 1 {
+		return d.forward(m)
 	}
 	author := m.key
 	if m.work != nil {
@@ -185,7 +214,7 @@ func (d *deliveryQueue) accept(m message) (result error) {
 		}
 		m.bytes = 0
 		m.work = nil
-		if err = d.drain(m.platform, false); err != nil {
+		if err = d.drain(m.platform, false, nil); err != nil {
 			return err
 		}
 		return nil
@@ -204,7 +233,7 @@ func (p *Pipeline) orderMessages(ctx context.Context, l *library.Listing, input 
 		}
 	}
 	for _, id := range p.selected {
-		if err = d.drain(id, true); err != nil {
+		if err = d.drain(id, true, nil); err != nil {
 			return err
 		}
 	}

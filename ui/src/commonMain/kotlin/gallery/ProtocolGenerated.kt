@@ -386,6 +386,8 @@ fun ClientAccessWire(raw: JsonElement?): ClientAccessWire =
 data class AccessSnapshotWire(
     val enabled: Boolean = false,
     val clients: List<ClientAccessWire> = emptyList(),
+    val clientPage: Int = 1,
+    val clientPages: Int = 1,
     val autoBan: AutoBanRuleWire = AutoBanRuleWire(),
 )
 
@@ -597,18 +599,6 @@ data class WorkRelationWire(
 )
 
 fun WorkRelationWire(raw: JsonElement?): WorkRelationWire =
-    json.decodeFromJsonElement(raw ?: emptyDocument)
-
-@Serializable
-data class ImagePayloadWire(
-    val encoded: String = "",
-    val width: Int = 0,
-    val height: Int = 0,
-    val animated: Boolean = false,
-    val durationMs: Long = 0L,
-)
-
-fun ImagePayloadWire(raw: JsonElement?): ImagePayloadWire =
     json.decodeFromJsonElement(raw ?: emptyDocument)
 
 @Serializable

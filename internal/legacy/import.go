@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/RecRivenVI/Gallery-Legacy/internal/accesslog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/control"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
@@ -62,20 +62,24 @@ func Import(source string, target instance.Config) (summary Summary, result erro
 	if err != nil {
 		return summary, fmt.Errorf("read legacy access snapshot: %w", err)
 	}
-	original, err := parseHistory(old, "")
+	original, err := accesslog.Parse(old)
 	if err != nil {
 		return summary, err
 	}
-	targetFile := filepath.Join(target.StateRoot, "access-history.json")
-	b, err := instance.ReadSnapshot(targetFile)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return summary, err
-	}
-	current, err := parseHistory(b, target.InstanceID)
+	store, err := accesslog.Open(target.StateRoot, target.InstanceID)
 	if err != nil {
 		return summary, err
 	}
-	merged, err := mergeHistory(original, current, time.Now())
+	defer func() { result = errors.Join(result, store.Close()) }()
+	current, err := store.Load()
+	if err != nil {
+		return summary, err
+	}
+	current.Events, err = store.Requests()
+	if err != nil {
+		return summary, err
+	}
+	merged, err := mergeHistory(original, current)
 	if err != nil {
 		return summary, err
 	}
@@ -92,7 +96,7 @@ func Import(source string, target instance.Config) (summary Summary, result erro
 			return summary, err
 		}
 	}
-	if err = instance.WriteJSON(targetFile, merged); err != nil {
+	if err = store.Save(merged, nil, false, true); err != nil {
 		return summary, err
 	}
 	return Summary{len(reports), failed, len(archives), len(merged.Clients), len(merged.Events)}, nil

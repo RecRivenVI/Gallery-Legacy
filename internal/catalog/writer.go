@@ -271,12 +271,34 @@ func (w *Writer) Checkpoint(ctx context.Context) error {
 	return e
 }
 
-func (w *Writer) Verify(ctx context.Context) error {
+func (w *Writer) Verify(ctx context.Context) (result error) {
+	conn, err := w.DB.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire catalog verification connection: %w", err)
+	}
+	defer conn.Close()
+	var previous int64
+	if err = conn.QueryRowContext(ctx, "PRAGMA mmap_size").Scan(&previous); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("read catalog verification mapping: %w", err)
+	}
+	// Foreign-key validation follows references across the entire catalog. A
+	// read mapping avoids one VFS read call for each cold SQLite page.
+	const verifyMapBytes int64 = 2 << 30
+	if previous < verifyMapBytes {
+		if _, err = conn.ExecContext(ctx, fmt.Sprintf("PRAGMA mmap_size=%d", verifyMapBytes)); err != nil {
+			return fmt.Errorf("enable catalog verification mapping: %w", err)
+		}
+		defer func() {
+			if _, err := conn.ExecContext(context.WithoutCancel(ctx), fmt.Sprintf("PRAGMA mmap_size=%d", previous)); err != nil {
+				result = errors.Join(result, fmt.Errorf("restore catalog verification mapping: %w", err))
+			}
+		}()
+	}
 	checks := []string{"SELECT count(*) FROM pragma_foreign_key_check", "SELECT count(*) FROM works w WHERE media_count<>(SELECT count(*) FROM media m WHERE m.work_id=w.work_id)", "SELECT count(*) FROM authors a WHERE work_count<>(SELECT count(*) FROM works w WHERE w.author_id=a.author_id)", "SELECT count(*) FROM tags t WHERE work_count<>(SELECT count(*) FROM work_tags wt WHERE wt.tag_id=t.tag_id)", "SELECT count(*) FROM metadata_shapes s WHERE work_count<>(SELECT count(*) FROM works w WHERE w.metadata_shape_id=s.metadata_shape_id)", "SELECT abs((SELECT works FROM live_stats)-(SELECT count(*) FROM works))", "SELECT abs((SELECT media FROM live_stats)-(SELECT count(*) FROM media))", "SELECT abs((SELECT authors FROM live_stats)-(SELECT count(*) FROM authors))", "SELECT abs((SELECT count(*) FROM works)-(SELECT count(*) FROM live_work_fts))"}
 	for i, q := range checks {
 		var count int64
 		started := time.Now()
-		e := w.DB.QueryRowContext(ctx, q).Scan(&count)
+		e := conn.QueryRowContext(ctx, q).Scan(&count)
 		w.Metrics.Verify.Add(time.Since(started).Nanoseconds())
 		if e != nil {
 			return e

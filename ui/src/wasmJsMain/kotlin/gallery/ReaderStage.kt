@@ -1,5 +1,6 @@
 package gallery
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -18,10 +19,14 @@ import kotlin.math.*
 import kotlinx.coroutines.*
 
 @Composable
-fun ReaderStage(state: ViewerState, phone: Boolean, progress: Float) {
+fun ReaderStage(
+    state: ViewerState,
+    phone: Boolean,
+    progress: State<Float>,
+    useFlight: Boolean,
+    onPageBounds: (Rect) -> Unit,
+) {
     val density = LocalDensity.current
-    val layer = rememberGraphicsLayer()
-    val backdrop = remember { Backdrop(layer) }
     var autoHidden by remember { mutableStateOf(false) }
     LaunchedEffect(state.lastPointer) {
         autoHidden = false
@@ -56,28 +61,40 @@ fun ReaderStage(state: ViewerState, phone: Boolean, progress: Float) {
                     x < 200 * density.density || x > state.areaWidth - 200 * density.density
             }
     ) {
-        Box(Modifier.fillMaxSize().captureBackdrop(backdrop)) {
-            if (state.reading.options.mode == "continuous") ContinuousPages(state, progress)
+        Box(Modifier.fillMaxSize()) {
+            if (state.reading.options.mode == "continuous")
+                ContinuousPages(state, progress, useFlight, onPageBounds)
             else {
-                val indices =
-                    state.reading.spread.let {
-                        if (state.reading.options.rtl) it.reversed() else it
-                    }
-                Row(
+                val spread = state.reading.spread.mapNotNull { state.media.getOrNull(it) }
+                AnimatedContent(
+                    spread,
                     Modifier.fillMaxSize().viewerGestures(state, phone).graphicsLayer {
                         scaleX = state.zoom
                         scaleY = state.zoom
-                        translationX = state.pan.x + state.dragX
+                        translationX = state.pan.x
                         translationY = state.pan.y
-                    }
-                ) {
-                    indices.forEach { index ->
-                        ReaderPage(state, index, Modifier.weight(1f).fillMaxHeight(), progress)
+                    },
+                    transitionSpec = { mediaFade(state.gallery.reduceMotion) },
+                    contentKey = { pages -> pages.map { it.url } },
+                ) { pages ->
+                    Row(Modifier.fillMaxSize()) {
+                        val ordered = if (state.reading.options.rtl) pages.reversed() else pages
+                        ordered.forEach { media ->
+                            ReaderPage(
+                                state,
+                                media,
+                                Modifier.weight(1f).fillMaxHeight(),
+                                progress,
+                                useFlight,
+                                onPageBounds,
+                                claimed = true,
+                            )
+                        }
                     }
                 }
             }
         }
-        CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        CompositionLocalProvider(LocalBackdrop provides null) {
             if (!state.hidden && !(phone && state.details) && (!autoHidden || state.nearEdge)) {
                 GlassSurface(Modifier.align(Alignment.CenterStart).padding(12.dp), radius = 50.dp) {
                     IconAction("left", if (state.reading.physicalDelta(-1) > 0) "下一页" else "上一页") {
@@ -110,66 +127,76 @@ fun ReaderStage(state: ViewerState, phone: Boolean, progress: Float) {
 @Composable
 private fun ReaderPage(
     state: ViewerState,
-    index: Int,
+    media: MediaSummaryWire,
     modifier: Modifier,
-    progress: Float,
-    continuous: Boolean = false,
+    progress: State<Float>,
+    useFlight: Boolean,
+    onPageBounds: (Rect) -> Unit,
+    claimed: Boolean,
 ) {
-    val media = state.media.getOrNull(index) ?: return
-    val density = LocalDensity.current
-    var rect by remember { mutableStateOf(Rect.Zero) }
     val large = media.url
     var loaded by remember(large, state.retry) { mutableStateOf(false) }
     var failed by remember(large, state.retry) { mutableStateOf(false) }
     var delayed by remember(large, state.retry) { mutableStateOf(false) }
-    val layer = rememberGraphicsLayer()
-    val backdrop = remember { Backdrop(layer) }
     LaunchedEffect(large, state.retry) {
-        delay(200)
+        delay(1000)
         delayed = true
     }
-    val primary = index == state.page
-    val target = if (state.closing) state.closeRect() else state.origin
-    val picture =
-        if (primary && progress < .999f && target != null && rect.width > 0 && rect.height > 0) {
-            val origin = target.translate(-rect.topLeft)
-            val box = lerp(origin, Rect(0f, 0f, rect.width, rect.height), progress)
-            Modifier.wrapContentSize(Alignment.TopStart, unbounded = true)
-                .offset { IntOffset(box.left.roundToInt(), box.top.roundToInt()) }
-                .requiredSize(
-                    with(density) { box.width.toDp() },
-                    with(density) { box.height.toDp() },
-                )
-        } else Modifier.fillMaxSize()
+    val primary = media.url == state.current?.url
+    if (claimed) {
+        DisposableEffect(media.url) {
+            state.showMedia(media.url)
+            onDispose { state.hideMedia(media.url) }
+        }
+    }
     Box(
         modifier
-            .onGloballyPositioned { rect = it.boundsInWindow() }
             .then(
-                if (primary) Modifier else Modifier.alpha(((progress - .3f) / .7f).coerceIn(0f, 1f))
+                if (primary && useFlight)
+                    Modifier.onGloballyPositioned {
+                        onPageBounds(
+                            Rect(
+                                it.positionInWindow(),
+                                Size(it.size.width.toFloat(), it.size.height.toFloat()),
+                            )
+                        )
+                    }
+                else Modifier
             )
+            .graphicsLayer {
+                val frame = progress.value
+                alpha =
+                    if (primary) {
+                        if (useFlight && frame < .995f) 0f else 1f
+                    } else ((frame - .3f) / .7f).coerceIn(0f, 1f)
+            }
     ) {
-        Box(Modifier.fillMaxSize().captureBackdrop(backdrop)) {
+        Box(Modifier.fillMaxSize()) {
             key(media.url, state.retry) {
+                if (!loaded)
+                    MediaImage(
+                        state.previewFor(media).thumbnailUrl,
+                        Modifier.fillMaxSize(),
+                        fit = true,
+                        placeholder = false,
+                        onInfo = { w, h, animated ->
+                            state.mediaInfo(media.relativePath, w, h, animated)
+                        },
+                    )
                 MediaImage(
-                    media.thumbnailUrl,
-                    picture,
-                    fit = progress > .99f,
+                    large,
+                    Modifier.fillMaxSize(),
+                    fit = true,
                     placeholder = false,
+                    onLoaded = { loaded = true },
+                    onError = { failed = true },
                     onInfo = { w, h, animated ->
                         state.mediaInfo(media.relativePath, w, h, animated)
                     },
                 )
-                MediaImage(
-                    large,
-                    picture,
-                    fit = progress > .99f,
-                    placeholder = false,
-                    onLoaded = { loaded = true },
-                    onError = { failed = true },
-                )
             }
         }
-        CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        CompositionLocalProvider(LocalBackdrop provides null) {
             if (delayed && !loaded && !failed)
                 Box(
                     Modifier.align(Alignment.BottomStart)
@@ -194,11 +221,15 @@ private fun ReaderPage(
 }
 
 @Composable
-private fun ContinuousPages(state: ViewerState, progress: Float) {
+private fun ContinuousPages(
+    state: ViewerState,
+    progress: State<Float>,
+    useFlight: Boolean,
+    onPageBounds: (Rect) -> Unit,
+) {
     val reader = state.reading
     val horizontal = rememberScrollState()
     val density = LocalDensity.current
-    val shown by rememberUpdatedState(progress)
     val offset = if (reader.episodes.previous != null) 1 else 0
     val currentOffset by rememberUpdatedState(offset)
     val visible by
@@ -225,7 +256,7 @@ private fun ContinuousPages(state: ViewerState, progress: Float) {
         snapshotFlow { reader.scroll.layoutInfo }
             .collect { layout ->
                 if (
-                    shown >= .99f &&
+                    progress.value >= .99f &&
                         layout.visibleItemsInfo.any {
                             it.index - currentOffset in state.media.indices
                         }
@@ -237,7 +268,7 @@ private fun ContinuousPages(state: ViewerState, progress: Float) {
                             .minBy { abs(it.offset + it.size / 2 - center) }
                             .index - currentOffset
                     if (state.page != page) {
-                        state.page = page
+                        state.selectPage(page)
                         state.updateLink()
                     }
                 }
@@ -285,10 +316,12 @@ private fun ContinuousPages(state: ViewerState, progress: Float) {
                     if (index in visible.first - 3..visible.last + 3)
                         ReaderPage(
                             state,
-                            index,
+                            media,
                             Modifier.width(width).height(width / ratio),
                             progress,
-                            continuous = true,
+                            useFlight,
+                            onPageBounds,
+                            claimed = index in visible,
                         )
                     else
                         Box(

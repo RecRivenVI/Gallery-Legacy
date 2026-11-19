@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/library"
@@ -83,7 +84,10 @@ func Resolve(config instance.Config, m reading.Row) (File, error) {
 	return f, nil
 }
 
-type Service struct{ Cache *Cache }
+type Service struct {
+	Cache    *Cache
+	playback sync.Mutex
+}
 
 func New(config instance.Config, resources string) (*Service, error) {
 	cache, err := NewCache(config, resources)

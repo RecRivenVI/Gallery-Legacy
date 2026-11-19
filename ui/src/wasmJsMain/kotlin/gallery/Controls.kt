@@ -15,12 +15,14 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 
@@ -79,8 +81,12 @@ fun Fluent(
             fluentPaths[name].orEmpty().map { PathParser().parsePathString(it).toPath() }
         }
     Canvas(modifier.size(size.dp)) {
-        scale(this.size.width / 20f, this.size.height / 20f, Offset.Zero) {
-            paths.forEach { drawPath(it, color) }
+        val side = this.size.minDimension
+        val inset = Offset((this.size.width - side) / 2, (this.size.height - side) / 2)
+        translate(inset.x, inset.y) {
+            scale(side / 20f, side / 20f, Offset.Zero) {
+                paths.forEach { drawPath(it, color) }
+            }
         }
     }
 }
@@ -95,6 +101,8 @@ fun Action(
     modifier: Modifier = Modifier,
     description: String = text,
     onLongClick: (() -> Unit)? = null,
+    centered: Boolean = false,
+    fontSize: Int = 13,
     onClick: () -> Unit,
 ) {
     val p = LocalPalette.current
@@ -111,6 +119,7 @@ fun Action(
             else -> Color.Transparent
         }
     val fg = if (primary) p.accentInk else p.fg
+    val shape = GalleryShape(Metrics.radius.dp)
     Row(
         modifier
             .then(
@@ -123,10 +132,9 @@ fun Action(
             )
             .widthIn(min = if (icon != null && text.isEmpty()) 34.dp else 0.dp)
             .heightIn(min = 34.dp)
-            .background(bg, GalleryShape(7.dp))
+            .background(bg, shape)
             .then(
-                if (focus && LocalKeyboard.current) Modifier.border(2.dp, p.fg, GalleryShape(7.dp))
-                else Modifier
+                if (focus && LocalKeyboard.current) Modifier.border(2.dp, p.fg, shape) else Modifier
             )
             .alpha(if (enabled) 1f else .4f)
             .hoverable(source, enabled)
@@ -142,16 +150,30 @@ fun Action(
                 if (text.isEmpty() && description.isNotEmpty()) contentDescription = description
             }
             .padding(
-                horizontal = if (icon != null && text.isEmpty()) 4.dp else 10.dp,
+                horizontal =
+                    when {
+                        centered -> 2.dp
+                        icon != null && text.isEmpty() -> 4.dp
+                        else -> 10.dp
+                    },
                 vertical = 5.dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement =
-            if (icon != null && text.isEmpty()) Arrangement.Center else Arrangement.spacedBy(6.dp),
+            Arrangement.spacedBy(
+                6.dp,
+                if (centered || (icon != null && text.isEmpty())) Alignment.CenterHorizontally
+                else Alignment.Start,
+            ),
     ) {
         if (icon != null) Fluent(icon, color = fg, size = if (text.isEmpty()) 16 else 20)
         if (text.isNotEmpty())
-            Label(text.removeSuffix(" ▾").removeSuffix(" ▴"), color = fg, maxLines = 1)
+            Label(
+                text.removeSuffix(" ▾").removeSuffix(" ▴"),
+                color = fg,
+                size = fontSize,
+                maxLines = 1,
+            )
         if (text.endsWith(" ▾") || text.endsWith(" ▴"))
             Fluent(if (text.endsWith(" ▾")) "down" else "up", color = fg, size = 12)
     }
@@ -196,8 +218,12 @@ fun Field(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     password: Boolean = false,
+    textAlign: TextAlign = TextAlign.Start,
+    fontSize: Int = 13,
+    description: String = hint,
 ) {
     val p = LocalPalette.current
+    val shape = GalleryShape(Metrics.radius.dp)
     var editing by remember { mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(value)) }
     val fonts = LocalFonts.current
     val focus = remember { FocusRequester() }
@@ -224,8 +250,8 @@ fun Field(
             if (next.composition == null && changed) onChange(next.text)
         },
         modifier
-            .then(semanticControl("textbox", hint, enabled))
-            .keyboardFocus()
+            .then(semanticControl("textbox", description, enabled))
+            .keyboardFocus(shape)
             .focusRequester(focus)
             .onFocusChanged {
                 if (!hadFocus && it.isFocused) onFocus?.invoke()
@@ -233,11 +259,14 @@ fun Field(
                 hadFocus = it.isFocused
             }
             .heightIn(min = if (compact) 28.dp else 34.dp)
-            .clip(GalleryShape(7.dp))
+            .clip(shape)
             .background(p.field)
-            .border(1.dp, p.edge, GalleryShape(7.dp))
-            .padding(horizontal = 10.dp, vertical = if (compact) 4.dp else 7.dp)
-            .semantics { if (hint.isNotEmpty()) contentDescription = hint }
+            .border(1.dp, p.edge, shape)
+            .padding(
+                horizontal = if (compact) 2.dp else 10.dp,
+                vertical = if (compact) 4.dp else 7.dp,
+            )
+            .semantics { if (description.isNotEmpty()) contentDescription = description }
             .onPreviewKeyEvent {
                 if (it.type == KeyEventType.KeyDown && it.key == Key.Escape && onEscape != null) {
                     onEscape()
@@ -257,7 +286,12 @@ fun Field(
         singleLine = !multiline,
         cursorBrush = SolidColor(p.fg),
         textStyle =
-            TextStyle(color = p.fg, fontFamily = LocalGalleryFont.current, fontSize = 13.sp),
+            TextStyle(
+                color = p.fg,
+                fontFamily = LocalGalleryFont.current,
+                fontSize = fontSize.sp,
+                textAlign = textAlign,
+            ),
         visualTransformation =
             if (password) androidx.compose.ui.text.input.PasswordVisualTransformation()
             else
@@ -273,8 +307,9 @@ fun Field(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 leading?.invoke()
-                Box(Modifier.weight(1f)) {
-                    if (editing.text.isEmpty()) Label(hint, color = p.faint, maxLines = 1)
+                Box(Modifier.weight(1f), propagateMinConstraints = textAlign == TextAlign.Center) {
+                    if (editing.text.isEmpty() && hint.isNotEmpty())
+                        Label(hint, color = p.faint, maxLines = 1)
                     inner()
                 }
                 trailing?.invoke()
@@ -503,18 +538,7 @@ fun ErrorNotice(message: String, retry: (() -> Unit)? = null) {
 
 @Composable
 fun Skeleton(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition()
-    val alpha by
-        transition.animateFloat(.15f, .35f, infiniteRepeatable(tween(800), RepeatMode.Reverse))
-    Box(
-        modifier
-            .clip(GalleryShape(6.dp))
-            .background(
-                LocalPalette.current.fg.copy(
-                    alpha = if (LocalReducedMotion.current) .22f else alpha
-                )
-            )
-    )
+    Box(modifier.clip(GalleryShape(6.dp)).background(LocalPalette.current.fg.copy(alpha = .22f)))
 }
 
 @Composable

@@ -10,9 +10,13 @@ import kotlin.math.abs
 import kotlinx.coroutines.*
 
 @Composable
-internal fun Modifier.viewerGestures(state: ViewerState, phone: Boolean): Modifier {
+internal fun Modifier.viewerGestures(
+    state: ViewerState,
+    phone: Boolean,
+    video: VideoPlayback? = null,
+): Modifier {
     val density = LocalDensity.current
-    return this.pointerInput(state, phone) {
+    return this.pointerInput(state, phone, video) {
             var lastTap = 0.0
             var tap: Job? = null
             coroutineScope {
@@ -40,12 +44,10 @@ internal fun Modifier.viewerGestures(state: ViewerState, phone: Boolean): Modifi
                         } else if (moved) {
                             if (state.zoom > 1.01f)
                                 state.move(change.position - change.previousPosition)
-                            else state.dragX = (end.x - start.x) * .6f
                             event.changes.forEach { it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
                     state.dragging = false
-                    state.dragX = 0f
                     if (!multi && moved) {
                         val delta = end - start
                         if (
@@ -61,7 +63,26 @@ internal fun Modifier.viewerGestures(state: ViewerState, phone: Boolean): Modifi
                         )
                             state.details = delta.y < 0
                     } else if (!multi && !moved) {
-                        if (now() - lastTap < 300) {
+                        val media = state.current
+                        val fit =
+                            fittedMediaRect(
+                                size.width.toFloat(),
+                                size.height.toFloat(),
+                                (state.imageWidth.takeIf { it > 0 } ?: media?.width ?: 0).toFloat(),
+                                (state.imageHeight.takeIf { it > 0 } ?: media?.height ?: 0)
+                                    .toFloat(),
+                            )
+                        val insideImage =
+                            fit == androidx.compose.ui.geometry.Rect.Zero ||
+                                fit.contains(
+                                    fit.center + (start - fit.center - state.pan) / state.zoom
+                                )
+                        if (!insideImage) {
+                            tap?.cancel()
+                            state.close()
+                        } else if (video != null) {
+                            video.activity(clicked = true, touch = phone)
+                        } else if (now() - lastTap < 300) {
                             tap?.cancel()
                             if (state.split) state.split = false
                             else
@@ -82,7 +103,11 @@ internal fun Modifier.viewerGestures(state: ViewerState, phone: Boolean): Modifi
             }
         }
         .onWebPointerEvent(PointerEventType.Scroll) { e ->
-            if (e.keyboardModifiers.isCtrlPressed || e.keyboardModifiers.isMetaPressed)
+            if (
+                video != null ||
+                    e.keyboardModifiers.isCtrlPressed ||
+                    e.keyboardModifiers.isMetaPressed
+            )
                 return@onWebPointerEvent
             val change = e.changes.first()
             state.setScale(

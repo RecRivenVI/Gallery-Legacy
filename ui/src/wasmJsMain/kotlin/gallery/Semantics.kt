@@ -14,20 +14,41 @@ private var semanticSequence = 0
     """(id,attributes)=>{
  let s=globalThis.gallerySemantics;
  if(!s){
-  const roots=new Set([document]);
+  const roots=new Map(),pending=new Set();
   s=globalThis.gallerySemantics={values:new Map(),scheduled:false};
   const apply=()=>{s.scheduled=false;
-   let removed=false;for(const root of roots)if(root.host&&!root.host.isConnected){roots.delete(root);removed=true}if(removed){s.observer.disconnect();for(const root of roots)s.observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['role','id']})}
-   for(const root of [...roots])for(const node of root.querySelectorAll('*'))if(node.shadowRoot&&!roots.has(node.shadowRoot)){roots.add(node.shadowRoot);s.observer.observe(node.shadowRoot,{childList:true,subtree:true,attributes:true,attributeFilter:['role','id']})}
-   for(const [key,value]of s.values){let node;for(const root of roots){node=root.getElementById(key);if(node)break}if(!node)continue;
+   for(const key of pending){const value=s.values.get(key);if(!value)continue;let node;for(const root of roots.keys()){node=root.getElementById(key);if(node)break}if(!node)continue;
     for(const [name,content]of Object.entries(value)){if(content===null){if(node.hasAttribute(name))node.removeAttribute(name)}else if(node.getAttribute(name)!==content)node.setAttribute(name,content)}
     if(!node.galleryDisableHandler){node.galleryDisableHandler=e=>{if(node.getAttribute('aria-disabled')==='true'){e.preventDefault();e.stopImmediatePropagation()}};node.addEventListener('click',node.galleryDisableHandler,true)}
    }
+   pending.clear();
   };
-  s.schedule=()=>{if(!s.scheduled){s.scheduled=true;queueMicrotask(apply)}};
-  s.observer=new MutationObserver(s.schedule);s.observer.observe(document,{childList:true,subtree:true,attributes:true,attributeFilter:['role','id']});
+  s.mark=key=>{if(!s.values.has(key))return;pending.add(key);if(!s.scheduled){s.scheduled=true;queueMicrotask(apply)}};
+  const find=node=>{
+   if(node.nodeType===1)check(node);
+   for(const child of node.querySelectorAll?.('*')||[])check(child);
+  };
+  const check=node=>{s.mark(node.id);if(node.shadowRoot)observe(node.shadowRoot)};
+  const observe=root=>{
+   if(roots.has(root))return;
+   const observer=new MutationObserver(records=>{
+    for(const r of records){
+     if(r.type==='attributes'){const node=r.target,attrs=s.values.get(node.id);if(attrs&&(r.attributeName==='id'||node.getAttribute('role')!==attrs.role))s.mark(node.id)}
+     else for(const node of r.addedNodes)find(node);
+    }
+    for(const [known,watch]of roots)if(known.host&&!known.host.isConnected){watch.disconnect();roots.delete(known)}
+   });
+   roots.set(root,observer);
+   observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['role','id']});
+   find(root);
+  };
+  observe(document);
  }
- s.values.set(id,JSON.parse(attributes));s.schedule();
+ const previous=s.values.get(id);
+ if(previous?.source===attributes)return;
+ const value=JSON.parse(attributes);
+ Object.defineProperty(value,'source',{value:attributes});
+ s.values.set(id,value);s.mark(id);
 }"""
 )
 private external fun projectSemantic(id: String, attributes: String)

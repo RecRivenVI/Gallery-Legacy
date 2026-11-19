@@ -1,10 +1,8 @@
-@file:OptIn(
-    kotlin.io.encoding.ExperimentalEncodingApi::class,
-    kotlin.js.ExperimentalWasmJsInterop::class,
-)
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 
 package gallery
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,9 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import kotlin.io.encoding.Base64
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -25,11 +23,14 @@ private val imageQueue = Semaphore(6)
 
 private class CachedImage(
     val image: SkiaImage,
-    val info: ImagePayloadWire,
-    var references: Int = 0,
+    val width: Int,
+    val height: Int,
+    val animated: Boolean,
+    val durationMs: Long,
 ) {
     val bitmap = image.toComposeImageBitmap()
     val bytes = image.width.toLong() * image.height * 4
+    var references = 0
 }
 
 private val imageCache = LinkedHashMap<String, CachedImage>()
@@ -64,10 +65,11 @@ private suspend fun acquireImage(url: String, nearby: Boolean = false): CachedIm
                                     val payload =
                                         imagePayload(url + if (nearby) "&priority=nearby" else "")
                                     CachedImage(
-                                            SkiaImage.makeFromEncoded(
-                                                Base64.decode(payload.encoded)
-                                            ),
-                                            payload.copy(encoded = ""),
+                                            SkiaImage.makeFromEncoded(payload.encodedBytes()),
+                                            payload.width,
+                                            payload.height,
+                                            payload.animated,
+                                            payload.durationMs.toLong(),
                                         )
                                         .also {
                                             imageCache[url] = it
@@ -105,7 +107,12 @@ suspend fun prefetchImage(url: String) {
 }
 
 @Composable
-fun Thumbnail(media: MediaSummaryWire?, modifier: Modifier = Modifier, fit: Boolean = false) {
+fun Thumbnail(
+    media: MediaSummaryWire?,
+    modifier: Modifier = Modifier,
+    fit: Boolean = false,
+    showDuration: Boolean = true,
+) {
     if (media == null) return
     Box(modifier) {
         val url = media.thumbnailUrl
@@ -126,7 +133,7 @@ fun Thumbnail(media: MediaSummaryWire?, modifier: Modifier = Modifier, fit: Bool
             onLoaded = { coverReady = true },
             onDuration = { if (it > 0 || media.durationMs == null) videoDuration = it },
         )
-        if (media.type == "video" && coverReady && videoDuration > 0)
+        if (showDuration && media.type == "video" && coverReady && videoDuration > 0)
             Box(
                 Modifier.align(Alignment.BottomEnd)
                     .padding(7.dp)
@@ -154,6 +161,7 @@ fun MediaImage(
     onSize: ((Int, Int) -> Unit)? = null,
     onInfo: ((Int, Int, Boolean) -> Unit)? = null,
     onDuration: ((Long) -> Unit)? = null,
+    draw: (DrawScope.(ImageBitmap) -> Unit)? = null,
 ) {
     var bitmap by remember(url) { mutableStateOf<ImageBitmap?>(imageCache[url]?.bitmap) }
     var failed by remember(url) { mutableStateOf(false) }
@@ -167,10 +175,9 @@ fun MediaImage(
         var image: CachedImage? = null
         try {
             image = acquireImage(url)
-            durationCallback?.invoke(image.info.durationMs)
+            durationCallback?.invoke(image.durationMs)
             bitmap = image.bitmap
-            if (image.info.width > 0)
-                infoCallback?.invoke(image.info.width, image.info.height, image.info.animated)
+            if (image.width > 0) infoCallback?.invoke(image.width, image.height, image.animated)
             sizeCallback?.invoke(image.bitmap.width, image.bitmap.height)
             loadedCallback?.invoke()
             awaitCancellation()
@@ -187,14 +194,16 @@ fun MediaImage(
         }
     }
     val value = bitmap
-    if (value != null)
-        Image(
-            value,
-            description,
-            modifier,
-            contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
-        )
-    else
+    if (value != null) {
+        if (draw != null) Canvas(modifier) { draw(value) }
+        else
+            Image(
+                value,
+                description,
+                modifier,
+                contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
+            )
+    } else
         Box(
             modifier.background(if (placeholder) LocalPalette.current.tint else Color.Transparent)
         ) {

@@ -51,17 +51,23 @@ fun main() {
         }
         LaunchedEffect(start) {
             try {
-                val icons = resourceText("fluent-icons.json").await<kotlin.js.JsString>().toString()
-                fluentPaths =
-                    json.decodeFromString<Map<String, List<String>>>(icons) +
+                coroutineScope {
+                    val font = async { fonts.start() }
+                    val primary = resourceText("fluent-icons.json")
+                    val personal = resourceText("fluent-personal.json")
+                    fluentPaths =
                         json.decodeFromString<Map<String, List<String>>>(
-                            resourceText("fluent-personal.json")
-                                .await<kotlin.js.JsString>()
-                                .toString()
-                        )
-                fonts.start()
+                            primary.await<kotlin.js.JsString>().toString()
+                        ) +
+                            json.decodeFromString<Map<String, List<String>>>(
+                                personal.await<kotlin.js.JsString>().toString()
+                            )
+                    font.await()
+                }
                 fontsReady = true
                 startupError = ""
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 startupError = "加载失败：" + humanError(e.message.orEmpty())
             }
@@ -69,13 +75,13 @@ fun main() {
         if (isDesktop()) LaunchedEffect(Unit) { manager.start() }
         else {
             LaunchedEffect(Unit) {
+                gallery.reload()
+                gallery.restoreViewer()
                 try {
                     gallery.refreshSources()
                 } catch (e: Exception) {
                     gallery.error = e.message.orEmpty()
                 }
-                gallery.reload()
-                gallery.restoreViewer()
             }
             DisposableEffect(Unit) {
                 val close = listenHistory { hash ->
@@ -96,6 +102,18 @@ fun main() {
                 val close = listenSearchShortcut {
                     if (gallery.viewer == null && gallery.panel.isEmpty() && !gallery.drawer)
                         gallery.search.focus()
+                }
+                onDispose { close() }
+            }
+            DisposableEffect(Unit) {
+                val close = listenBackButton {
+                    when {
+                        gallery.panel == "background" -> gallery.panel = "settings"
+                        gallery.panel.isNotEmpty() -> gallery.panel = ""
+                        gallery.drawer -> gallery.drawer = false
+                        gallery.viewer != null -> gallery.viewer?.close()
+                        else -> browserBack()
+                    }
                 }
                 onDispose { close() }
             }

@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.*
 import androidx.compose.ui.layout.*
@@ -34,6 +35,29 @@ fun Modifier.captureBackdrop(backdrop: Backdrop) = onGloballyPositioned {
         backdrop.layer.record { this@drawWithContent.drawContent() }
         drawLayer(backdrop.layer)
     }
+
+@Composable
+internal fun ViewerBackdrop(source: Backdrop) {
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        Canvas(
+            Modifier.requiredSize(maxWidth / 4, maxHeight / 4)
+                .onGloballyPositioned { origin = it.positionInWindow() }
+                .graphicsLayer {
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = 4f
+                    scaleY = 4f
+                    val radius = 7.dp.toPx()
+                    renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
+                }
+        ) {
+            val offset = source.origin - origin
+            scale(.25f, .25f, Offset.Zero) {
+                translate(offset.x, offset.y) { drawLayer(source.layer) }
+            }
+        }
+    }
+}
 
 @Composable
 fun GlassSurface(

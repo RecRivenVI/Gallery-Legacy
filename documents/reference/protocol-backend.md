@@ -39,6 +39,8 @@ JSON 返回 protocolVersion、generationId，工作库增加 revision；成功�
 
 - 原图、字幕与封面均支持单段 bytes= 起止／后缀 Range；多段、非法、越界为 INVALID_RANGE／416。返回 Accept-Ranges、Content-Length、Content-Range；HEAD 不发送正文。零字节非 Range 响应长度为零。
 - 源文件只读，校验路径、重解析点和物理身份。缩略图响应提供 `thumbnailUrl`，按 `purpose=display|strip` 取多用途图或底栏图。命中状态见 `X-Gallery-Thumbnail`，实际封面使用封面库；阅读器主图使用原始媒体地址。FFmpeg 从视频取帧并返回实际时长。
+- `GET /api/v1/media/:id` 可带 `playback=compatible`，复用原媒体身份校验。仅对 Pixiv WebM 视频生成可在浏览器播放的 H.264 MP4，原媒体地址仍返回原文件。使用配置的 FFmpeg，每实例同时处理一段，原片和响应各限 16 MiB，原片时长限 30 秒，转码限 25 秒，兼容响应禁止缓存。超限返回 `VIDEO_COMPAT_LIMIT`，忙时返回 `VIDEO_COMPAT_BUSY`，缺少编码器返回 `VIDEO_COMPAT_TOOL_UNAVAILABLE`。
+- 已确认没有音轨的兼容视频响应包含 `X-Gallery-Video-Silent: true`。画廊可静音启动这种播放源，浏览器音量偏好不受影响。
 - SVG 使用 sandbox CSP；字幕仅 zh-CN／en-US 的同名 VTT、最多 4MiB。媒体 MIME、私有缓存头与失败码与 Node 对照，不直接用 Go 默认 ServeFile 替代合同。
 - cover／preview／content 及 defaultVisible 按文件名和已提取预览标志决定；声明不增加实际媒体，封面停用字段不能丢失作品。
 
@@ -56,7 +58,8 @@ Catalog、live、Search、Adapter、shape 分别使用 [catalog 契约](../../ap
 - Go 任务与宿主共享 PID，任务租约另绑定已有任务 ID（taskId），防止任务结束而宿主仍活着时误报运行中；不替代完整进程身份，也不把令牌暴露给公开状态。
 - 单请求换行 JSON，4096 字节上限、10 秒服务端空闲期限；请求含 instanceId／token／operation。成功含 ok=true、instanceId、identity、data；失败 ok=false、稳定 code。客户端继续验证回复身份，控制超时 15 秒，不放宽。
 - 命名管道保留 status 与 access.\* 的认证协议。manager、scan、stop 不从外部管道启动或解绑服务，返回 MANAGER_REQUIRED。管理器通过自己持有的 Go 子进程输入管道发送命令，Go 原生核验直接父进程并监测完整身份；配置、日志、报告、缓存、检查点、scope、验证与诊断仍由固定白名单调用，不能公开成 HTTP 管理接口。
-- Electron 只接受本窗口顶层 frame 与精确管理文档（hash 为页内路由），保留白名单；系统目录选择／打开文件／托盘留在 Electron，其他工作调用 Go。
+- `access.read` 的 `days` 接受 1、7、30 或 0（全部）。`clientPage`、`eventPage`、`banPage` 从 1 开始，每页 50 条。响应分别包含 `clients`、`events` 和 `banEvents`，客户端附 `clientPage`／`clientPages`，事件附 `moreEvents`／`moreBanEvents`。界面仅读客户端时可传 `includeEvents: false`。请求事件不含地址、URL、查询或正文，封禁动作通过同一认证管道读取。持久化与清除行为见 [ADR-20](../design/adr-20-access_retention.md)。
+- Tauri 本机命令验证管理器窗口标签和本地管理文档。系统目录选择、打开文件与托盘由桌面宿主处理，业务操作由固定白名单转交 Go。
 - 启动就绪／停止／重启、管理器退出时正常结束、隐藏再打开、取消保留已提交、父控制程序退出的协作取消与陈旧锁恢复都必须验证。独立存活按 101 号明确撤销，其他协议语义仍对照。切换只在新合成实例中进行，不抢用现有实例。
 
 ## 差分边界
@@ -70,7 +73,7 @@ Catalog、live、Search、Adapter、shape 分别使用 [catalog 契约](../../ap
 | manage scan.start／status／cancel        | full／incremental、固定平台单选／多选、单作者；确认／范围非法保持原错误；会话内启动真正 Go 任务，scan 排它与 go-scan 原生租约共同防止双 writer；取消保留完整作品事务                                                                                                     |
 | 任务收尾／崩溃                           | 成功 READY，取消 CANCELLED／SCAN_CANCELLED，崩溃映射 SCAN_OWNER_EXITED；保留已提交 Catalog／Search／revision／签名，不将失败改成成功；按 [101 号决定](../design/adr-8-manager_lifecycle.md)，管理器真正退出时先结束扫描再关闭服务，隐藏不退出；独立存活不再对照冻结 Node |
 | 静态恢复与运行库初始化                   | 维护租约内验证 READY／active 指针和来源；缺指针但存在 READY 拒绝；初始化不覆盖已有库；坏库／来源不符不得启动为空库                                                                                                                                                       |
-| 原生窗口桥                               | 原窗口／顶层 frame／精确 URL 和 operation 白名单不变；只用隔离候选显式选择 Go 可执行；目录选择、托盘、窗口仍在 Electron                                                                                                                                                  |
+| 原生窗口桥 | 管理器窗口标签、本地管理文档与操作白名单共同限定调用范围；目录选择、托盘和窗口由 Tauri 处理 |
 
 输入错误、认证拒绝和身份错配必须有真正 pipe／进程证据；时间戳、PID、UUID 与计时按各自身份关系核对，不要求跨运行位一致。状态探测不能阻塞在 PowerShell 子进程；新 Go 使用原生进程句柄取得同格式身份。
 

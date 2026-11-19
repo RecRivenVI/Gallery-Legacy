@@ -17,6 +17,7 @@ class ManagerState(val scope: CoroutineScope) {
     var draft by mutableStateOf<RuntimeConfigurationWire?>(null)
     var access by mutableStateOf<AccessSnapshotWire?>(null)
     var period by mutableIntStateOf(1)
+    var accessPage by mutableIntStateOf(1)
     var selected by
         mutableStateOf(
             stored("manager_selected").split('|').filter { it in platforms }.ifEmpty { platforms }
@@ -155,8 +156,21 @@ class ManagerState(val scope: CoroutineScope) {
 
     suspend fun refreshPage() {
         when (page) {
-            "access" ->
-                access = readAdmin<AccessSnapshotWire>("access.read", document("days" to period))
+            "access" -> {
+                val requestedPage = accessPage
+                val requestedPeriod = period
+                val snapshot =
+                    readAdmin<AccessSnapshotWire>(
+                        "access.read",
+                        document(
+                            "days" to requestedPeriod,
+                            "clientPage" to requestedPage,
+                            "includeEvents" to false,
+                        ),
+                    )
+                if (page == "access" && period == requestedPeriod && accessPage == requestedPage)
+                    access = snapshot
+            }
             "diagnose" -> {
                 validation = readAdmin<ValidationStatusWire>("validation.status")
                 storage = readAdmin<StorageSnapshotWire>("storage.read")

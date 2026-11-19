@@ -55,7 +55,10 @@ fun PersonalNavigation(state: GalleryState) {
         else -> Label("作品 ${grouped(state.total)}", color = LocalPalette.current.faint)
     }
     if (state.route.kind !in listOf("collections"))
-        Action("筛选" + (if (state.filters.count > 0) " ${state.filters.count}" else "") + " ▾") {
+        AnchoredAction(
+            state,
+            "筛选" + (if (state.filters.count > 0) " ${state.filters.count}" else "") + " ▾",
+        ) {
             state.filters.open()
         }
 }

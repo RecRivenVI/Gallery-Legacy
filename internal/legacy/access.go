@@ -1,41 +1,19 @@
 package legacy
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 
+	"github.com/RecRivenVI/Gallery-Legacy/internal/accesslog"
 	"github.com/RecRivenVI/Gallery-Legacy/internal/instance"
 )
 
 type row = map[string]any
 
-type history struct {
-	Version    int             `json:"version"`
-	InstanceID string          `json:"instanceId"`
-	Enabled    *bool           `json:"enabled,omitempty"`
-	AutoBan    json.RawMessage `json:"autoBan,omitempty"`
-	Clients    []row           `json:"clients"`
-	Events     []row           `json:"events"`
-}
-
-func parseHistory(b []byte, target string) (history, error) {
-	if len(b) == 0 && target != "" {
-		return history{Version: 1, InstanceID: target}, nil
-	}
-	var h history
-	if err := json.Unmarshal(b, &h); err != nil {
-		return h, err
-	}
-	if h.Version != 1 || h.InstanceID == "" || target != "" && h.InstanceID != target {
-		return h, errors.New("LEGACY_ACCESS_IDENTITY_INVALID")
-	}
-	return h, nil
-}
+type history = accesslog.History
 
 func intValue(v any) int64 {
 	switch n := v.(type) {
@@ -61,7 +39,7 @@ func accessEvent(r row, id string) (eventKey, bool) {
 	return k, id != "" && k.at > 0 && k.status >= 100 && k.status <= 599 && k.elapsed >= 0 && accessCategory.MatchString(resource) && slices.Contains([]string{"GET", "HEAD", "POST", "OPTIONS"}, method)
 }
 
-func mergeHistory(source, target history, now time.Time) (history, error) {
+func mergeHistory(source, target history) (history, error) {
 	if source.InstanceID == target.InstanceID {
 		return target, errors.New("LEGACY_ACCESS_TARGET_EQUALS_SOURCE")
 	}
@@ -79,9 +57,6 @@ func mergeHistory(source, target history, now time.Time) (history, error) {
 		oldID, err := accessIdentity(source.InstanceID, old)
 		if err != nil {
 			return target, err
-		}
-		if intValue(old["lastSeenAtMs"]) < now.Add(-30*24*time.Hour).UnixMilli() {
-			continue
 		}
 		address := old["address"].(string)
 		id := instance.AccessClientID(target.InstanceID, address)
@@ -139,24 +114,19 @@ func mergeHistory(source, target history, now time.Time) (history, error) {
 		}
 		return strings.Compare(ai, bi)
 	})
-	target.Clients = target.Clients[:min(256, len(target.Clients))]
-	kept := map[string]bool{}
-	for _, c := range target.Clients {
-		kept[c["id"].(string)] = true
-	}
 	existing := map[eventKey]int{}
 	events := make([]row, 0, len(target.Events)+len(source.Events))
 	for _, e := range target.Events {
 		id, _ := e["client"].(string)
-		if key, ok := accessEvent(e, id); ok && kept[id] {
+		if key, ok := accessEvent(e, id); ok {
 			existing[key]++
-			events = append(events, e)
 		}
+		events = append(events, e)
 	}
 	for _, e := range source.Events {
 		oldID, _ := e["client"].(string)
 		id := mapping[oldID]
-		if key, ok := accessEvent(e, id); ok && kept[id] {
+		if key, ok := accessEvent(e, id); ok {
 			if existing[key] > 0 {
 				existing[key]--
 				continue
@@ -174,7 +144,7 @@ func mergeHistory(source, target history, now time.Time) (history, error) {
 		}
 		return 0
 	})
-	target.Events = events[max(0, len(events)-200):]
+	target.Events = events
 	return target, nil
 }
 

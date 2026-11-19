@@ -11,8 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
@@ -167,18 +170,20 @@ fun GalleryHeader(state: GalleryState, narrow: Boolean, width: Int) {
                     )
                 }
                 if (state.route.kind != "authors")
-                    Action(
+                    AnchoredAction(
+                        state,
                         "筛选" +
                             (if (state.filters.count > 0) " ${state.filters.count}" else "") +
-                            " ▾"
+                            " ▾",
                     ) {
                         state.filters.open()
                     }
             }
             if (state.route.kind == "author") {
                 Label("作品 ${grouped(state.total)}", color = p.faint)
-                Action(
-                    "筛选" + (if (state.filters.count > 0) " ${state.filters.count}" else "") + " ▾"
+                AnchoredAction(
+                    state,
+                    "筛选" + (if (state.filters.count > 0) " ${state.filters.count}" else "") + " ▾",
                 ) {
                     state.filters.open()
                 }
@@ -193,12 +198,15 @@ fun GalleryHeader(state: GalleryState, narrow: Boolean, width: Int) {
                         state.route.copy(mediaType = listOf("all", "image", "video")[it], page = 1)
                     )
                 }
-            Action(
+            AnchoredAction(
+                state,
                 (if (state.route.kind == "authors") authorSorts[state.route.sort]
                     else workSorts[state.route.sort])
-                    .orEmpty() + " ▾"
+                    .orEmpty() + " ▾",
             ) {
                 state.panel = "sort"
+                if (!state.filters.mixed && state.route.kind !in listOf("authors", "files"))
+                    state.filters.loadOptions()
             }
             if (width >= 1280 && !coarsePointer())
                 IconAction("panel", "分栏", selected = state.splitEnabled) {
@@ -217,8 +225,17 @@ fun GalleryHeader(state: GalleryState, narrow: Boolean, width: Int) {
                 state.preference("size", state.size)
             }
             Label(Metrics.sizes[state.size], color = p.faint)
-            Action(state.ratio + " ▾") { state.panel = "ratio" }
+            AnchoredAction(state, state.ratio + " ▾") { state.panel = "ratio" }
         }
         SearchConditions(state)
+    }
+}
+
+@Composable
+internal fun AnchoredAction(state: GalleryState, text: String, onClick: () -> Unit) {
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    Action(text, modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() }) {
+        state.panelAnchor = bounds
+        onClick()
     }
 }

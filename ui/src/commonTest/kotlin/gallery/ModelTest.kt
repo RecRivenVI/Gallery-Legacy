@@ -26,7 +26,7 @@ class ModelTest {
         assertEquals(0f, pageBandTarget(1, total, step, width))
         assertEquals(total * step - 3 - width, pageBandTarget(total, total, step, width))
         val middle = pageBandTarget(540, total, step, width)
-        assertEquals(width / 2, (540 - .5f) * step - middle)
+        assertEquals(width / 2, (540 - .5f) * step - 1.5f - middle)
         assertTrue(visiblePageRange(middle, step, width, total).count() <= 7)
         assertEquals(0..1, visiblePageRange(0f, 37f, 71f, 2))
     }

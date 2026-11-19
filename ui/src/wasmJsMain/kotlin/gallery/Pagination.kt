@@ -8,14 +8,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
 
 @Composable
 fun Pager(state: GalleryState, narrow: Boolean, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.then(semanticControl("group", "页码条"))) {
-        val jumpWidth = (state.totalPages.toString().length * 8 + 20).coerceAtLeast(34)
-        val summaryWidth = jumpWidth + state.totalPages.toString().length * 8 + 64
+        val summaryWidth = Metrics.pageJumpSize + grouped(state.totalPages.toLong()).length * 8 + 64
         val bandAvailable = (maxWidth.value - summaryWidth - 178).coerceAtLeast(36f)
         Row(
             horizontalArrangement = Arrangement.spacedBy(Metrics.pageInset.dp),
@@ -25,7 +25,7 @@ fun Pager(state: GalleryState, narrow: Boolean, modifier: Modifier = Modifier) {
                 GlassSurface(radius = Metrics.panelRadius.dp, opacity = Metrics.panelGlassOpacity) {
                     Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                         PageArrow(state, false)
-                        JumpPage(state, jumpWidth, true)
+                        JumpPage(state, true)
                         PageArrow(state, true)
                     }
                 }
@@ -46,7 +46,7 @@ fun Pager(state: GalleryState, narrow: Boolean, modifier: Modifier = Modifier) {
                     }
                 }
                 GlassSurface(radius = Metrics.panelRadius.dp, opacity = Metrics.panelGlassOpacity) {
-                    JumpPage(state, jumpWidth, false)
+                    JumpPage(state, false)
                 }
             }
         }
@@ -75,23 +75,23 @@ private fun PageDivider() {
 }
 
 @Composable
-private fun JumpPage(state: GalleryState, numberWidth: Int, phone: Boolean) {
+private fun JumpPage(state: GalleryState, phone: Boolean) {
     val p = LocalPalette.current
+    val currentPage = state.route.page.toString()
     var editing by remember { mutableStateOf(false) }
     var text by remember(state.route.page) { mutableStateOf(state.route.page.toString()) }
     Row(
-        Modifier.height(42.dp).padding(horizontal = Metrics.pageInset.dp),
+        Modifier.height((Metrics.pageHeight + 8).dp).padding(horizontal = Metrics.pageInset.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (!phone) Label("第", color = p.faint)
-        Box(Modifier.width(numberWidth.dp).height(28.dp)) {
+        Box(Modifier.size(Metrics.pageJumpSize.dp)) {
             if (editing)
                 Field(
                     text,
                     { text = it.filter(Char::isDigit).take(7) },
-                    "跳到指定页",
-                    Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     onEnter = {
                         val page =
                             text.toIntOrNull()?.coerceIn(1, state.totalPages) ?: state.route.page
@@ -102,14 +102,19 @@ private fun JumpPage(state: GalleryState, numberWidth: Int, phone: Boolean) {
                     onEscape = { editing = false },
                     onBlur = { editing = false },
                     compact = true,
+                    textAlign = TextAlign.Center,
+                    fontSize = pageNumberFontSize(text, Metrics.pageJumpSize),
+                    description = "跳到指定页",
                 )
             else
                 Action(
-                    state.route.page.toString(),
+                    currentPage,
                     description = "跳到指定页",
                     modifier = Modifier.fillMaxSize(),
+                    centered = true,
+                    fontSize = pageNumberFontSize(currentPage, Metrics.pageJumpSize),
                 ) {
-                    text = state.route.page.toString()
+                    text = currentPage
                     editing = true
                 }
         }
@@ -120,9 +125,14 @@ private fun JumpPage(state: GalleryState, numberWidth: Int, phone: Boolean) {
 @Composable
 private fun PageBand(state: GalleryState, available: Float) {
     val count = state.totalPages
-    val itemWidth = (count.toString().length * 8 + 20).coerceAtLeast(34).toFloat()
-    val step = itemWidth + Metrics.pageGap
-    val width = minOf(Metrics.pageBandMax, available, count * step - Metrics.pageGap)
+    val buttonSize = Metrics.pageHeight
+    val step = buttonSize + Metrics.pageGap
+    val width =
+        minOf(
+            Metrics.pageBandMax,
+            available,
+            count * step - Metrics.pageGap,
+        )
     val maximum = (count * step - Metrics.pageGap - width).coerceAtLeast(0f)
     val position = state.pageBand
     val offset = { position.value.coerceIn(0f, maximum) }
@@ -154,7 +164,7 @@ private fun PageBand(state: GalleryState, available: Float) {
     }
     Box(
         Modifier.width(width.dp)
-            .height(Metrics.pageHeight.dp)
+            .height(buttonSize.dp)
             .hoverable(interaction)
             .then(semanticControl("group", "页码带"))
     ) {
@@ -186,11 +196,14 @@ private fun PageBand(state: GalleryState, available: Float) {
                 }
         ) {
             for (index in visible) key(index) {
+                val number = (index + 1).toString()
                 Action(
-                    (index + 1).toString(),
+                    number,
                     selected = state.route.page == index + 1,
+                    centered = true,
+                    fontSize = pageNumberFontSize(number, buttonSize),
                     modifier =
-                        Modifier.width(itemWidth.dp).height(Metrics.pageHeight.dp).graphicsLayer {
+                        Modifier.size(buttonSize.dp).graphicsLayer {
                             translationX = (index * step - offset()).dp.toPx()
                         },
                 ) {
@@ -218,3 +231,6 @@ private fun PageBand(state: GalleryState, available: Float) {
             }
     }
 }
+
+private fun pageNumberFontSize(number: String, buttonSize: Int): Int =
+    ((buttonSize - 4) / (number.length.coerceAtLeast(1) * .62f)).toInt().coerceAtMost(13)

@@ -154,7 +154,7 @@ class ViewerReading(private val viewer: ViewerState) {
     }
 
     fun select(page: Int) {
-        viewer.page = page.coerceIn(0, (viewer.media.size - 1).coerceAtLeast(0))
+        viewer.selectPage(page.coerceIn(0, (viewer.media.size - 1).coerceAtLeast(0)))
         scrollTarget = viewer.page
         viewer.updateLink()
     }
